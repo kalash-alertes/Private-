@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kwatsur}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kwatsur_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-kwatsur}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - kwatsur_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kwatsur} -d ${POSTGRES_DB:-kwatsur}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-kwatsur}:${POSTGRES_PASSWORD:-kwatsur_dev}@db:5432/${POSTGRES_DB:-kwatsur}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+volumes:
+  kwatsur_pgdata:
