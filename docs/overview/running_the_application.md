@@ -138,6 +138,8 @@ dédié, voir [docs/technical/testing.md](../technical/testing.md)).
 | Construction : `Read timed out` ou `from versions: none` | Téléchargement PyPI coupé dans Docker | `powershell -File scripts\download_docker_wheels.ps1` puis `wsl docker compose up --build -d` |
 | Construction : un paquet manque (ex. `uvloop`) | Paquet réservé à Linux, ignoré par pip sous Windows | L'ajouter dans `scripts/download_docker_wheels.ps1` (comme `uvloop`) et relancer le script |
 | `pip install` sous Windows : version introuvable | Version qui n'existe pas pour Python 3.14 | Choisir une version disponible pour 3.12 **et** 3.14 dans `requirements.txt` |
+| `No 'script_location' key found in configuration`, ou « fichier … illisible dans le conteneur » | Projet dans un **dossier partagé VirtualBox** (`/media/sf_...`) : ses fichiers sont réservés au groupe `vboxsf`, illisibles pour le compte du conteneur | **Recommandé** : cloner le projet sur le disque de la machine virtuelle (`git clone` dans le dossier personnel), puis `docker compose up --build -d`. Sinon : `BACKEND_CONTAINER_USER=root` dans le `.env` |
+| Rien ne correspond, ou `alembic.ini` absent | Mauvaise branche : `main` contient l'ancienne version | `git checkout feature/fortianalyzer-collector` |
 | `port is already allocated` (5432 ou 8000) | Un autre programme utilise le port | Arrêter ce programme, ou changer `POSTGRES_PORT` dans `.env` |
 | Erreur de base après avoir changé le code des tables | Une migration manque | Voir [docs/technical/database.md](../technical/database.md) (« Modifier le schéma ») |
 

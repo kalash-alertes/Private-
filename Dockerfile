@@ -21,6 +21,11 @@ COPY web_interface ./web_interface
 COPY db ./db
 COPY scripts ./scripts
 
+# Fichiers lisibles par tous : COPY conserve les droits du dossier d'origine. Depuis un dossier partagé VirtualBox
+# (droits 0770, groupe vboxsf), alembic.ini serait illisible pour le compte non-root ci-dessous, et Alembic
+# échouerait avec « No 'script_location' key found in configuration ».
+RUN chmod -R a+rX /application
+
 # Compte non-root : le backend n'a pas besoin de privilèges.
 RUN useradd --create-home backend_runner
 USER backend_runner
