@@ -20,6 +20,11 @@ services:
       retries: 10
 
   backend:
+    # Toutes les valeurs du .env (APP_IS_IN_DEMO, FORTIANALYZER_*, LOG_COLLECTION_*...) sont transmises au conteneur ;
+    # les valeurs de `environment` ci-dessous priment (notamment DATABASE_URL, qui vise le service `database`).
+    env_file:
+      - path: .env
+        required: false
     build:
       context: .
       # Réseau de l'hôte pendant la construction : plus fiable que le réseau Docker sous WSL pour télécharger les paquets.
@@ -29,8 +34,6 @@ services:
       APPLICATION_ENVIRONMENT: ${APPLICATION_ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
-      # Escalade automatique des incidents en retard toutes les N secondes (0 = désactivée).
-      AUTOMATIC_ESCALATION_INTERVAL_SECONDS: ${AUTOMATIC_ESCALATION_INTERVAL_SECONDS:-300}
     depends_on:
       database:
         condition: service_healthy
@@ -40,6 +43,8 @@ services:
       - ./backend:/application/backend
       - ./web_interface:/application/web_interface
       - ./db:/application/db
+      # Certificat d'autorité de FortiAnalyzer (facultatif), voir certificates/README.md. Lecture seule.
+      - ./certificates:/application/certificates:ro
     ports:
       - "127.0.0.1:8000:8000"
 

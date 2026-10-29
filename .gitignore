@@ -9,3 +9,8 @@ htmlcov/
 
 # Paquets Python téléchargés pour construire l'image Docker hors ligne (voir docker_wheels/README.md)
 docker_wheels/*.whl
+
+# Certificats locaux (FortiAnalyzer) : jamais commités
+certificates/*.pem
+certificates/*.crt
+certificates/*.cer
