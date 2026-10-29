@@ -131,4 +131,6 @@ def load_synthetic_demo_data() -> None:
 if __name__ == "__main__":
     if get_application_settings().application_environment == "production":
         raise SystemExit("Refusé : ce script ne doit jamais être lancé sur une base de production.")
+    if not get_application_settings().app_is_in_demo:
+        raise SystemExit("Refusé : APP_IS_IN_DEMO=false (données réelles FortiAnalyzer) ; pas de données inventées.")
     load_synthetic_demo_data()

@@ -24,6 +24,8 @@ from backend.features.import_runs.router import import_runs_router
 from backend.features.incident_response_settings.router import incident_response_settings_router
 from backend.features.incidents.automatic_escalation import run_automatic_escalation_periodically
 from backend.features.incidents.router import incidents_router
+from backend.features.log_collection.collection_scheduler import run_log_collection_periodically
+from backend.features.log_collection.router import log_collection_router
 from backend.features.playbooks.router import playbooks_router
 from backend.features.source_logs.router import source_logs_router
 from web_interface.web_interface_registration import register_web_interface
@@ -33,18 +35,28 @@ API_PATH_PREFIX = "/api"
 
 @contextlib.asynccontextmanager
 async def run_background_tasks(_application: FastAPI) -> AsyncIterator[None]:
-    """Démarre l'escalade automatique périodique si elle est activée, et l'arrête proprement à l'extinction."""
-    escalation_interval_seconds = get_application_settings().automatic_escalation_interval_seconds
-    escalation_task = None
-    if escalation_interval_seconds > 0:
-        escalation_task = asyncio.create_task(
-            run_automatic_escalation_periodically(get_database_session_factory(), escalation_interval_seconds)
+    """Démarre les tâches périodiques activées (escalade, collecte des alertes) et les arrête à l'extinction."""
+    settings = get_application_settings()
+    background_tasks = []
+    if settings.automatic_escalation_interval_seconds > 0:
+        background_tasks.append(
+            asyncio.create_task(
+                run_automatic_escalation_periodically(
+                    get_database_session_factory(), settings.automatic_escalation_interval_seconds
+                )
+            )
+        )
+    if settings.log_collection_interval_seconds > 0:
+        background_tasks.append(
+            asyncio.create_task(
+                run_log_collection_periodically(get_database_session_factory(), settings.log_collection_interval_seconds)
+            )
         )
     yield
-    if escalation_task is not None:
-        escalation_task.cancel()
+    for background_task in background_tasks:
+        background_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
-            await escalation_task
+            await background_task
 
 
 def create_application() -> FastAPI:
@@ -69,6 +81,7 @@ def create_application() -> FastAPI:
         incident_response_settings_router,
         audit_journal_router,
         dashboard_router,
+        log_collection_router,
     ]:
         application.include_router(feature_router, prefix=API_PATH_PREFIX)
 

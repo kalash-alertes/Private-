@@ -1,7 +1,8 @@
 """Règles métier de l'historique des imports : démarrer, terminer et consulter une exécution de collecte.
 
-Fonctions publiques utilisables par les autres fonctionnalités (futur collecteur, `source_logs`) :
-`start_import_run`, `finish_import_run`, `ensure_import_run_accepts_new_logs`, `fetch_import_run`.
+Fonctions publiques utilisables par les autres fonctionnalités (`log_collection`, `source_logs`) :
+`start_import_run`, `finish_import_run`, `ensure_import_run_accepts_new_logs`, `fetch_import_run`,
+`fetch_latest_synchronization_cursor`.
 
 Il n'existe volontairement aucune route HTTP pour démarrer ou terminer une exécution : seul le collecteur
 (code interne) le fait. Les routes exposent uniquement la consultation.
@@ -65,6 +66,16 @@ def ensure_import_run_accepts_new_logs(database_session: Session, import_run_id:
         raise ResourceConflictError(
             f"L'exécution d'import {import_run_id} est terminée : aucun log ne peut plus lui être rattaché."
         )
+
+
+def fetch_latest_synchronization_cursor(database_session: Session) -> str | None:
+    """Retourne le point de reprise de la dernière collecte réussie ou partielle (None : aucune collecte encore).
+
+    Une exécution échouée n'avance jamais le point de reprise : la collecte suivante reprend la même période.
+    """
+    return repository.fetch_latest_synchronization_cursor(
+        database_session, [ImportRunStatus.SUCCEEDED.value, ImportRunStatus.PARTIALLY_SUCCEEDED.value]
+    )
 
 
 def fetch_import_run(database_session: Session, import_run_id: UUID) -> ImportRunRead:

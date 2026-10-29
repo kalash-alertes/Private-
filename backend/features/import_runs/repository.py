@@ -45,3 +45,13 @@ def fetch_import_runs_page(
         .offset(offset)
     ).all()
     return list(import_runs), total or 0
+
+
+def fetch_latest_synchronization_cursor(database_session: Session, statuses: list[str]) -> str | None:
+    """Retourne le curseur de la plus récente exécution ayant l'un de ces statuts et un curseur, ou None."""
+    return database_session.scalar(
+        select(ImportRun.curseur_synchronisation)
+        .where(ImportRun.statut.in_(statuses), ImportRun.curseur_synchronisation.is_not(None))
+        .order_by(ImportRun.debut.desc(), ImportRun.id.desc())
+        .limit(1)
+    )

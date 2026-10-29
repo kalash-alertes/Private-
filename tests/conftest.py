@@ -38,6 +38,25 @@ def make_sqlite_transactions_reliable(sqlite_engine: Engine) -> None:
         connection.exec_driver_sql("BEGIN")
 
 
+# Valeurs imposées à TOUS les tests, quel que soit le .env du poste : pas de tâche de fond, mode démonstration
+# (jamais d'appel réseau vers un vrai FortiAnalyzer). Les variables d'environnement priment sur le fichier .env.
+SETTINGS_FORCED_FOR_TESTS = {
+    "AUTOMATIC_ESCALATION_INTERVAL_SECONDS": "0",
+    "LOG_COLLECTION_INTERVAL_SECONDS": "0",
+    "APP_IS_IN_DEMO": "true",
+}
+
+
+@pytest.fixture(autouse=True)
+def isolate_tests_from_local_env_file(monkeypatch) -> Iterator[None]:
+    """Neutralise le .env local pour les réglages qui changeraient le comportement des tests."""
+    for setting_name, setting_value in SETTINGS_FORCED_FOR_TESTS.items():
+        monkeypatch.setenv(setting_name, setting_value)
+    get_application_settings.cache_clear()
+    yield
+    get_application_settings.cache_clear()
+
+
 @pytest.fixture
 def migrated_sqlite_database_engine(tmp_path, monkeypatch) -> Iterator[Engine]:
     """Base SQLite temporaire créée en appliquant réellement les migrations Alembic."""
