@@ -4,17 +4,44 @@
 {% block page_stylesheets %}<link rel="stylesheet" href="/static/css/journals.css">{% endblock %}
 
 {% block page_body %}
+  {% set configuration = collection_configuration %}
   <section class="logs-intro">
     <div>
-      <div class="logs-eyebrow">{{ icon("activity", 14) }} COLLECTE ET ANALYSE</div>
-      <h2>Historique des imports FortiAnalyzer</h2>
-      <p>Chaque passage du collecteur est enregistré, même en cas d'échec. Une alerte déjà connue n'est jamais recréée (« ignorée »).</p>
+      <div class="logs-eyebrow">{{ icon("activity", 14) }} SOURCE DES ALERTES</div>
+      <h2>{% if configuration.est_en_mode_demo %}Mode démonstration{% else %}FortiAnalyzer{% endif %}</h2>
+      <p>
+        {% if configuration.est_en_mode_demo %}
+          Les alertes sont <b>inventées</b> (APP_IS_IN_DEMO=true). Pour lire le vrai FortiAnalyzer : renseigner sa
+          connexion dans le fichier .env, mettre APP_IS_IN_DEMO=false, puis redémarrer l'application.
+        {% else %}
+          {{ configuration.adresse_fortianalyzer or "Adresse non renseignée" }} · ADOM {{ configuration.adom or "—" }}
+          · logs : {{ configuration.types_de_logs | join(", ") or "—" }} · {{ configuration.authentification or "authentification non renseignée" }}
+        {% endif %}
+        <br>Sévérité minimale enregistrée : {{ configuration.severite_minimale | criticality_label }} ·
+        {% if configuration.intervalle_collecte_secondes > 0 %}collecte automatique toutes les {{ (configuration.intervalle_collecte_secondes / 60) | round(1) }} min{% else %}collecte automatique désactivée{% endif %}.
+      </p>
+    </div>
+    <div class="collection-actions">
+      <span class="source-mode-badge {{ 'source-mode-demo' if configuration.est_en_mode_demo else 'source-mode-live' }}"><span></span>{{ "Démonstration" if configuration.est_en_mode_demo else "Données réelles" }}</span>
+      <form method="post" action="/journaux/collecte">
+        <button class="button button-primary" type="submit">{{ icon("refresh_cw", 15) }} Lancer une collecte maintenant</button>
+      </form>
     </div>
   </section>
 
+  {% if configuration.parametres_manquants %}
+    <div class="alert-banner alert-banner-error" role="alert">
+      {{ icon("circle_alert", 17) }}
+      <div>
+        <strong>Connexion FortiAnalyzer incomplète</strong>
+        <p>À renseigner dans le fichier .env : {{ configuration.parametres_manquants | join(", ") }}. Puis redémarrer : <code>wsl docker compose up -d</code>.</p>
+      </div>
+    </div>
+  {% endif %}
+
   <section class="panel logs-list-panel">
     <div class="panel-header logs-list-header">
-      <div><h2>Exécutions d'import</h2><p>Les plus récentes d'abord.</p></div>
+      <div><h2>Historique des collectes</h2><p>Chaque passage est enregistré, même en cas d'échec. Une alerte déjà connue n'est jamais recréée (« ignorée »).</p></div>
       <span class="logs-count">{{ import_runs_page.total }} exécution(s)</span>
     </div>
     <form class="logs-toolbar" method="get" action="/journaux">
@@ -44,7 +71,7 @@
               <td class="logs-message-cell" title="{{ import_run.erreur or '' }}">{{ import_run.erreur or "—" }}</td>
             </tr>
           {% else %}
-            <tr><td colspan="7" class="logs-empty">Aucun import pour l'instant : le collecteur FortiAnalyzer n'est pas encore branché.</td></tr>
+            <tr><td colspan="7" class="logs-empty">Aucune collecte pour l'instant : cliquer sur « Lancer une collecte maintenant ».</td></tr>
           {% endfor %}
         </tbody>
       </table>

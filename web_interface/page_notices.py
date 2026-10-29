@@ -14,6 +14,7 @@ PAGE_NOTICE_MESSAGES_BY_KEY = {
     "playbook_supprime": "Playbook supprimé.",
     "delai_modifie": "Délai de réponse enregistré.",
     "escalade_executee": "Escalade automatique exécutée.",
+    "collecte_executee": "Collecte terminée : voir son résultat en tête de l'historique.",
 }
 
 

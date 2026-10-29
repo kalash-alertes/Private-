@@ -8,6 +8,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from backend.core.settings import get_application_settings
 from backend.features.dashboard import service as dashboard_service
 from web_interface.page_notices import find_page_notice_message
 
@@ -61,6 +62,7 @@ def build_application_layout_context(
             "incidents": dashboard.nombre_incidents_ouverts,
             "alertes": dashboard.nombre_alertes_a_traiter,
         },
+        "is_demo_mode": get_application_settings().app_is_in_demo,
         "page_title": page_title,
         "page_description": page_description,
         "notice_message": find_page_notice_message(notice_key),

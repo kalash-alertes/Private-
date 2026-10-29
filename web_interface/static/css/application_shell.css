@@ -38,6 +38,7 @@
 .global-search input { width: 100%; min-width: 0; background: transparent; border: 0; outline: 0; color: #e7edf7; font-size: 11px; }
 .global-search input::placeholder { color: #77869c; }
 .top-icon { position: relative; }
+.demo-mode-badge { font-size: 9px; font-weight: 700; letter-spacing: 1px; color: #e4c28a; background: #29251f; border: 1px solid #493d2a; border-radius: 20px; padding: 5px 9px; text-decoration: none; }
 .notification-button i { position: absolute; top: 6px; right: 6px; width: 5px; height: 5px; background: #f87171; border-radius: 50%; border: 1px solid #0d1523; }
 .top-avatar { display: grid; place-items: center; flex-shrink: 0; border-radius: 50%; width: 30px; height: 30px; background: #2b466e; color: #c7dcff; }
 

@@ -16,7 +16,18 @@
 .logs-date-cell { display: flex; align-items: center; gap: 6px; color: #8492a7; }
 .logs-empty { text-align: center; padding: 32px !important; color: #8391a7; white-space: normal; }
 
+.collection-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; flex-shrink: 0; }
+.collection-actions form { margin: 0; }
+.source-mode-badge { display: inline-flex; align-items: center; gap: 7px; border-radius: 20px; padding: 7px 10px; font-size: 9px; font-weight: 700; white-space: nowrap; }
+.source-mode-badge span { width: 6px; height: 6px; border-radius: 50%; }
+.source-mode-demo { border: 1px solid #493d2a; background: #29251f; color: #e4c28a; }
+.source-mode-demo span { background: #e4b15f; }
+.source-mode-live { border: 1px solid #24524a; background: #10221f; color: #7ed0b9; }
+.source-mode-live span { background: #3dc69d; }
+.logs-intro code { color: #e4c994; }
+
 @media (max-width: 650px) {
+  .collection-actions { align-items: stretch; width: 100%; }
   .logs-intro { align-items: flex-start; flex-direction: column; }
   .logs-toolbar { align-items: stretch; flex-direction: column; }
   .logs-filter select { max-width: none; width: 100%; }
