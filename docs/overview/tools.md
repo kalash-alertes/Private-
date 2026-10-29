@@ -7,8 +7,8 @@ Le détail technique (versions, fichiers, commandes) est dans [docs/technical/to
 
 ```
 FortiAnalyzer ──► Collecteur ──► OpenSearch (recherche dans les logs)
-   (à venir)       (à venir)  └─► PostgreSQL (incidents, imports) ──► API ──► Écrans analyste
-                                     (en place)                      (en place)   (à venir)
+   (à venir)       (à venir)  └─► PostgreSQL (incidents, imports) ──► Serveur Python ──► Écrans analyste
+                                     (en place)                          (en place)        (en place)
 ```
 
 ## Ce qui est déjà en place
@@ -29,6 +29,12 @@ FortiAnalyzer ──► Collecteur ──► OpenSearch (recherche dans les logs
 À noter : **SQLite** n'est utilisé que pour des tests rapides. La vraie base de l'application est PostgreSQL, et
 l'application a été vérifiée sur PostgreSQL.
 
+## L'interface
+
+Les écrans des analystes sont fabriqués par le serveur Python lui-même (outil **Jinja2**), avec l'apparence de la
+maquette de l'équipe. Il n'y a donc pas de second programme à lancer. OpenSearch Dashboards n'est plus prévu comme
+interface. Voir [interface.md](./interface.md).
+
 ## Ce qui est prévu mais pas encore branché
 
 | Outil | À quoi il servira | Ce qui manque pour l'ajouter |
@@ -36,9 +42,7 @@ l'application a été vérifiée sur PostgreSQL.
 | **FortiAnalyzer** | La source des alertes de sécurité. Il reste la référence d'origine. | La documentation de son API, le mode de connexion, un exemple de données anonymisé. |
 | **Collecteur** | Le programme qui ira chercher les alertes dans FortiAnalyzer, sans jamais créer de doublon. | Les informations FortiAnalyzer ci-dessus. |
 | **OpenSearch** | Ranger et rechercher rapidement dans de gros volumes de logs. | Décider où garder les logs complets. |
-| **OpenSearch Dashboards** | Explorer les logs de façon technique, à côté de l'application. | OpenSearch en place. |
 | **Data Prepper** | Transformer les logs en chemin, si le besoin apparaît. | Une décision : il est facultatif. |
-| **Écrans analyste** | L'interface pour traiter les incidents. | La connexion des utilisateurs et les droits d'accès. |
 
 ## Ce qu'il faut retenir
 

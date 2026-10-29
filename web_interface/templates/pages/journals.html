@@ -1,0 +1,54 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import pagination_footer %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/journals.css">{% endblock %}
+
+{% block page_body %}
+  <section class="logs-intro">
+    <div>
+      <div class="logs-eyebrow">{{ icon("activity", 14) }} COLLECTE ET ANALYSE</div>
+      <h2>Historique des imports FortiAnalyzer</h2>
+      <p>Chaque passage du collecteur est enregistré, même en cas d'échec. Une alerte déjà connue n'est jamais recréée (« ignorée »).</p>
+    </div>
+  </section>
+
+  <section class="panel logs-list-panel">
+    <div class="panel-header logs-list-header">
+      <div><h2>Exécutions d'import</h2><p>Les plus récentes d'abord.</p></div>
+      <span class="logs-count">{{ import_runs_page.total }} exécution(s)</span>
+    </div>
+    <form class="logs-toolbar" method="get" action="/journaux">
+      <label class="logs-filter">
+        {{ icon("filter", 14) }}
+        <select name="statut" aria-label="Filtrer par statut">
+          <option value="">Tous les statuts</option>
+          {% for import_status, status_label in import_run_statuses %}
+            <option value="{{ import_status.value }}" {% if selected_status == import_status %}selected{% endif %}>{{ status_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="button button-secondary button-small" type="submit">Filtrer</button>
+    </form>
+    <div class="table-scroll">
+      <table class="logs-table">
+        <thead><tr><th>STATUT</th><th>DÉBUT</th><th>FIN</th><th>REÇUS</th><th>NOUVEAUX</th><th>IGNORÉS (DÉJÀ CONNUS)</th><th>ERREUR</th></tr></thead>
+        <tbody>
+          {% for import_run in import_runs_page.items %}
+            <tr>
+              <td><span class="status-pill status-{{ import_run.statut | import_run_status_css }}"><span class="status-dot"></span>{{ import_run.statut | import_run_status_label }}</span></td>
+              <td class="logs-date-cell">{{ icon("clock3", 13) }} {{ import_run.debut | display_datetime }}</td>
+              <td class="time-cell">{{ import_run.fin | display_datetime }}</td>
+              <td>{{ import_run.nb_logs_recus | number }}</td>
+              <td>{{ import_run.nb_logs_inseres | number }}</td>
+              <td>{{ import_run.nb_logs_ignores | number }}</td>
+              <td class="logs-message-cell" title="{{ import_run.erreur or '' }}">{{ import_run.erreur or "—" }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="7" class="logs-empty">Aucun import pour l'instant : le collecteur FortiAnalyzer n'est pas encore branché.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination_footer(import_runs_page, "/journaux", filter_query, "exécutions") }}
+  </section>
+{% endblock %}

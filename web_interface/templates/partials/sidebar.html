@@ -1,0 +1,39 @@
+{# Menu latéral : groupes et liens définis dans application_layout.py (NAVIGATION_GROUPS). #}
+<aside class="sidebar">
+  <div class="brand-row">
+    <div class="brand-mark">{{ icon("shield", 22, 2.4) }}</div>
+    <div class="brand-copy">
+      <strong>FAnalyzer IR<span>·</span></strong>
+      <small>INCIDENT RESPONSE</small>
+    </div>
+    <label for="sidebar-toggle" class="icon-button sidebar-close" aria-label="Fermer le menu">{{ icon("x", 18) }}</label>
+  </div>
+
+  <nav class="side-nav" aria-label="Navigation principale">
+    {% for navigation_group in navigation_groups %}
+      <section class="nav-group">
+        <p class="nav-label">{{ navigation_group.label }}</p>
+        {% for navigation_item in navigation_group.items %}
+          <a href="{{ navigation_item.url }}"
+             class="nav-item{% if navigation_item.key == active_navigation_key %} active{% endif %}"
+             {% if navigation_item.key == active_navigation_key %}aria-current="page"{% endif %}>
+            {{ icon(navigation_item.icon_name, 17, 1.9) }}
+            <span>{{ navigation_item.label }}</span>
+            {% set navigation_count = navigation_counts.get(navigation_item.key) %}
+            {% if navigation_count %}
+              <span class="nav-count{% if navigation_item.key == 'alertes' %} count-alert{% endif %}">{{ navigation_count }}</span>
+            {% endif %}
+          </a>
+        {% endfor %}
+      </section>
+    {% endfor %}
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="system-status">
+      <span class="online-indicator"></span>
+      <span>Base de données connectée</span>
+      <span class="status-check">✓</span>
+    </div>
+  </div>
+</aside>

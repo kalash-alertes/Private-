@@ -6,13 +6,28 @@ Code : `backend/features/incidents/`. Table : `incidents` (voir [database.md](./
 
 | Méthode | Route | Corps | Réponse / erreurs |
 |---|---|---|---|
-| POST | `/incidents` | `{"log_id": uuid}` | 201 détail ; 404 log absent ; 409 log déjà lié à un incident |
-| GET | `/incidents?statut=&criticite_actuelle=&faux_positif=&assigne_a=&log_id=&limit=&offset=` | — | page, plus récents d'abord |
-| GET | `/incidents/{id}` | — | détail (+ `criticite_source` du log) ; 404 |
-| PUT | `/incidents/{id}/statut` | `{"statut": ...}` | détail ; 404 |
-| PUT | `/incidents/{id}/criticite-actuelle` | `{"criticite_actuelle": ...}` | détail ; 404 ; 409 si clôturé |
-| PUT | `/incidents/{id}/faux-positif` | `{"faux_positif": bool, "justification": str?}` | détail ; 404 ; 409 si clôturé ; 422 si justification manquante |
-| PUT | `/incidents/{id}/assignation` | `{"assigne_a": str \| null}` | détail ; 404 ; 409 si clôturé |
+Toutes les routes sont sous `/api` (la racine sert l'interface web).
+
+| Méthode | Route | Corps | Réponse / erreurs |
+|---|---|---|---|
+| POST | `/api/incidents` | `{"log_id": uuid, "titre"?: str, "categorie"?: str}` | 201 détail ; 404 log absent ; 409 log déjà lié à un incident |
+| GET | `/api/incidents?vue=en_cours\|traites&recherche=&statut=&criticite_actuelle=&faux_positif=&assigne_a=&categorie=&playbook_id=&log_id=&limit=&offset=` | — | page de lignes de liste, plus récents d'abord |
+| GET | `/api/incidents/{id}` | — | détail (+ `criticite_source`, `alertes`) ; 404 |
+| PUT | `/api/incidents/{id}/statut` | `{"statut": ...}` | détail ; 404 |
+| PUT | `/api/incidents/{id}/criticite-actuelle` | `{"criticite_actuelle": ...}` | détail ; 404 ; 409 si clôturé |
+| PUT | `/api/incidents/{id}/titre` | `{"titre": str}` | détail ; 404 ; 409 si clôturé |
+| PUT | `/api/incidents/{id}/categorie` | `{"categorie": str}` | détail ; 404 ; 409 si clôturé |
+| PUT | `/api/incidents/{id}/faux-positif` | `{"faux_positif": bool, "justification": str?}` | détail ; 404 ; 409 si clôturé ; 422 si justification manquante |
+| PUT | `/api/incidents/{id}/assignation` | `{"assigne_a": str \| null}` | détail ; 404 ; 409 si clôturé |
+| GET | `/api/incidents/{id}/playbook` | — | playbook + état de chaque étape (`playbook: null` s'il n'y en a pas) ; 404 |
+| PUT | `/api/incidents/{id}/playbook` | `{"playbook_id": uuid \| null}` | détail ; 404 (incident ou playbook) ; 409 si clôturé |
+| PUT | `/api/incidents/{id}/playbook/etapes/{etape_id}` | `{"realisee": bool, "realisee_par"?: str}` | playbook de l'incident ; 404 étape hors playbook ; 422 sans playbook ; 409 si clôturé |
+| POST | `/api/incidents/escalade-automatique` | — | `{nombre_incidents_escalades, incidents_escalades}` |
+
+**Ligne de liste** (`IncidentListItemRead`) = champs stockés + `reference` (`INC-000042`), `est_ouvert`,
+`date_limite_traitement`, `delai_depasse`, `nombre_alertes`, `plan` (`{playbook_id, nom, nombre_etapes,
+nombre_etapes_realisees}` ou null). Détail = ligne + `criticite_source` + `alertes[]`.
+`recherche` : sous-chaîne sans casse dans titre, catégorie, responsable ; `%` et `_` cherchés littéralement.
 
 Une route par action : chaque règle métier reste isolée et testable. Erreurs métier : `{"detail", "error_code"}`
 (`resource_not_found`, `resource_conflict`). Validation : 422 au format FastAPI. Champ inconnu dans un corps ⇒ 422.
@@ -35,9 +50,22 @@ Une route par action : chaque règle métier reste isolée et testable. Erreurs 
 - `assigne_a` : texte libre, espaces retirés, 1–255 caractères ; `null` = non assigné ; chaîne vide refusée (schéma + CHECK).
 - La qualification faux positif **ne change pas** le statut.
 
+**Ajoutées avec les Paramètres**
+- Référence séquentielle `numero_reference` (UNIQUE, max + 1 dans le SAVEPOINT ; collision concurrente ⇒ nouvel essai,
+  5 au maximum) affichée `INC-000001`.
+- Titre et catégorie : fournis à la création ou déduits du log (`Alerte <type>`, `<type>`), modifiables.
+- Playbook : à la création, celui de la catégorie (s'il existe) est attribué ; changer la catégorie ne change pas le
+  playbook. L'avancement d'un autre playbook est conservé en base mais ne compte pas.
+- `traite_le` : renseigné en devenant résolu/clôturé, conservé de résolu à clôturé, effacé à la réouverture (CHECK).
+- « En cours » = nouveau, en_cours, en_attente ; « Traités » = résolu, clôturé.
+- Date limite, délai dépassé et escalade : voir [incident_response_settings.md](./incident_response_settings.md).
+- Chaque changement effectif est tracé dans le journal d'audit ([audit_journal.md](./audit_journal.md)).
+- Cocher/décocher une étape met à jour `updated_at` de l'incident (colonne « Mis à jour »).
+
 **PROVISOIRES (décision attendue)**
 - Toutes les transitions de statut sont autorisées (aucun graphe défini dans le cadrage).
-- Un incident clôturé est en lecture seule (criticité, faux positif, attribution ⇒ 409) : il faut le rouvrir.
+- Un incident clôturé est en lecture seule (criticité, faux positif, attribution, titre, catégorie, playbook, étapes
+  ⇒ 409) : il faut le rouvrir.
   But : le contenu d'un incident clôturé (base du futur rapport) ne change pas silencieusement.
 - Valeurs de statut (`nouveau`, `en_cours`, `en_attente`, `resolu`, `cloture`) et de criticité (`information`, `faible`,
   `moyenne`, `haute`, `critique`) : à confirmer ; tout changement = migration (contraintes CHECK).
@@ -56,5 +84,7 @@ Une route par action : chaque règle métier reste isolée et testable. Erreurs 
 
 ## Dépendances
 
-`service.py` appelle `backend.features.source_logs.service.fetch_source_log_metadata` (fonction publique) pour lire la
-criticité source. Aucun import du code interne de `source_logs`.
+Services publics utilisés (aucun import du code interne d'une autre feature) : `source_logs` (criticité source,
+alertes), `playbooks` (attribution, détail), `incident_response_settings` (délais), `audit_journal` (traçage).
+Clés étrangères : `incidents.playbook_id → playbooks` (SET NULL), `etapes_realisees_incident.etape_playbook_id →
+etapes_playbook` (CASCADE).

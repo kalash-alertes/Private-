@@ -2,10 +2,17 @@
 
 Fonctions publiques utilisables par les autres fonctionnalités :
 - `store_source_log_if_new` : réservée au futur collecteur ; aucune route HTTP ne l'expose ;
-- `fetch_source_log_metadata` : utilisée par `incidents` pour lire la criticité source d'un log.
+- `fetch_source_log_metadata` : utilisée par `incidents` pour lire la criticité source d'un log ;
+- `fetch_source_logs_metadata_by_ids` : utilisée par `incidents` pour afficher les alertes d'une page d'incidents ;
+- `count_all_source_logs`, `count_source_logs_per_event_day` : utilisées par `dashboard` (tableau de bord).
 """
 
+from collections import Counter
+from collections.abc import Iterable
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
+
+from backend.core.utc_datetime_types import interpret_stored_datetime_as_utc
 
 from sqlalchemy.orm import Session
 
@@ -59,6 +66,38 @@ def fetch_source_log_detail(database_session: Session, source_log_id: UUID) -> S
 def fetch_source_log_metadata(database_session: Session, source_log_id: UUID) -> SourceLogMetadataRead:
     """Retourne les métadonnées d'un log. Lève ResourceNotFoundError s'il n'existe pas."""
     return SourceLogMetadataRead.model_validate(_fetch_existing_source_log(database_session, source_log_id))
+
+
+def fetch_source_logs_metadata_by_ids(
+    database_session: Session, source_log_ids: Iterable[UUID]
+) -> dict[UUID, SourceLogMetadataRead]:
+    """Retourne les métadonnées des logs demandés, indexées par id (les id inexistants sont absents du résultat)."""
+    return {
+        source_log.id: SourceLogMetadataRead.model_validate(source_log)
+        for source_log in repository.fetch_source_logs_by_ids(database_session, set(source_log_ids))
+    }
+
+
+def count_all_source_logs(database_session: Session) -> int:
+    """Retourne le nombre total de logs connus."""
+    return repository.count_all_source_logs(database_session)
+
+
+def count_source_logs_per_event_day(database_session: Session, first_day: date, last_day: date) -> dict[date, int]:
+    """Retourne le nombre de logs par jour d'événement (UTC), pour chaque jour de [first_day, last_day] (0 compris).
+
+    Agrégation en Python (et non SQL) : identique sur PostgreSQL et SQLite ; les volumes d'une semaine le permettent.
+    """
+    period_start = datetime.combine(first_day, time.min, tzinfo=UTC)
+    period_end = datetime.combine(last_day + timedelta(days=1), time.min, tzinfo=UTC)
+    logs_per_day = Counter(
+        interpret_stored_datetime_as_utc(event_date).date()
+        for event_date in repository.fetch_event_dates_between(database_session, period_start, period_end)
+    )
+    return {
+        first_day + timedelta(days=offset): logs_per_day.get(first_day + timedelta(days=offset), 0)
+        for offset in range((last_day - first_day).days + 1)
+    }
 
 
 def list_source_logs(

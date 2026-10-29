@@ -2,8 +2,10 @@
 
 ## Stack
 
-Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, Pydantic v2. Déploiement dev : Docker Compose (`database` + `backend`).
-OpenSearch, Dashboards et Data Prepper seront ajoutés au compose quand la fonctionnalité de collecte/indexation sera codée.
+Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, Pydantic v2, Jinja2 (interface). Déploiement dev : Docker
+Compose (`database` + `backend`). Le backend sert à la fois l'**interface web** (racine `/`) et l'**API JSON** (`/api`).
+OpenSearch et Data Prepper (optionnel) seront ajoutés avec la collecte. **OpenSearch Dashboards n'est plus l'interface
+prévue** : décision du 2026-10-29, l'interface est `web_interface/` (voir [web_interface.md](./web_interface.md)).
 
 ## Organisation du code
 
@@ -16,6 +18,8 @@ backend/
                              pagination.py (limit/offset), utc_datetime_types.py (dates UTC en entrée/sortie)
   features/<feature>/        models.py, schemas.py, repository.py, service.py, router.py, README.md
   integrations/<systeme>/    Clients externes derrière une interface (FortiAnalyzer, OpenSearch)
+web_interface/               Interface analystes en Python : pages/ (une par page), templates/, static/css/
+scripts/                     Outils de développement (données de démonstration synthétiques)
 db/migrations/               Alembic : env.py lit DATABASE_URL via backend.core.settings
 tests/                       pytest : SQLite + vraies migrations ; tests/postgresql_integration/ (PostgreSQL réel)
 ```
@@ -33,9 +37,16 @@ tests/                       pytest : SQLite + vraies migrations ; tests/postgre
 
 | Feature | Routes | Doc | Dépend de (service public) |
 |---|---|---|---|
-| `import_runs` | `GET /executions-import`, `GET /executions-import/{id}` | [import_runs.md](./import_runs.md) | — |
-| `source_logs` | `GET /logs`, `GET /logs/{id}` | [source_logs.md](./source_logs.md) | `import_runs` |
-| `incidents` | `POST/GET /incidents`, `GET /incidents/{id}`, `PUT /incidents/{id}/{statut,criticite-actuelle,faux-positif,assignation}` | [incidents.md](./incidents.md) | `source_logs` |
+| `import_runs` | `GET /api/executions-import`, `GET /api/executions-import/{id}` | [import_runs.md](./import_runs.md) | — |
+| `source_logs` | `GET /api/logs`, `GET /api/logs/{id}` | [source_logs.md](./source_logs.md) | `import_runs` |
+| `incidents` | `/api/incidents...` (cycle de vie, playbook, étapes, escalade) | [incidents.md](./incidents.md) | `source_logs`, `playbooks`, `incident_response_settings`, `audit_journal` |
+| `playbooks` | `/api/parametres/playbooks...` | [playbooks.md](./playbooks.md) | `audit_journal` |
+| `incident_response_settings` | `/api/parametres/reponse-incidents/delais...` | [incident_response_settings.md](./incident_response_settings.md) | `audit_journal` |
+| `audit_journal` | `GET /api/parametres/journal-audit` | [audit_journal.md](./audit_journal.md) | — |
+| `dashboard` | `GET /api/tableau-de-bord` | [dashboard.md](./dashboard.md) | `source_logs`, `incidents` |
+
+Toutes les routes de l'API sont préfixées par `/api` (y compris `/api/health`). L'interface web (`web_interface/`)
+n'a pas de logique métier : elle appelle les mêmes services publics.
 
 Conventions transverses :
 - **Transactions** : chaque fonction de service qui écrit fait son propre `commit` (une action = une transaction).
@@ -49,16 +60,21 @@ Conventions transverses :
 
 ## Flux cible (cf. explain_project.md)
 
-FortiAnalyzer → collecteur (`integrations/fortianalyzer` + feature d'import) → OpenSearch (logs) et PostgreSQL (métadonnées, incidents, imports) → API → frontend analyste.
+FortiAnalyzer → collecteur (`integrations/fortianalyzer` + feature d'import) → OpenSearch (logs) et PostgreSQL (métadonnées, incidents, imports) → services → interface web (`/`) et API JSON (`/api`).
 
 ## Décisions et points ouverts
 
 - **Statuts d'incident** et **niveaux de criticité** : valeurs provisoires (voir `backend/core/criticality.py`, `incidents/models.py`). À confirmer avec les niveaux réels de FortiAnalyzer ; tout changement = migration.
-- **Utilisateurs / authentification** non décidés : `incidents.assigne_a` est du texte libre pour l'instant.
+- **Utilisateurs / authentification** non décidés : `incidents.assigne_a` est du texte libre ; le journal d'audit ne
+  connaît pas encore l'auteur des actions ; protection CSRF à ajouter avec l'authentification.
+- **Paramètres Clients et Utilisateurs** : sections présentes dans l'interface, jugées non prioritaires (vides).
 - **Clé de déduplication** : `logs.identifiant_source` est obligatoire et unique ; le collecteur devra le calculer de façon déterministe si FortiAnalyzer n'en fournit pas.
 - **Base de données** : PostgreSQL est la seule base de l'application. SQLite ne sert qu'aux tests rapides de logique.
 - **Tests** : tests PostgreSQL (`tests/postgresql_integration/`) exécutés si `TEST_POSTGRESQL_DATABASE_URL` est défini ;
   validés le 2026-10-28 sur PostgreSQL 16 ; à brancher en CI. Voir [testing.md](./testing.md).
-- **Versions** : `requirements.txt` épingle les versions de l'image Docker (Python 3.12). Le code a été testé localement
-  avec des versions plus récentes (Python 3.14, SQLAlchemy 2.1, FastAPI 0.141, Pydantic 2.13) ; il évite les API
-  propres à ces versions, mais l'exécution avec les versions épinglées n'a pas encore été vérifiée.
+- **Versions** : `requirements.txt` épingle des versions valables à la fois pour Python 3.12 (image Docker) et 3.14
+  (poste Windows) ; vérifié le 2026-10-29 (tests sous Windows, application lancée dans Docker sur PostgreSQL 16,
+  migration 0003 appliquée). Les anciennes versions (2024) n'existaient pas pour Python 3.14 ; `sqlalchemy==2.1.0`
+  n'était pas installable pour 3.12, d'où 2.1.6.
+- **Construction de l'image hors ligne** : `scripts/download_docker_wheels.ps1` remplit `docker_wheels/` depuis
+  Windows ; le `Dockerfile` installe depuis ce dossier s'il est rempli, sinon depuis PyPI.

@@ -1,0 +1,42 @@
+/* Playbooks : bibliothèque (cartes) et formulaire de création / modification. Repris de la maquette. */
+
+.playbooks-page { display: flex; flex-direction: column; gap: 20px; }
+.playbooks-notice { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid rgba(101, 151, 255, .3); border-radius: 10px; background: rgba(101, 151, 255, .07); }
+.playbooks-notice > svg { color: #6d9cff; flex-shrink: 0; }
+.playbooks-notice p { margin: 5px 0 0; font-size: 12px; line-height: 1.6; color: #c8d8f4; }
+.playbooks-search { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 9px; color: #8290a5; margin: 0; }
+.playbooks-search input { flex: 1; min-width: 0; padding: 10px 0; border: 0; outline: none; background: transparent; color: inherit; }
+
+.playbooks-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.playbook-card, .playbooks-empty, .playbook-form { min-width: 0; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
+.playbook-card { display: flex; flex-direction: column; }
+.playbook-card h3 { margin: 0 0 6px; overflow-wrap: anywhere; font: 700 14px Manrope, sans-serif; }
+.playbook-card p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; color: #8290a5; font-size: 12px; }
+.playbook-card-icon { display: inline-flex; width: fit-content; padding: 12px; margin-bottom: 12px; border-radius: 10px; color: #80aaff; background: rgba(47, 111, 237, .15); }
+.playbook-status { position: absolute; }
+.playbook-card { position: relative; }
+.playbook-card .playbook-status { top: 20px; right: 20px; font-size: 11px; color: #fbbf24; }
+.playbook-tags { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 10px; }
+.playbook-tags span { padding: 5px 8px; border-radius: 20px; background: rgba(101, 151, 255, .1); font-size: 11px; color: #a9c4fb; }
+.playbook-card-steps { margin: 0 0 12px; padding-left: 18px; color: #c2cddd; font-size: 11px; line-height: 1.7; }
+.playbook-card-source { color: #75859b; font-size: 10px; overflow-wrap: anywhere; margin-top: auto; }
+.playbook-card-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+.playbooks-empty { grid-column: 1 / -1; padding: 40px 20px; text-align: center; color: #8290a5; }
+.playbooks-empty h3 { color: #e7edf7; }
+.playbooks-empty p { max-width: 440px; margin: 10px auto 20px; }
+
+.playbook-form { display: flex; flex-direction: column; gap: 16px; }
+.playbook-form-header, .playbook-step-heading, .playbook-steps-heading, .playbook-form-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.playbook-form h3 { margin: 0; font: 700 14px Manrope, sans-serif; }
+.playbook-form label { display: flex; flex-direction: column; gap: 7px; font-size: 12px; color: #c2cddd; }
+.playbook-form input, .playbook-form select, .playbook-form textarea { width: 100%; padding: 11px 12px; border: 1px solid #334155; border-radius: 8px; background: #0b1422; color: inherit; font: inherit; }
+.playbook-form input:focus, .playbook-form select:focus, .playbook-form textarea:focus { outline: 1px solid #6597ff; border-color: #6597ff; }
+.playbook-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.playbook-step { display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; }
+.playbook-form-actions { justify-content: flex-end; flex-wrap: wrap; }
+
+@media (max-width: 900px) { .playbooks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+  .playbooks-grid, .playbook-form-grid { grid-template-columns: 1fr; }
+  .playbook-steps-heading { align-items: flex-start; flex-direction: column; }
+}

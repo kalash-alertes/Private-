@@ -1,0 +1,65 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import severity_pill, pagination_footer %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/incidents.css">{% endblock %}
+
+{% block page_body %}
+  <section class="summary-cards" aria-label="Résumé des alertes">
+    <article class="summary-card"><span>Total des alertes {{ icon("bell", 18, css_class="summary-icon-blue") }}</span><strong>{{ alert_counts.total | number }}</strong></article>
+    <article class="summary-card"><span>Alertes critiques {{ icon("circle_alert", 18, css_class="summary-icon-red") }}</span><strong>{{ alert_counts.critiques | number }}</strong></article>
+    <article class="summary-card"><span>À traiter {{ icon("clock3", 18, css_class="summary-icon-purple") }}</span><strong>{{ alert_counts.a_traiter | number }}</strong></article>
+    <article class="summary-card"><span>Avec incident {{ icon("circle_check", 18, css_class="summary-icon-green") }}</span><strong>{{ alert_counts.traitees | number }}</strong></article>
+  </section>
+
+  <section class="panel incidents-panel">
+    <div class="panel-header incidents-header">
+      <div>
+        <div class="title-with-count"><h2>Liste des alertes</h2><span class="table-count">{{ alerts_page.total }}</span></div>
+        <p>Les plus récentes d'abord. La sévérité d'origine FortiAnalyzer n'est jamais modifiée.</p>
+      </div>
+    </div>
+    <form class="table-toolbar" method="get" action="/alertes">
+      <div class="table-tools">
+        <label class="filter-control">
+          {{ icon("filter", 14) }}
+          <select name="criticite" aria-label="Filtrer par sévérité">
+            <option value="">Toutes les sévérités</option>
+            {% for criticality in criticality_levels %}
+              <option value="{{ criticality.value }}" {% if selected_criticality == criticality %}selected{% endif %}>{{ criticality | criticality_label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="button button-secondary button-small" type="submit">Filtrer</button>
+      </div>
+    </form>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>ALERTE</th><th>SÉVÉRITÉ</th><th>DATE DE L'ÉVÉNEMENT</th><th>REÇUE LE</th><th>INCIDENT</th></tr></thead>
+        <tbody>
+          {% for alert in alerts_page.items %}
+            {% set incident_id = incident_id_by_alert_id.get(alert.id) %}
+            <tr>
+              <td><div class="incident-title">{{ alert.type }}</div><div class="incident-id">{{ alert.identifiant_source }}</div></td>
+              <td>{{ severity_pill(alert.criticite_source) }}</td>
+              <td class="time-cell">{{ alert.date_evenement | display_datetime }}</td>
+              <td class="time-cell">{{ alert.arrivee_db | display_datetime }}</td>
+              <td>
+                {% if incident_id %}
+                  <a class="text-button" href="/incidents/{{ incident_id }}">Voir l'incident {{ icon("chevron_right", 14) }}</a>
+                {% else %}
+                  <form method="post" action="/incidents">
+                    <input type="hidden" name="log_id" value="{{ alert.id }}">
+                    <button class="button button-primary button-small" type="submit">{{ icon("plus", 14) }} Créer l'incident</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="empty-state">Aucune alerte. Elles apparaîtront après le premier import FortiAnalyzer.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination_footer(alerts_page, "/alertes", filter_query, "alertes") }}
+  </section>
+{% endblock %}

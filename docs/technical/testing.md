@@ -17,6 +17,14 @@ python -m pytest -rs        # affiche la raison des tests ignorés
 Un test SQLite réussi **n'est pas** une validation PostgreSQL : SQLite ignore `SELECT ... FOR UPDATE`, sérialise toutes
 les écritures et ne conserve pas les fuseaux horaires.
 
+## Interface web
+
+`tests/web_interface/` (fixture `web_client` : pages à la racine, redirections non suivies pour vérifier les 303).
+`api_client` appelle l'API sous `/api` (`base_url` du client de test). Avec SQLite, terminer la transaction de la
+session du test (`database_session.rollback()`) avant d'appeler une page qui écrit, sinon « database is locked ».
+Les nouvelles fonctionnalités (playbooks, délais/escalade, journal d'audit, tableau de bord) et la migration 0003 sur
+des données existantes sont couvertes ; l'escalade concurrente sur PostgreSQL n'a pas encore de test dédié.
+
 ## Activer les tests PostgreSQL
 
 La base est **vidée** par les tests : utiliser une base dédiée dont le nom contient `test` (garde-fou dans `conftest.py`).

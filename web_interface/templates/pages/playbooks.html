@@ -1,0 +1,65 @@
+{% extends "layouts/application_layout.html" %}
+
+{% block page_stylesheets %}
+  <link rel="stylesheet" href="/static/css/settings.css">
+  <link rel="stylesheet" href="/static/css/playbooks.css">
+{% endblock %}
+
+{% block heading_actions %}
+  <a class="button button-primary" href="/parametres/playbooks/nouveau">{{ icon("plus", 17) }} Nouveau playbook</a>
+{% endblock %}
+
+{% block page_body %}
+  {% include "partials/settings_tabs.html" %}
+
+  <section class="playbooks-page">
+    <div class="playbooks-notice">
+      {{ icon("shield_check", 19) }}
+      <div>
+        <strong>Procédures sourcées</strong>
+        <p>Chaque playbook cite sa source (documentation officielle, procédure interne validée). Un playbook associé à une
+          catégorie est attribué automatiquement aux nouveaux incidents de cette catégorie. Aucune action n'est exécutée
+          automatiquement sur l'infrastructure.</p>
+      </div>
+    </div>
+
+    <form class="playbooks-search" method="get" action="/parametres/playbooks" role="search">
+      {{ icon("search", 17) }}
+      <input name="recherche" value="{{ search_text }}" placeholder="Rechercher un playbook..." aria-label="Rechercher un playbook" maxlength="255">
+    </form>
+
+    <div class="playbooks-grid">
+      {% for playbook in playbooks %}
+        <article class="playbook-card">
+          <div class="playbook-card-icon">{{ icon("workflow", 22) }}</div>
+          <span class="playbook-status">{{ playbook.etapes | length }} étape(s)</span>
+          <h3>{{ playbook.nom }}</h3>
+          <p>{{ playbook.description or "Aucune description renseignée." }}</p>
+          <div class="playbook-tags">
+            <span>{{ playbook.categorie or "Sans catégorie" }}</span>
+          </div>
+          <ol class="playbook-card-steps">
+            {% for step in playbook.etapes[:3] %}<li>{{ step.titre }}</li>{% endfor %}
+            {% if playbook.etapes | length > 3 %}<li class="muted-text">…</li>{% endif %}
+          </ol>
+          <small class="playbook-card-source">Source : {{ playbook.source }}</small>
+          <div class="playbook-card-actions">
+            <a class="button button-secondary button-small" href="/parametres/playbooks/{{ playbook.id }}/modifier">Modifier</a>
+          </div>
+        </article>
+      {% else %}
+        <div class="playbooks-empty">
+          {{ icon("workflow", 30) }}
+          {% if search_text %}
+            <h3>Aucun playbook trouvé</h3>
+            <p>Aucun playbook ne correspond à « {{ search_text }} ».</p>
+          {% else %}
+            <h3>Aucun playbook enregistré</h3>
+            <p>Créez votre premier playbook pour définir une procédure de réponse aux incidents.</p>
+            <a class="button button-primary" href="/parametres/playbooks/nouveau">{{ icon("plus", 16) }} Créer mon premier playbook</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

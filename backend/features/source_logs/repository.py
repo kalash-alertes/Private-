@@ -1,5 +1,6 @@
 """Accès base de données pour la table `logs`. Aucune règle métier ici (voir `service.py`)."""
 
+from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -48,6 +49,13 @@ def fetch_source_log_by_id(database_session: Session, source_log_id: UUID) -> So
     return database_session.get(SourceLog, source_log_id)
 
 
+def fetch_source_logs_by_ids(database_session: Session, source_log_ids: set[UUID]) -> list[SourceLog]:
+    """Retourne les logs demandés (en une requête) ; les id inexistants sont ignorés."""
+    if not source_log_ids:
+        return []
+    return list(database_session.scalars(select(SourceLog).where(SourceLog.id.in_(source_log_ids))).all())
+
+
 def fetch_source_logs_page(
     database_session: Session, filter_values: dict[str, Any], limit: int, offset: int
 ) -> tuple[list[SourceLog], int]:
@@ -76,3 +84,16 @@ def fetch_source_logs_page(
         .offset(offset)
     ).all()
     return list(source_logs), total or 0
+
+
+def count_all_source_logs(database_session: Session) -> int:
+    return database_session.scalar(select(func.count()).select_from(SourceLog)) or 0
+
+
+def fetch_event_dates_between(database_session: Session, start: datetime, end: datetime) -> list[datetime]:
+    """Retourne les dates d'événement des logs dans [start, end[ (agrégées ensuite par le service)."""
+    return list(
+        database_session.scalars(
+            select(SourceLog.date_evenement).where(SourceLog.date_evenement >= start, SourceLog.date_evenement < end)
+        ).all()
+    )

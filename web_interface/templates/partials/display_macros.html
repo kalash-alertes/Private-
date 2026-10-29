@@ -1,0 +1,62 @@
+{# Petits éléments d'affichage réutilisés par plusieurs pages (pastilles, responsable, pagination). #}
+
+{% macro severity_pill(criticality) -%}
+  <span class="severity-pill severity-{{ criticality | criticality_css }}"><span class="severity-dot"></span>{{ criticality | criticality_label }}</span>
+{%- endmacro %}
+
+{% macro incident_status_pill(status) -%}
+  <span class="status-pill status-{{ status | incident_status_css }}"><span class="status-dot"></span>{{ status | incident_status_label }}</span>
+{%- endmacro %}
+
+{% macro assignee_badge(person_name) -%}
+  <span class="assignee">
+    <span class="assignee-avatar">{{ person_name | initials }}</span>
+    {{ person_name or "Non assigné" }}
+  </span>
+{%- endmacro %}
+
+{% macro deadline_badge(item) -%}
+  {% if item.delai_depasse is none %}
+    <span class="deadline-badge deadline-none">Aucun délai</span>
+  {% elif item.delai_depasse %}
+    <span class="deadline-badge deadline-exceeded" title="Date limite : {{ item.date_limite_traitement | display_datetime }}">{{ icon("clock3", 12) }} Dépassé</span>
+  {% else %}
+    <span class="deadline-badge deadline-respected" title="Date limite : {{ item.date_limite_traitement | display_datetime }}">{{ icon("clock3", 12) }} {% if item.est_ouvert %}Jusqu'au {{ item.date_limite_traitement | display_datetime }}{% else %}Respecté{% endif %}</span>
+  {% endif %}
+{%- endmacro %}
+
+{% macro plan_progress(plan) -%}
+  {% if plan %}
+    {% set completion_percent = (100 * plan.nombre_etapes_realisees / plan.nombre_etapes) | round | int if plan.nombre_etapes else 0 %}
+    <span class="plan-progress" title="{{ plan.nom }}">
+      <span class="plan-progress-bar"><span style="width: {{ completion_percent }}%"></span></span>
+      {{ plan.nombre_etapes_realisees }}/{{ plan.nombre_etapes }}
+    </span>
+  {% else %}
+    <span class="muted-text">Aucun plan</span>
+  {% endif %}
+{%- endmacro %}
+
+{#
+  Pagination par liens : `base_query` contient les filtres à conserver, `page` est une PaginatedResponse.
+#}
+{% macro pagination_footer(page, base_url, base_query, item_label) -%}
+  {% set current_page_number = (page.offset // page.limit) + 1 %}
+  {% set last_page_number = ((page.total - 1) // page.limit) + 1 if page.total else 1 %}
+  <div class="table-footer">
+    <span>Affichage de <strong>{{ page.items | length }}</strong> sur <strong>{{ page.total }}</strong> {{ item_label }}</span>
+    <div class="pagination">
+      {% if current_page_number > 1 %}
+        <a href="{{ base_url }}?{{ base_query }}&offset={{ page.offset - page.limit }}" aria-label="Page précédente">{{ icon("chevron_left", 15) }}</a>
+      {% else %}
+        <span class="pagination-disabled">{{ icon("chevron_left", 15) }}</span>
+      {% endif %}
+      <span class="page-current">{{ current_page_number }} / {{ last_page_number }}</span>
+      {% if current_page_number < last_page_number %}
+        <a href="{{ base_url }}?{{ base_query }}&offset={{ page.offset + page.limit }}" aria-label="Page suivante">{{ icon("chevron_right", 15) }}</a>
+      {% else %}
+        <span class="pagination-disabled">{{ icon("chevron_right", 15) }}</span>
+      {% endif %}
+    </div>
+  </div>
+{%- endmacro %}

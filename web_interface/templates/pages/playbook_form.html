@@ -1,0 +1,95 @@
+{% extends "layouts/application_layout.html" %}
+
+{% block page_stylesheets %}
+  <link rel="stylesheet" href="/static/css/settings.css">
+  <link rel="stylesheet" href="/static/css/playbooks.css">
+{% endblock %}
+
+{% block heading_actions %}
+  <a class="button button-secondary" href="/parametres/playbooks">{{ icon("arrow_left", 16) }} Retour aux playbooks</a>
+{% endblock %}
+
+{% block page_body %}
+  {% include "partials/settings_tabs.html" %}
+
+  {#
+    Le bouton « Enregistrer » est placé en premier dans le formulaire (et masqué visuellement) : la touche Entrée
+    déclenche le premier bouton d'envoi, il faut donc que ce soit l'enregistrement et non « Supprimer l'étape ».
+  #}
+  <form class="playbook-form" method="post" action="{{ form_action }}">
+    <button type="submit" name="action" value="enregistrer" class="visually-hidden" tabindex="-1" aria-hidden="true">Enregistrer</button>
+
+    <div class="playbook-form-header">
+      <h3>{{ "Créer un playbook" if playbook_id is none else "Modifier le playbook" }}</h3>
+    </div>
+
+    <label>Nom *
+      <input name="nom" value="{{ draft.nom }}" maxlength="255" required placeholder="Ex. : Investigation d'une IP suspecte">
+    </label>
+    <label>Description
+      <textarea name="description" rows="3" maxlength="10000" placeholder="Objectif de la procédure...">{{ draft.description }}</textarea>
+    </label>
+    <div class="playbook-form-grid">
+      <label>Catégorie d'incident
+        <input name="categorie" value="{{ draft.categorie }}" maxlength="255" placeholder="Ex. : intrusion (type d'alerte FortiAnalyzer)">
+        <small class="field-help">Les nouveaux incidents de cette catégorie recevront ce playbook automatiquement.</small>
+      </label>
+      <label>Source *
+        <input name="source" value="{{ draft.source }}" maxlength="10000" required placeholder="Ex. : Procédure interne SOC-PR-012 v2, validée le ...">
+        <small class="field-help">Obligatoire : une procédure ne doit jamais être présentée sans référence vérifiable.</small>
+      </label>
+    </div>
+
+    <div class="playbook-steps-heading">
+      <h3>Étapes de la procédure</h3>
+      <button type="submit" name="action" value="{{ add_step_action }}" class="button button-secondary" formnovalidate>{{ icon("plus", 15) }} Ajouter une étape</button>
+    </div>
+
+    {% for step in draft.etapes %}
+      <div class="playbook-step">
+        <input type="hidden" name="etape_id" value="{{ step.step_id }}">
+        <div class="playbook-step-heading">
+          <strong>Étape {{ loop.index }}</strong>
+          {% if draft.etapes | length > 1 %}
+            <button type="submit" name="action" value="{{ remove_step_action_prefix }}{{ loop.index0 }}" class="icon-button" formnovalidate aria-label="Supprimer l'étape {{ loop.index }}">{{ icon("trash2", 16) }}</button>
+          {% endif %}
+        </div>
+        <label>Titre de l'étape *
+          <input name="etape_titre" value="{{ step.titre }}" maxlength="255" required placeholder="Ex. : Analyser les journaux réseau">
+        </label>
+        <label>Instructions
+          <textarea name="etape_description" rows="2" maxlength="10000" placeholder="Décrivez ce qui doit être fait...">{{ step.description }}</textarea>
+        </label>
+      </div>
+    {% endfor %}
+
+    <div class="playbook-form-actions">
+      {% if playbook_id is not none %}
+        <a class="button button-danger" href="#supprimer-playbook">{{ icon("trash2", 15) }} Supprimer</a>
+      {% endif %}
+      <a class="button button-secondary" href="/parametres/playbooks">Annuler</a>
+      <button type="submit" name="action" value="enregistrer" class="button button-primary">{{ icon("save", 16) }} Enregistrer le playbook</button>
+    </div>
+  </form>
+{% endblock %}
+
+{% block page_dialogs %}
+  {% if playbook_id is not none %}
+    <div id="supprimer-playbook" class="modal-backdrop target-dialog">
+      <a href="#" class="dialog-dismiss-area" aria-label="Fermer"></a>
+      <form class="incident-modal" method="post" action="/parametres/playbooks/{{ playbook_id }}/supprimer">
+        <div class="modal-heading">
+          <div>
+            <span class="modal-icon modal-icon-danger">{{ icon("trash2", 18) }}</span>
+            <h2>Supprimer « {{ draft.nom }} » ?</h2>
+            <p>Les incidents qui suivent ce playbook n'auront plus de plan, et leur avancement sera perdu. Action définitive.</p>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <a class="button button-secondary" href="#">Annuler</a>
+          <button type="submit" class="button button-danger">Supprimer définitivement</button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "layouts/application_layout.html" %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/settings.css">{% endblock %}
+
+{% block page_body %}
+  {% include "partials/settings_tabs.html" %}
+  <section class="panel empty-panel">
+    {{ icon("settings", 30) }}
+    <h3>{{ section_title }} — section prévue</h3>
+    <p>{{ section_explanation }}</p>
+  </section>
+{% endblock %}

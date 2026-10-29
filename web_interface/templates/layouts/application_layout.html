@@ -1,0 +1,61 @@
+{#
+  Mise en page commune : menu latéral, barre du haut, en-tête de page, messages.
+  Les pages étendent ce gabarit et remplissent les blocs `heading_actions` et `page_body`.
+  Menu mobile sans JavaScript : la case à cocher #sidebar-toggle ouvre/ferme le menu (voir application_shell.css).
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>{{ page_title }} | {{ application_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/static/css/foundation.css">
+  <link rel="stylesheet" href="/static/css/application_shell.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  {% block page_stylesheets %}{% endblock %}
+</head>
+<body>
+  <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle" aria-hidden="true">
+  <div class="app-shell">
+    {% include "partials/sidebar.html" %}
+    <label for="sidebar-toggle" class="mobile-scrim" aria-label="Fermer le menu"></label>
+
+    <main class="main-area">
+      {% include "partials/topbar.html" %}
+
+      <div class="page-content">
+        <div class="page-heading">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-line"></span> CENTRE DE SÉCURITÉ</div>
+            <h1>{{ page_title }}</h1>
+            <p>{{ page_description }}</p>
+          </div>
+          <div class="heading-actions">{% block heading_actions %}{% endblock %}</div>
+        </div>
+
+        {% if error_message %}
+          <div class="alert-banner alert-banner-error" role="alert">
+            {{ icon("circle_alert", 17) }}
+            <div><strong>Action impossible</strong><p>{{ error_message }}</p></div>
+          </div>
+        {% endif %}
+
+        {% block page_body %}{% endblock %}
+
+        <footer class="page-footer">
+          <span>{{ application_name }} <b>•</b> Centre de réponse aux incidents</span>
+          <span><span class="online-indicator"></span> Données de la base de l'application</span>
+        </footer>
+      </div>
+    </main>
+
+    {% if notice_message %}
+      {% include "partials/page_notice.html" %}
+    {% endif %}
+    {% block page_dialogs %}{% endblock %}
+  </div>
+</body>
+</html>

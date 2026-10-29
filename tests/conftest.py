@@ -67,13 +67,31 @@ def database_session(database_session_factory) -> Iterator[Session]:
 
 @pytest.fixture
 def api_client(database_session_factory) -> Iterator[TestClient]:
-    """Client HTTP dont chaque requête utilise une session sur la base SQLite de test."""
+    """Client HTTP de l'API JSON (préfixe /api) ; chaque requête utilise une session sur la base SQLite de test."""
 
     def open_test_database_session() -> Iterator[Session]:
         with database_session_factory() as session:
             yield session
 
     application.dependency_overrides[get_database_session] = open_test_database_session
-    with TestClient(application) as client:
+    # httpx ajoute les chemins relatifs à base_url : `api_client.get("/incidents")` appelle /api/incidents.
+    with TestClient(application, base_url="http://testserver/api") as client:
+        yield client
+    application.dependency_overrides.clear()
+
+
+@pytest.fixture
+def web_client(database_session_factory) -> Iterator[TestClient]:
+    """Client HTTP de l'interface web (pages HTML à la racine), sur la base SQLite de test.
+
+    Les redirections ne sont pas suivies automatiquement : les tests vérifient la redirection (303) puis la page.
+    """
+
+    def open_test_database_session() -> Iterator[Session]:
+        with database_session_factory() as session:
+            yield session
+
+    application.dependency_overrides[get_database_session] = open_test_database_session
+    with TestClient(application, follow_redirects=False) as client:
         yield client
     application.dependency_overrides.clear()

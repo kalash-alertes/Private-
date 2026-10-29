@@ -17,13 +17,20 @@
 5. **Clôture** : la date de clôture est enregistrée automatiquement. Un incident clôturé ne peut plus être modifié ;
    pour le corriger, on le **rouvre** (la date de clôture est alors effacée).
 
+6. **Suivi** : chaque incident a une référence (INC-000001), un titre et une catégorie. Le **playbook** de sa
+   catégorie lui est attribué automatiquement ; l'analyste coche les étapes au fur et à mesure. Une **date limite**
+   dépend de sa sévérité ; en cas de retard, l'incident peut être **escaladé** automatiquement
+   (voir [settings_and_playbooks.md](./settings_and_playbooks.md)).
+7. **Traçabilité** : chaque changement est inscrit au **journal d'audit**.
+
+Tout cela se fait dans l'interface web (voir [interface.md](./interface.md)).
+
 ## Ce qui n'est pas encore là
 
 - La collecte réelle depuis FortiAnalyzer (en attente d'informations sur l'API).
-- Les écrans (seule l'API existe).
-- La connexion des utilisateurs : le responsable d'un incident est pour l'instant un simple nom saisi.
-- L'historique des changements (qui a changé quoi, quand) : seules les valeurs actuelles sont conservées.
-- Les procédures de réponse (playbooks), les notes d'investigation et les rapports.
+- La connexion des utilisateurs : le responsable d'un incident est pour l'instant un simple nom saisi, et le journal
+  d'audit ne sait pas encore qui a fait chaque action.
+- Les notes d'investigation et les rapports.
 
 ## Règles encore provisoires
 

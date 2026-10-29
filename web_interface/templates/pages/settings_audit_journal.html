@@ -1,0 +1,56 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import pagination_footer %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/settings.css">{% endblock %}
+
+{% block page_body %}
+  {% include "partials/settings_tabs.html" %}
+
+  <div class="info-callout">
+    {{ icon("lock_keyhole", 19) }}
+    <div>
+      <strong>Journal en ajout seul</strong>
+      <p>Les événements ne peuvent être ni modifiés ni supprimés. Les connexions réussies et échouées y seront inscrites
+        dès que la connexion des utilisateurs sera mise en place.</p>
+    </div>
+  </div>
+
+  <section class="panel incidents-panel">
+    <form class="table-toolbar" method="get" action="/parametres/journal-audit">
+      <div class="table-tools">
+        <label class="filter-control">
+          {{ icon("filter", 14) }}
+          <select name="type_evenement" aria-label="Filtrer par type d'événement">
+            <option value="">Tous les événements</option>
+            {% for event_type, event_label in audit_event_types %}
+              <option value="{{ event_type.value }}" {% if selected_event_type == event_type %}selected{% endif %}>{{ event_label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="button button-secondary button-small" type="submit">Filtrer</button>
+      </div>
+    </form>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>DATE</th><th>ÉVÉNEMENT</th><th>ACTEUR</th><th>DESCRIPTION</th><th>ADRESSE IP</th></tr></thead>
+        <tbody>
+          {% for audit_event in audit_events_page.items %}
+            <tr>
+              <td class="time-cell">{{ audit_event.date_evenement | display_datetime }}</td>
+              <td><span class="status-pill status-{{ audit_event.type_evenement | audit_event_type_css }}"><span class="status-dot"></span>{{ audit_event.type_evenement | audit_event_type_label }}</span></td>
+              <td>{{ audit_event.acteur or "Système" }}</td>
+              <td class="description-cell">
+                {% set resource_url = resource_urls_by_event_id.get(audit_event.id) %}
+                {% if resource_url %}<a class="table-link" href="{{ resource_url }}">{{ audit_event.description }}</a>{% else %}{{ audit_event.description }}{% endif %}
+              </td>
+              <td class="time-cell">{{ audit_event.adresse_ip or "—" }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="empty-state">Aucun événement enregistré.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination_footer(audit_events_page, "/parametres/journal-audit", filter_query, "événements") }}
+  </section>
+{% endblock %}

@@ -1,0 +1,19 @@
+/* Paramètres : onglets des sections, règles de délai et d'escalade par sévérité. */
+
+.settings-tabs { display: flex; gap: 4px; border-bottom: 1px solid #263349; margin-bottom: 16px; overflow-x: auto; }
+.settings-tab { display: inline-flex; align-items: center; gap: 7px; padding: 11px 14px; color: #8e9cb1; font-size: 12px; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; }
+.settings-tab:hover { color: #e6edf9; }
+.settings-tab.active { color: #8fb4ff; border-bottom-color: #6d9cff; }
+
+.settings-panel { padding: 20px; }
+.escalation-result { margin: 12px 0 0; color: #7ed0b9; font-size: 12px; }
+.deadline-rule-list { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.deadline-rule-row { display: grid; grid-template-columns: 110px minmax(200px, 1fr) 170px minmax(200px, 1fr) auto; align-items: end; gap: 14px; padding: 14px; border: 1px solid #263349; border-radius: 9px; background: #0f1928; margin: 0; }
+.deadline-rule-row .field-label { margin: 0; }
+.deadline-rule-severity, .deadline-rule-row .checkbox-label { align-self: center; }
+.delay-input-group { display: flex; gap: 6px; }
+.delay-input-group input { width: 90px; flex: none; }
+.delay-input-group select { flex: 1; }
+
+@media (max-width: 1200px) { .deadline-rule-row { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 650px) { .deadline-rule-row { grid-template-columns: 1fr; } }

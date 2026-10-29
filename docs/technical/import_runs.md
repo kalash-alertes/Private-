@@ -56,8 +56,8 @@ enregistre ses logs puis termine son exécution dans le même fil ; à revoir si
 
 | Méthode | Route | Réponse |
 |---|---|---|
-| GET | `/executions-import?statut=&limit=&offset=` | page `{items, total, limit, offset}`, plus récentes d'abord (`debut` desc, puis `id`) |
-| GET | `/executions-import/{id}` | détail, 404 si absente |
+| GET | `/api/executions-import?statut=&limit=&offset=` | page `{items, total, limit, offset}`, plus récentes d'abord (`debut` desc, puis `id`) |
+| GET | `/api/executions-import/{id}` | détail, 404 si absente |
 
 Pas de POST/PUT : 405.
 

@@ -1,0 +1,6 @@
+{# Message de confirmation après une action. Le lien « fermer » recharge la page sans le paramètre `notice`. #}
+<div class="toast" role="status">
+  <span class="toast-check">✓</span>
+  {{ notice_message }}
+  <a href="{{ request.url.remove_query_params('notice') }}" aria-label="Fermer le message">{{ icon("x", 15) }}</a>
+</div>

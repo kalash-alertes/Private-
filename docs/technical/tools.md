@@ -11,7 +11,8 @@ Docker ; voir la section « Versions » en fin de page pour l'écart avec l'envi
 | Source de données | FortiAnalyzer | Système d'origine des alertes | **Prévu** (API non intégrée) |
 | Collecte | Collecteur Python (`backend/integrations/fortianalyzer`) | Lire l'API FortiAnalyzer, normaliser, dédoublonner | **Prévu** |
 | Transformation | Data Prepper | Pipeline de transformation optionnel | **Optionnel, non décidé** |
-| Recherche / stockage des logs | OpenSearch, OpenSearch Dashboards | Indexation et exploration technique des logs | **Prévu** |
+| Recherche / stockage des logs | OpenSearch | Indexation et recherche des logs | **Prévu** |
+| Interface analystes | Jinja2 (gabarits), python-multipart (formulaires), tzdata (fuseaux) | Pages HTML rendues en Python (`web_interface/`) | En place |
 | API | Python, FastAPI, Uvicorn | Exposer les routes HTTP | En place |
 | Validation | Pydantic, pydantic-settings | Valider entrées/sorties et configuration | En place |
 | Accès aux données | SQLAlchemy, psycopg | ORM et pilote PostgreSQL | En place |
@@ -23,7 +24,7 @@ Docker ; voir la section « Versions » en fin de page pour l'écart avec l'envi
 | Assistants IA | `AGENTS.md`, `.github/copilot-instructions.md` | Règles de code pour les IA | En place |
 
 Flux cible : FortiAnalyzer → collecteur → OpenSearch (logs) et PostgreSQL (métadonnées, incidents, imports) → API
-FastAPI → frontend analyste (à venir).
+FastAPI → interface web (`web_interface/`, à la racine) et API JSON (`/api`).
 
 ---
 
@@ -48,6 +49,16 @@ FastAPI → frontend analyste (à venir).
 - **Rôle** : serveur ASGI qui exécute l'application FastAPI.
 - **Niveau** : démarrage uniquement (`CMD` du `Dockerfile`, `command` du service `backend` dans `docker-compose.yml`).
 - **Intégration** : `uvicorn backend.main:application --host 0.0.0.0 --port 8000` (`--reload` en développement).
+
+### Jinja2 (`jinja2==3.1.4`), python-multipart (`python-multipart==0.0.12`), tzdata (`tzdata==2024.2`)
+- **Rôle** : rendu des pages HTML de l'interface (Jinja2, échappement automatique) ; lecture des formulaires HTML par
+  FastAPI (python-multipart) ; base des fuseaux horaires pour afficher les dates en `Europe/Paris` (tzdata, absente de
+  certaines images Docker « slim » et de Windows).
+- **Niveau** : `web_interface/` uniquement. Le backend métier n'en dépend pas.
+- **Intégration** : `web_interface/template_rendering.py` (moteur, filtres) ; `web_interface_registration.py`
+  (branchement dans `backend/main.py`). Voir [web_interface.md](./web_interface.md).
+- **Remplace** : OpenSearch Dashboards et le frontend React de la maquette comme interface des analystes (décision du
+  2026-10-29). Le dossier `frontend/` (squelette sans rapport) n'est pas utilisé.
 
 ### Pydantic (`pydantic==2.9.2`)
 - **Rôle** : valider toute donnée externe (corps HTTP, filtres, futur contenu FortiAnalyzer) et formater les réponses.
@@ -159,9 +170,7 @@ n'ont pas été ajoutés à `docker-compose.yml` : ils le seront avec la fonctio
 | FortiAnalyzer | Source des alertes ; reste le système d'origine | Client dans `backend/integrations/fortianalyzer/` derrière une interface (remplaçable par un faux en test) ; configuration `FORTIANALYZER_*` de `.env.example` | Version, documentation de l'API, mode d'authentification, exemple de réponse anonymisé, champ d'identifiant stable, pagination |
 | Collecteur | Lire FortiAnalyzer, valider (Pydantic), normaliser, appeler `source_logs.service.store_source_log_if_new` et `import_runs.service` | Nouvelle feature d'import + intégration FortiAnalyzer | Informations FortiAnalyzer ci-dessus |
 | OpenSearch | Stockage indexé et recherche des logs | `backend/integrations/opensearch/` ; service ajouté au compose ; `logs.reference_opensearch` relie les deux bases | Décision sur l'emplacement du log brut (PostgreSQL, OpenSearch ou les deux) |
-| OpenSearch Dashboards | Exploration technique des logs | Service du compose, à côté de l'application (n'en dépend pas) | OpenSearch en place |
 | Data Prepper | Transformation / pipelines entre collecteur et OpenSearch | Service du compose, si les volumes ou transformations le justifient | Décision d'architecture |
-| Frontend analyste | Interface de traitement des incidents | `frontend/` ; origine autorisée via `CORS_ALLOWED_ORIGINS` | Authentification et autorisations |
 
 ---
 

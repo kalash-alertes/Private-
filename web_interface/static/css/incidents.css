@@ -1,0 +1,54 @@
+/* Incidents : liste (référence, état ouvert/traité) et fiche (playbook, informations, actions, historique). */
+
+.incident-reference { font: 700 10px ui-monospace, Consolas, monospace; color: #a9c4fb; background: #1a2a44; border-radius: 5px; padding: 4px 6px; white-space: nowrap; }
+.open-state { font-size: 9px; color: #75859b; margin-top: 5px; }
+.alert-count { display: inline-flex; align-items: center; gap: 5px; color: #c2cddd; }
+.escalated-text { color: #ff8d9d; font-weight: 600; }
+
+/* --- Fiche incident --- */
+.incident-summary-strip { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.incident-detail-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 15px; align-items: start; }
+.incident-side-column { display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+
+.playbook-progress-panel { padding: 20px; }
+.playbook-progress-bar { height: 7px; border-radius: 4px; background: #22304a; overflow: hidden; margin: 16px 0; }
+.playbook-progress-bar span { display: block; height: 100%; background: linear-gradient(90deg, #35c6ad, #6d9cff); }
+.playbook-description { color: #a5b4c8; font-size: 12px; line-height: 1.6; margin: 0 0 14px; }
+.playbook-step-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+.playbook-step-item { display: flex; align-items: flex-start; gap: 13px; padding: 13px; border: 1px solid #263349; border-radius: 9px; background: #0f1928; }
+.playbook-step-item.is-completed { border-color: #24524a; background: #10221f; }
+.playbook-step-number { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; background: #1b2d4b; color: #8fb4ff; font: 700 12px Manrope, sans-serif; }
+.is-completed .playbook-step-number { background: #1d403e; color: #54d4b3; }
+.playbook-step-content { flex: 1; min-width: 0; }
+.playbook-step-content strong { display: block; color: #e2eaf6; font-size: 12px; }
+.is-completed .playbook-step-content strong { color: #9fb9b2; text-decoration: line-through; text-decoration-color: #3e6b62; }
+.playbook-step-content p { margin: 6px 0 0; color: #a5b4c8; font-size: 11px; line-height: 1.6; white-space: pre-line; }
+.playbook-step-content small { display: block; margin-top: 6px; color: #6fbfa9; font-size: 10px; }
+.playbook-step-form { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin: 0; }
+.playbook-source { display: flex; align-items: center; gap: 7px; margin: 16px 0 0; color: #8391a7; font-size: 10px; overflow-wrap: anywhere; }
+
+.fact-list { margin: 14px 0 0; display: flex; flex-direction: column; }
+.fact-list > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #202d40; }
+.fact-list dt { color: #8391a7; font-size: 10px; }
+.fact-list dd { margin: 0; color: #dce5f2; font-size: 11px; text-align: right; overflow-wrap: anywhere; }
+.side-section-title { margin: 18px 0 10px; font: 700 11px Manrope, sans-serif; color: #b8c7dc; }
+.alert-reference { display: flex; align-items: flex-start; gap: 10px; padding: 10px; border: 1px solid #263349; border-radius: 8px; background: #0f1928; }
+.alert-reference strong { display: block; font-size: 11px; color: #dce5f2; }
+.alert-reference small { display: block; margin-top: 4px; color: #75859b; font-size: 9px; overflow-wrap: anywhere; }
+
+.incident-actions .field-label { margin-bottom: 0; flex: 1; }
+.inline-action-form { display: flex; align-items: flex-end; gap: 8px; margin: 14px 0 0; }
+.inline-action-form .button { height: 38px; }
+.stacked-action-form { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid #202d40; display: flex; flex-direction: column; gap: 10px; }
+
+.history-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; }
+.history-list li { padding: 9px 0; border-bottom: 1px solid #202d40; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: #c2cddd; }
+.history-list li:last-child { border-bottom: 0; }
+.history-list small { color: #75859b; font-size: 9px; }
+
+@media (max-width: 1100px) { .incident-detail-grid { grid-template-columns: 1fr; } }
+@media (max-width: 650px) {
+  .playbook-step-item { flex-wrap: wrap; }
+  .playbook-step-form { width: 100%; justify-content: flex-end; }
+  .inline-action-form { flex-direction: column; align-items: stretch; }
+}

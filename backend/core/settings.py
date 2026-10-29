@@ -13,6 +13,9 @@ class ApplicationSettings(BaseSettings):
     log_level: str = "INFO"
     # Origines autorisées pour le futur frontend, séparées par des virgules.
     cors_allowed_origins: str = "http://localhost:8080"
+    # Intervalle de l'escalade automatique des incidents en retard, en secondes. 0 = boucle désactivée
+    # (l'escalade reste déclenchable par POST /incidents/escalade-automatique).
+    automatic_escalation_interval_seconds: float = 0
 
     @property
     def cors_allowed_origins_list(self) -> list[str]:

@@ -38,10 +38,14 @@ La traduction des champs FortiAnalyzer vers ce schéma (normalisation) n'existe 
 
 ## Routes HTTP
 
+Fonctions publiques ajoutées pour le tableau de bord et les incidents : `fetch_source_logs_metadata_by_ids`,
+`count_all_source_logs`, `count_source_logs_per_event_day` (agrégation par jour UTC en Python).
+
+
 | Méthode | Route | Réponse |
 |---|---|---|
-| GET | `/logs?criticite_source=&type=&execution_import_id=&date_evenement_min=&date_evenement_max=&limit=&offset=` | page de **métadonnées** (sans `donnees_brutes`), événements les plus récents d'abord |
-| GET | `/logs/{id}` | détail **avec** `donnees_brutes`, 404 si absent |
+| GET | `/api/logs?criticite_source=&type=&execution_import_id=&date_evenement_min=&date_evenement_max=&limit=&offset=` | page de **métadonnées** (sans `donnees_brutes`), événements les plus récents d'abord |
+| GET | `/api/logs/{id}` | détail **avec** `donnees_brutes`, 404 si absent |
 
 Dates de filtre : bornes incluses, fuseau obligatoire (sinon 422) ; plage inversée ⇒ 422. POST ⇒ 405.
 

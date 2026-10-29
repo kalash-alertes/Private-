@@ -14,6 +14,7 @@ from backend.core.pagination import PaginationParameters
 from backend.features.incidents import service as incidents_service
 from backend.features.incidents.models import IncidentStatus
 from backend.features.incidents.schemas import (
+    IncidentCreationRequest,
     IncidentAssignmentRequest,
     IncidentCriticalityChangeRequest,
     IncidentFalsePositiveQualificationRequest,
@@ -26,7 +27,9 @@ from tests.synthetic_data import store_synthetic_source_log
 
 def create_synthetic_incident(database_session, identifier_suffix="0001", criticite_source=CriticalityLevel.CRITICAL):
     storage_result = store_synthetic_source_log(database_session, identifier_suffix, criticite_source=criticite_source)
-    return incidents_service.create_incident_from_source_log(database_session, storage_result.source_log_id)
+    return incidents_service.create_incident_from_source_log(
+        database_session, IncidentCreationRequest(log_id=storage_result.source_log_id)
+    )
 
 
 def change_status(database_session, incident_id, statut):
@@ -51,14 +54,16 @@ def test_a_log_gives_at_most_one_incident(database_session, database_session_fac
     # Seconde création depuis une autre session : passe par la contrainte UNIQUE (même chemin qu'une course).
     with database_session_factory() as other_database_session:
         with pytest.raises(ResourceConflictError):
-            incidents_service.create_incident_from_source_log(other_database_session, incident.log_id)
+            incidents_service.create_incident_from_source_log(
+                other_database_session, IncidentCreationRequest(log_id=incident.log_id)
+            )
         # La session reste utilisable après le conflit (SAVEPOINT annulé, pas la transaction entière).
         assert incidents_service.fetch_incident_detail(other_database_session, incident.id).id == incident.id
 
 
 def test_incident_cannot_be_created_from_unknown_log(database_session) -> None:
     with pytest.raises(ResourceNotFoundError):
-        incidents_service.create_incident_from_source_log(database_session, uuid4())
+        incidents_service.create_incident_from_source_log(database_session, IncidentCreationRequest(log_id=uuid4()))
 
 
 def test_criticality_reevaluation_never_touches_the_source_criticality(database_session) -> None:

@@ -22,13 +22,19 @@ HTTP_STATUS_CODE_BY_DOMAIN_ERROR: dict[type[DomainError], int] = {
 }
 
 
+def find_http_status_code_for_domain_error(domain_error: DomainError) -> int:
+    """Code HTTP correspondant à l'erreur métier (400 pour une erreur métier sans code dédié)."""
+    return HTTP_STATUS_CODE_BY_DOMAIN_ERROR.get(type(domain_error), status.HTTP_400_BAD_REQUEST)
+
+
+async def convert_domain_error_to_json_response(_request: Request, domain_error: DomainError) -> JSONResponse:
+    """Réponse JSON de l'API pour une erreur métier."""
+    return JSONResponse(
+        status_code=find_http_status_code_for_domain_error(domain_error),
+        content={"detail": domain_error.message, "error_code": domain_error.error_code},
+    )
+
+
 def register_domain_error_handlers(application: FastAPI) -> None:
-    """Branche sur l'application un gestionnaire par type d'erreur métier."""
-
-    async def convert_domain_error_to_http_response(_request: Request, domain_error: DomainError) -> JSONResponse:
-        return JSONResponse(
-            status_code=HTTP_STATUS_CODE_BY_DOMAIN_ERROR.get(type(domain_error), status.HTTP_400_BAD_REQUEST),
-            content={"detail": domain_error.message, "error_code": domain_error.error_code},
-        )
-
-    application.add_exception_handler(DomainError, convert_domain_error_to_http_response)
+    """Branche sur l'application le gestionnaire des erreurs métier (réponses JSON)."""
+    application.add_exception_handler(DomainError, convert_domain_error_to_json_response)

@@ -252,6 +252,11 @@ lui-même.
 
 ### 4.4 OpenSearch Dashboards
 
+> **Mise à jour du 2026-10-29** : OpenSearch Dashboards n'est plus prévu comme interface. L'interface des analystes
+> est rendue en Python par le backend (`web_interface/`), avec le visuel de la maquette de l'équipe. Voir
+> [docs/technical/web_interface.md](./docs/technical/web_interface.md). Le texte ci-dessous est conservé pour
+> l'historique du cadrage.
+
 OpenSearch Dashboards est l'interface graphique qui permet de consulter
 et d'explorer les données d'OpenSearch.
 

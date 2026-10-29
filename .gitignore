@@ -6,3 +6,6 @@ __pycache__/
 .coverage
 htmlcov/
 .DS_Store
+
+# Paquets Python téléchargés pour construire l'image Docker hors ligne (voir docker_wheels/README.md)
+docker_wheels/*.whl

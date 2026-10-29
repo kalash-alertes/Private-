@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from backend.core.criticality import CriticalityLevel
 from backend.features.import_runs import service as import_runs_service
+from backend.features.playbooks.schemas import PlaybookStepWriteRequest, PlaybookWriteRequest
 from backend.features.source_logs import service as source_logs_service
 from backend.features.source_logs.schemas import NewSourceLogData, SourceLogStorageResult
 
@@ -50,4 +51,16 @@ def store_synthetic_source_log(
         build_synthetic_new_source_log(
             import_run.id, identifier_suffix, criticite_source=criticite_source, **new_source_log_overrides
         ),
+    )
+
+
+def build_synthetic_playbook_request(
+    categorie: str | None = "synthetique_intrusion", nom: str = "Playbook synthétique", step_count: int = 3
+) -> PlaybookWriteRequest:
+    """Playbook synthétique (la source indique clairement qu'il s'agit d'une donnée de test, pas d'une procédure)."""
+    return PlaybookWriteRequest(
+        nom=nom,
+        categorie=categorie,
+        source="DONNÉE DE TEST SYNTHÉTIQUE — aucune procédure réelle",
+        etapes=[PlaybookStepWriteRequest(titre=f"Étape synthétique {index}") for index in range(1, step_count + 1)],
     )

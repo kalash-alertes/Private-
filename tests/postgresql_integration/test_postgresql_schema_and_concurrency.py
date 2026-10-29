@@ -21,7 +21,7 @@ from backend.database_model_registry import DatabaseModelBase, ImportRun, Incide
 from backend.features.import_runs import service as import_runs_service
 from backend.features.import_runs.schemas import ImportRunFinishedOutcome
 from backend.features.incidents import service as incidents_service
-from backend.features.incidents.schemas import IncidentStatusChangeRequest
+from backend.features.incidents.schemas import IncidentCreationRequest, IncidentStatusChangeRequest
 from backend.features.source_logs import service as source_logs_service
 from tests.synthetic_data import build_synthetic_new_source_log, store_synthetic_source_log
 
@@ -87,7 +87,16 @@ def test_postgresql_check_constraints_are_enforced(postgresql_session_factory) -
 
     with postgresql_session_factory() as session:
         storage_result = store_synthetic_source_log(session)
-        session.add(Incident(log_id=storage_result.source_log_id, criticite_actuelle="critique", faux_positif=True))
+        session.add(
+            Incident(
+                log_id=storage_result.source_log_id,
+                numero_reference=1,
+                titre="Alerte synthétique",
+                categorie="synthetique_intrusion",
+                criticite_actuelle="critique",
+                faux_positif=True,
+            )
+        )
         with pytest.raises(IntegrityError):
             session.flush()
 
@@ -119,7 +128,7 @@ def test_concurrent_incident_creations_for_one_log_create_one_incident(postgresq
     def create_incident(start_barrier):
         with postgresql_session_factory() as session:
             start_barrier.wait()
-            return incidents_service.create_incident_from_source_log(session, log_id)
+            return incidents_service.create_incident_from_source_log(session, IncidentCreationRequest(log_id=log_id))
 
     creation_outcomes = run_concurrently(create_incident)
 
@@ -155,7 +164,7 @@ def test_concurrent_finishes_of_one_import_run_keep_the_first_outcome(postgresql
 def test_concurrent_closings_keep_a_single_consistent_closing_date(postgresql_session_factory) -> None:
     with postgresql_session_factory() as session:
         log_id = store_synthetic_source_log(session).source_log_id
-        incident_id = incidents_service.create_incident_from_source_log(session, log_id).id
+        incident_id = incidents_service.create_incident_from_source_log(session, IncidentCreationRequest(log_id=log_id)).id
 
     def close_incident(start_barrier):
         with postgresql_session_factory() as session:

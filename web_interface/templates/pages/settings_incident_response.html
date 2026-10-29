@@ -1,0 +1,61 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import severity_pill %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/settings.css">{% endblock %}
+
+{% block page_body %}
+  {% include "partials/settings_tabs.html" %}
+
+  <div class="info-callout">
+    {{ icon("shield_check", 19) }}
+    <div>
+      <strong>Comment fonctionnent les délais et l'escalade</strong>
+      <p>
+        La <b>date limite</b> d'un incident = sa date de création + le délai de sa sévérité actuelle. Changer un délai ici
+        déplace les dates limites des incidents existants. Si l'<b>escalade automatique</b> est activée pour une sévérité,
+        un incident encore ouvert après sa date limite est escaladé une fois : il est marqué « escaladé », réattribué à
+        la cible indiquée (si renseignée) et l'événement est inscrit au journal d'audit. Rien n'est exécuté sur
+        l'infrastructure.
+      </p>
+    </div>
+  </div>
+
+  <section class="panel settings-panel">
+    <div class="panel-header">
+      <div><h2>Temps de réponse par sévérité</h2><p>Valeurs initiales indicatives : à ajuster selon les engagements de l'équipe.</p></div>
+      <form method="post" action="/parametres/reponse-incidents/escalade">
+        <button class="button button-secondary button-small" type="submit">{{ icon("refresh_cw", 14) }} Lancer l'escalade maintenant</button>
+      </form>
+    </div>
+    {% if escalated_incident_count is not none %}
+      <p class="escalation-result">{{ escalated_incident_count }} incident(s) escaladé(s) lors de cette exécution.</p>
+    {% endif %}
+
+    <div class="deadline-rule-list">
+      {% for row in rule_rows %}
+        {% set rule = row.rule %}
+        <form method="post" action="/parametres/reponse-incidents/delais/{{ rule.criticite.value }}" class="deadline-rule-row">
+          <div class="deadline-rule-severity">{{ severity_pill(rule.criticite) }}</div>
+          <label class="field-label">Délai de traitement
+            <span class="delay-input-group">
+              <input type="number" name="delai_valeur" min="1" value="{{ row.delay_value }}" required>
+              <select name="delai_unite" aria-label="Unité du délai">
+                {% for unit_name in ["minutes", "heures", "jours"] %}
+                  <option value="{{ unit_name }}" {% if row.delay_unit == unit_name %}selected{% endif %}>{{ unit_name }}</option>
+                {% endfor %}
+              </select>
+            </span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" name="escalade_automatique_activee" {% if rule.escalade_automatique_activee %}checked{% endif %}>
+            Escalade automatique
+          </label>
+          <label class="field-label">Escalader vers
+            <input name="escalader_vers" value="{{ rule.escalader_vers or '' }}" maxlength="255" placeholder="Ex. : responsable.soc (facultatif)">
+          </label>
+          <button class="button button-primary button-small" type="submit">{{ icon("save", 14) }} Enregistrer</button>
+        </form>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
