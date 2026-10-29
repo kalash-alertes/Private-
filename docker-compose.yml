@@ -1,28 +1,39 @@
+# Environnement de développement. Les ports sont liés à localhost uniquement (pas d'exposition réseau).
+# OpenSearch / Dashboards / Data Prepper seront ajoutés ici dans une étape ultérieure.
 services:
-  db:
+  database:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-kwatsur}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kwatsur_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-kwatsur}
+      POSTGRES_USER: ${POSTGRES_USER:-soc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_locally}
+      POSTGRES_DB: ${POSTGRES_DB:-soc_incidents}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - kwatsur_pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kwatsur} -d ${POSTGRES_DB:-kwatsur}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-soc} -d ${POSTGRES_DB:-soc_incidents}"]
       interval: 5s
       timeout: 5s
       retries: 10
-  api:
+
+  backend:
     build: .
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-kwatsur}:${POSTGRES_PASSWORD:-kwatsur_dev}@db:5432/${POSTGRES_DB:-kwatsur}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-soc}:${POSTGRES_PASSWORD:-change_me_locally}@database:5432/${POSTGRES_DB:-soc_incidents}
+      APPLICATION_ENVIRONMENT: ${APPLICATION_ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
     depends_on:
-      db:
+      database:
         condition: service_healthy
+    # Applique les migrations puis démarre l'API avec rechargement automatique (code monté en volume).
+    command: sh -c "alembic upgrade head && uvicorn backend.main:application --host 0.0.0.0 --port 8000 --reload"
+    volumes:
+      - ./backend:/application/backend
+      - ./db:/application/db
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+
 volumes:
-  kwatsur_pgdata:
+  postgres_data:

@@ -1,0 +1,1 @@
+Suis impérativement les règles de [AGENTS.md](../AGENTS.md) (nommage explicite, modules indépendants, commentaires stratégiques, doc technique + doc humaine pour chaque ajout, migrations Alembic, tests).
