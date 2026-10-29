@@ -68,6 +68,12 @@ wsl docker compose up --build -d
 
 ## 4. Voir des données de test (démonstration)
 
+Avec `APP_IS_IN_DEMO=true` (valeur par défaut du `.env`), l'application **invente quelques alertes à chaque collecte**
+(toutes les 5 minutes, ou bouton « Lancer une collecte maintenant » dans **Journaux**). Un badge « DÉMO » est affiché
+en haut. Pour lire le vrai FortiAnalyzer : [connecting_fortianalyzer.md](./connecting_fortianalyzer.md).
+
+En plus, pour remplir tous les écrans d'un coup (playbooks, incidents à différents stades) :
+
 Tant que le collecteur FortiAnalyzer n'est pas branché, la base est vide. Pour voir les écrans remplis :
 
 ```powershell
@@ -85,7 +91,7 @@ Puis rafraîchir http://localhost:8000. Le script crée :
 | 1 import | visible dans **Journaux** |
 | Événements | visibles dans **Paramètres > Journal d'audit** |
 
-Ces données sont **inventées**. Relancer le script ne crée pas de doublons d'alertes.
+Ces données sont **inventées**. Relancer le script ne crée pas de doublons d'alertes. Le script refuse de s'exécuter si `APP_IS_IN_DEMO=false` (base alimentée par le vrai FortiAnalyzer).
 
 **À essayer** pour faire le tour :
 1. **Incidents** : passer de l'onglet « En cours » à « Traités », filtrer, chercher.

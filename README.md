@@ -10,6 +10,7 @@ Lire [AGENTS.md](./AGENTS.md) avant tout changement (nommage, modularité, comme
 
 Guide complet (première fois, tous les jours, données de test, dépannage) :
 **[docs/overview/running_the_application.md](./docs/overview/running_the_application.md)**.
+Brancher le vrai FortiAnalyzer (`APP_IS_IN_DEMO=false`) : **[docs/overview/connecting_fortianalyzer.md](./docs/overview/connecting_fortianalyzer.md)**.
 
 ```powershell
 Copy-Item .env.example .env                           # une seule fois, puis adapter les valeurs
@@ -41,7 +42,8 @@ défini : voir [docs/technical/testing.md](./docs/technical/testing.md).
 ## API disponible (sans authentification : usage local uniquement)
 
 Sous `/api` : `/executions-import` (imports), `/logs` (alertes), `/incidents` (création, suivi, playbook, escalade),
-`/parametres/playbooks`, `/parametres/reponse-incidents/delais`, `/parametres/journal-audit`, `/tableau-de-bord`.
+`/parametres/playbooks`, `/parametres/reponse-incidents/delais`, `/parametres/journal-audit`, `/tableau-de-bord`,
+`/collecte` (collecte des alertes).
 Détail interactif : `/docs`. **Pas prêt pour la production** (ni authentification, ni autorisations, ni durcissement).
 
 ## Organisation
@@ -49,10 +51,11 @@ Détail interactif : `/docs`. **Pas prêt pour la production** (ni authentificat
 | Dossier | Contenu |
 |---|---|
 | `backend/core/` | Configuration, connexion DB, valeurs communes |
-| `backend/features/` | Une fonctionnalité = un module indépendant (`import_runs`, `source_logs`, `incidents`, `playbooks`, `incident_response_settings`, `audit_journal`, `dashboard`) |
+| `backend/features/` | Une fonctionnalité = un module indépendant (`import_runs`, `source_logs`, `incidents`, `playbooks`, `incident_response_settings`, `audit_journal`, `dashboard`, `log_collection`) |
 | `web_interface/` | Interface analystes en Python : une page = un fichier `pages/*.py` + un gabarit `templates/pages/*.html` ; CSS dans `static/css/` |
 | `scripts/` | Outils de développement (données de démonstration synthétiques) |
-| `backend/integrations/` | Adaptateurs vers FortiAnalyzer, OpenSearch... |
+| `backend/integrations/` | Adaptateurs externes : `fortianalyzer/` (client réel + démonstration) |
+| `certificates/` | Certificat d'autorité de FortiAnalyzer (facultatif, non commité) |
 | `db/migrations/` | Migrations Alembic (schéma PostgreSQL) |
 | `docs/technical/` | Documentation détaillée (développeurs / IA) |
 | `docs/overview/` | Documentation de vue d'ensemble (humains) |
@@ -66,7 +69,7 @@ Détail interactif : `/docs`. **Pas prêt pour la production** (ni authentificat
 - Outils (rôle, niveau d'utilisation, intégration) : [vue simple](./docs/overview/tools.md) · [détail technique](./docs/technical/tools.md)
 - Architecture technique : [docs/technical/architecture.md](./docs/technical/architecture.md)
 - Base de données : [docs/technical/database.md](./docs/technical/database.md)
-- Fonctionnalités : [imports](./docs/technical/import_runs.md) · [logs](./docs/technical/source_logs.md) · [incidents](./docs/technical/incidents.md) · [playbooks](./docs/technical/playbooks.md) · [délais et escalade](./docs/technical/incident_response_settings.md) · [journal d'audit](./docs/technical/audit_journal.md) · [tableau de bord](./docs/technical/dashboard.md) · [tests](./docs/technical/testing.md)
+- Fonctionnalités : [imports](./docs/technical/import_runs.md) · [logs](./docs/technical/source_logs.md) · [incidents](./docs/technical/incidents.md) · [playbooks](./docs/technical/playbooks.md) · [délais et escalade](./docs/technical/incident_response_settings.md) · [journal d'audit](./docs/technical/audit_journal.md) · [tableau de bord](./docs/technical/dashboard.md) · [collecte FortiAnalyzer](./docs/technical/log_collection.md) · [tests](./docs/technical/testing.md)
 - Interface web : [technique](./docs/technical/web_interface.md) · [vue simple](./docs/overview/interface.md)
 - Parcours d'un incident (vue simple) : [docs/overview/incident_workflow.md](./docs/overview/incident_workflow.md)
 - Paramètres, playbooks, délais, audit (vue simple) : [docs/overview/settings_and_playbooks.md](./docs/overview/settings_and_playbooks.md)

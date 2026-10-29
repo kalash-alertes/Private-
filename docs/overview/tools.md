@@ -7,7 +7,7 @@ Le détail technique (versions, fichiers, commandes) est dans [docs/technical/to
 
 ```
 FortiAnalyzer ──► Collecteur ──► OpenSearch (recherche dans les logs)
-   (à venir)       (à venir)  └─► PostgreSQL (incidents, imports) ──► Serveur Python ──► Écrans analyste
+  (branché)       (en place)  └─► PostgreSQL (incidents, imports) ──► Serveur Python ──► Écrans analyste
                                      (en place)                          (en place)        (en place)
 ```
 
@@ -35,12 +35,16 @@ Les écrans des analystes sont fabriqués par le serveur Python lui-même (outil
 maquette de l'équipe. Il n'y a donc pas de second programme à lancer. OpenSearch Dashboards n'est plus prévu comme
 interface. Voir [interface.md](./interface.md).
 
+## La connexion à FortiAnalyzer
+
+Le **collecteur** va chercher les alertes dans FortiAnalyzer toutes les 5 minutes, sans jamais créer de doublon. En
+**mode démonstration** (`APP_IS_IN_DEMO=true`), il invente des alertes à la place. Pour brancher le vrai
+FortiAnalyzer : [connecting_fortianalyzer.md](./connecting_fortianalyzer.md).
+
 ## Ce qui est prévu mais pas encore branché
 
 | Outil | À quoi il servira | Ce qui manque pour l'ajouter |
 |---|---|---|
-| **FortiAnalyzer** | La source des alertes de sécurité. Il reste la référence d'origine. | La documentation de son API, le mode de connexion, un exemple de données anonymisé. |
-| **Collecteur** | Le programme qui ira chercher les alertes dans FortiAnalyzer, sans jamais créer de doublon. | Les informations FortiAnalyzer ci-dessus. |
 | **OpenSearch** | Ranger et rechercher rapidement dans de gros volumes de logs. | Décider où garder les logs complets. |
 | **Data Prepper** | Transformer les logs en chemin, si le besoin apparaît. | Une décision : il est facultatif. |
 

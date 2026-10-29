@@ -50,7 +50,8 @@ Lis ce tableau de haut en bas : c'est aussi l'ordre dans lequel une requête les
 > l'équipe (`dashboard/` sur `main`). On a gardé le **visuel** de ce prototype, mais il est maintenant produit en
 > Python. Le dossier `frontend/` est un ancien squelette sans rapport : il n'est pas utilisé.
 >
-> **Ce qui n'existe pas encore** : la collecte réelle depuis FortiAnalyzer, OpenSearch, et la connexion des utilisateurs.
+> **Ce qui n'existe pas encore** : OpenSearch et la connexion des utilisateurs. La collecte FortiAnalyzer existe
+> (mode démonstration ou réel, `APP_IS_IN_DEMO`) mais n'a pas encore été validée sur le vrai FortiAnalyzer.
 
 ### Comment les outils s'emboîtent
 
@@ -217,7 +218,7 @@ Ce schéma résume trois choix que tu retrouveras partout :
 | `main.py` | **Point d'entrée.** Fabrique l'application : API sous `/api`, pages, boucle d'escalade. |
 | `database_model_registry.py` | Importe toutes les tables pour qu'Alembic et les tests voient le schéma complet. |
 
-### 4.4 `backend/features/` — les 7 fonctionnalités
+### 4.4 `backend/features/` — les 8 fonctionnalités
 
 | Dossier | Ce qu'il gère | Tables |
 |---|---|---|
@@ -228,6 +229,10 @@ Ce schéma résume trois choix que tu retrouveras partout :
 | `incident_response_settings/` | Les **délais par sévérité** et l'escalade. | `delais_reponse_incidents` |
 | `audit_journal/` | Le **journal d'audit**. | `journal_audit` |
 | `dashboard/` | Les chiffres du tableau de bord (aucune table : il assemble les autres). | — |
+| `log_collection/` | La **collecte** des alertes (FortiAnalyzer ou démonstration) : conversion, seuil, enregistrement. | — |
+
+`backend/integrations/fortianalyzer/` : les **sources d'alertes** interchangeables (vrai client JSON-RPC,
+démonstration) et le choix selon `APP_IS_IN_DEMO`. Voir [log_collection.md](../technical/log_collection.md).
 
 `incidents/` est la plus grosse ; son `service.py` a été découpé en plusieurs fichiers, chacun avec un seul rôle :
 

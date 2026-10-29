@@ -8,8 +8,8 @@ Docker ; voir la section « Versions » en fin de page pour l'écart avec l'envi
 
 | Couche | Outil | Rôle | Statut |
 |---|---|---|---|
-| Source de données | FortiAnalyzer | Système d'origine des alertes | **Prévu** (API non intégrée) |
-| Collecte | Collecteur Python (`backend/integrations/fortianalyzer`) | Lire l'API FortiAnalyzer, normaliser, dédoublonner | **Prévu** |
+| Source de données | FortiAnalyzer | Système d'origine des alertes | **Intégré** (API JSON-RPC ; première connexion réelle à valider) |
+| Collecte | `backend/features/log_collection` + `backend/integrations/fortianalyzer` (httpx) | Lire l'API FortiAnalyzer (ou la démonstration), normaliser, dédoublonner | **En place** ([log_collection.md](./log_collection.md)) |
 | Transformation | Data Prepper | Pipeline de transformation optionnel | **Optionnel, non décidé** |
 | Recherche / stockage des logs | OpenSearch | Indexation et recherche des logs | **Prévu** |
 | Interface analystes | Jinja2 (gabarits), python-multipart (formulaires), tzdata (fuseaux) | Pages HTML rendues en Python (`web_interface/`) | En place |
@@ -144,7 +144,12 @@ FastAPI → interface web (`web_interface/`, à la racine) et API JSON (`/api`).
 
 ## Tests
 
-### pytest (`pytest==8.3.3`) et httpx (`httpx==0.27.2`)
+### httpx en production : client FortiAnalyzer
+- **Rôle** : en plus des tests, httpx est le client HTTP du connecteur FortiAnalyzer
+  (`backend/integrations/fortianalyzer/fortianalyzer_json_rpc_client.py`) : HTTPS, vérification TLS (booléen ou
+  fichier CA), délai maximal. En test, `httpx.MockTransport` remplace le réseau par un faux FortiAnalyzer.
+
+### pytest et httpx (versions : voir `requirements.txt`)
 - **Rôle** : pytest exécute les tests ; httpx est requis par le `TestClient` de FastAPI pour tester les routes sans
   serveur réel.
 - **Niveau** : `pytest.ini` (marqueur `postgresql`), `tests/` (miroir de `backend/`), `tests/conftest.py` (fixtures),
@@ -167,8 +172,6 @@ n'ont pas été ajoutés à `docker-compose.yml` : ils le seront avec la fonctio
 
 | Outil | Rôle prévu | Où il s'intégrera | Prérequis |
 |---|---|---|---|
-| FortiAnalyzer | Source des alertes ; reste le système d'origine | Client dans `backend/integrations/fortianalyzer/` derrière une interface (remplaçable par un faux en test) ; configuration `FORTIANALYZER_*` de `.env.example` | Version, documentation de l'API, mode d'authentification, exemple de réponse anonymisé, champ d'identifiant stable, pagination |
-| Collecteur | Lire FortiAnalyzer, valider (Pydantic), normaliser, appeler `source_logs.service.store_source_log_if_new` et `import_runs.service` | Nouvelle feature d'import + intégration FortiAnalyzer | Informations FortiAnalyzer ci-dessus |
 | OpenSearch | Stockage indexé et recherche des logs | `backend/integrations/opensearch/` ; service ajouté au compose ; `logs.reference_opensearch` relie les deux bases | Décision sur l'emplacement du log brut (PostgreSQL, OpenSearch ou les deux) |
 | Data Prepper | Transformation / pipelines entre collecteur et OpenSearch | Service du compose, si les volumes ou transformations le justifient | Décision d'architecture |
 

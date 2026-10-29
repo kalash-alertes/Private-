@@ -17,7 +17,7 @@ backend/
                              domain_errors.py + http_error_handlers.py (erreurs métier -> 404/409/422),
                              pagination.py (limit/offset), utc_datetime_types.py (dates UTC en entrée/sortie)
   features/<feature>/        models.py, schemas.py, repository.py, service.py, router.py, README.md
-  integrations/<systeme>/    Clients externes derrière une interface (FortiAnalyzer, OpenSearch)
+  integrations/fortianalyzer/ Sources d'alertes : client JSON-RPC réel + démonstration (APP_IS_IN_DEMO)
 web_interface/               Interface analystes en Python : pages/ (une par page), templates/, static/css/
 scripts/                     Outils de développement (données de démonstration synthétiques)
 db/migrations/               Alembic : env.py lit DATABASE_URL via backend.core.settings
@@ -44,6 +44,7 @@ tests/                       pytest : SQLite + vraies migrations ; tests/postgre
 | `incident_response_settings` | `/api/parametres/reponse-incidents/delais...` | [incident_response_settings.md](./incident_response_settings.md) | `audit_journal` |
 | `audit_journal` | `GET /api/parametres/journal-audit` | [audit_journal.md](./audit_journal.md) | — |
 | `dashboard` | `GET /api/tableau-de-bord` | [dashboard.md](./dashboard.md) | `source_logs`, `incidents` |
+| `log_collection` | `POST /api/collecte`, `GET /api/collecte/configuration` | [log_collection.md](./log_collection.md) | `import_runs`, `source_logs`, `integrations/fortianalyzer` |
 
 Toutes les routes de l'API sont préfixées par `/api` (y compris `/api/health`). L'interface web (`web_interface/`)
 n'a pas de logique métier : elle appelle les mêmes services publics.

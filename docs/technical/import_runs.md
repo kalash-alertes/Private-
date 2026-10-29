@@ -52,6 +52,12 @@ Cas limite connu : `ensure_import_run_accepts_new_logs` ne verrouille pas l'exé
 la même exécution est terminée par un autre processus pourrait être rattaché juste après la fin. En pratique le collecteur
 enregistre ses logs puis termine son exécution dans le même fil ; à revoir si la collecte devient parallèle.
 
+## Point de reprise
+
+`service.fetch_latest_synchronization_cursor` renvoie le `curseur_synchronisation` de la plus récente exécution
+**réussie ou partielle** (utilisé par `log_collection` : date ISO de fin de la période lue). Une exécution échouée
+n'avance jamais le point de reprise.
+
 ## Routes HTTP
 
 | Méthode | Route | Réponse |
