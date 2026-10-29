@@ -37,8 +37,12 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    # Applique les migrations puis démarre l'API avec rechargement automatique (code monté en volume).
-    command: sh -c "alembic upgrade head && uvicorn backend.main:application --host 0.0.0.0 --port 8000 --reload"
+    # Compte du conteneur : non-root par défaut. Mettre BACKEND_CONTAINER_USER=root dans le .env seulement si le projet
+    # est dans un dossier partagé VirtualBox (fichiers montés illisibles sinon) ; voir scripts/start_backend.sh.
+    user: ${BACKEND_CONTAINER_USER:-backend_runner}
+    # Vérifie que le code est lisible, applique les migrations, puis démarre avec rechargement automatique.
+    # Le script vient de l'image (scripts/ n'est pas monté) : il reste lisible même depuis un dossier partagé.
+    command: sh scripts/start_backend.sh
     volumes:
       - ./backend:/application/backend
       - ./web_interface:/application/web_interface
