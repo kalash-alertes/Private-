@@ -1,0 +1,46 @@
+/*
+  Fondations : couleurs (jetons), typographie, remise à zéro.
+  Thème sombre repris de la maquette de l'équipe (dashboard/src/styles.css, branche main).
+*/
+:root {
+  font-family: 'DM Sans', sans-serif;
+  color: #e7edf7;
+  background: #0b1220;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --bg: #0b1220;
+  --sidebar: #101827;
+  --panel: #111c2d;
+  --panel2: #142035;
+  --border: #263349;
+  --muted: #8290a5;
+  --text: #e8eef8;
+  --blue: #6d9cff;
+  --teal: #35c6ad;
+  --danger: #ff647c;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--bg); font-size: 13px; }
+a { color: inherit; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+  outline: 2px solid #6d9cff;
+  outline-offset: 2px;
+}
+.muted-text { color: var(--muted); }
+
+/* Élément accessible aux lecteurs d'écran / au clavier mais invisible. */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}

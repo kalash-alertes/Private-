@@ -1,134 +1,75 @@
-\# Conception initiale de la base de données — Application de gestion des alertes FortiAnalyzer
-
-
-
-\## 1. Choix technologique
-
-
-
-Nous avons choisi \*\*PostgreSQL\*\* comme système de gestion de base de données relationnelle. Il permettra de stocker les alertes récupérées depuis FortiAnalyzer et de conserver les informations nécessaires à leur suivi.
-
-
-
-Pour la première version (V1), nous avons décidé de commencer avec \*\*trois tables principales\*\*, afin de garder une structure simple et de pouvoir la faire évoluer selon les besoins du projet.
-
-
-
-\## 2. Les trois tables retenues
-
-
-
-\### Table 1 : `logs`
-
-
-
-Cette table stockera les logs critiques récupérés depuis l'API de FortiAnalyzer.
-
-
-
-Elle contiendra notamment :
-
-\- L'identifiant du log provenant de FortiAnalyzer ;
-
-\- La date et l'heure de l'événement ;
-
-\- Le type et la criticité initiale du log ;
-
-\- Les données utiles de l'événement ;
-
-\- La date et l'heure d'enregistrement dans notre base de données.
-
-
-
-\*\*Objectif :\*\* conserver les informations utiles des alertes critiques sans recopier l'ensemble des logs de FortiAnalyzer.
-
-
-
-\### Table 2 : `incidents`
-
-
-
-Cette table permettra de suivre les incidents issus des alertes récupérées.
-
-
-
-Elle contiendra notamment :
-
-\- La référence du log à l'origine de l'incident ;
-
-\- Le statut de l'incident ;
-
-\- La criticité initiale et la criticité réévaluée ;
-
-\- L'indication permettant de marquer un faux positif ;
-
-\- Les informations nécessaires au suivi du traitement.
-
-
-
-\*\*Objectif :\*\* distinguer l'événement technique de l'incident que les analystes doivent examiner, qualifier et traiter.
-
-
-
-\### Table 3 : `executions\_import`
-
-
-
-Cette table enregistrera les opérations de récupération des données depuis l'API FortiAnalyzer.
-
-
-
-Elle contiendra notamment :
-
-\- La date et l'heure de début et de fin de chaque import ;
-
-\- Le statut de l'opération ;
-
-\- Le nombre de logs reçus et enregistrés ;
-
-\- Les informations de synchronisation nécessaires à la prochaine récupération.
-
-
-
-\*\*Objectif :\*\* suivre les imports, planifier les récupérations périodiques et éviter de perdre ou de traiter plusieurs fois les mêmes alertes.
-
-
-
-\## 3. Principe de fonctionnement
-
-
-
-1\. L'application interroge périodiquement l'API FortiAnalyzer.
-
-2\. Elle récupère uniquement les logs correspondant au niveau critique retenu pour la V1.
-
-3\. Elle enregistre l'exécution de l'import et les logs reçus dans PostgreSQL.
-
-4\. Les logs pertinents donnent lieu à des incidents qui pourront être qualifiés et suivis.
-
-5\. Les analystes pourront ensuite réévaluer la criticité, identifier les faux positifs et traiter les incidents.
-
-
-
-\## 4. Pourquoi commencer avec trois tables ?
-
-
-
-Cette structure constitue une base minimale pour démarrer le projet. Elle évite de complexifier prématurément le modèle tout en séparant trois responsabilités : \*\*les événements techniques, le suivi des incidents et la synchronisation avec FortiAnalyzer\*\*.
-
-
-
-Les fonctionnalités plus avancées — gestion des utilisateurs, tickets, escalades, playbooks, documentation et rapports — seront intégrées progressivement. Elles pourront nécessiter de nouvelles tables lorsque nous concevrons leur fonctionnement détaillé.
-
-
-
-\## 5. Décision de conception à retenir
-
-
-
-La base de données sera conçue pour évoluer. Les trois tables constituent le périmètre initial, et non une limite définitive du modèle. Nous conserverons également l'identifiant source des logs et prévoirons un mécanisme de détection des doublons lors des imports.
-
-
-
-\*\*Décision retenue : PostgreSQL, trois tables initiales (`logs`, `incidents`, `executions\_import`) et une récupération périodique des seuls logs critiques de FortiAnalyzer.\*\*
-
+# Intelligentsia SOC
+
+Application de gestion des alertes et incidents issus de FortiAnalyzer. Cadrage complet : [explain_project.md](./explain_project.md).
+
+## Pour les IA et développeurs
+
+Lire [AGENTS.md](./AGENTS.md) avant tout changement (nommage, modularité, commentaires, docs, tests).
+
+## Démarrer (Docker)
+
+Guide complet (première fois, tous les jours, données de test, dépannage) :
+**[docs/overview/running_the_application.md](./docs/overview/running_the_application.md)**.
+Brancher le vrai FortiAnalyzer (`APP_IS_IN_DEMO=false`) : **[docs/overview/connecting_fortianalyzer.md](./docs/overview/connecting_fortianalyzer.md)**.
+
+```powershell
+Copy-Item .env.example .env                           # une seule fois, puis adapter les valeurs
+powershell -File scripts\download_docker_wheels.ps1   # une fois, et après chaque changement de requirements.txt
+wsl docker compose up --build -d                      # sur ce poste, Docker tourne dans WSL
+```
+
+Le script télécharge les paquets Python depuis Windows dans `docker_wheels/` : l'image est ensuite construite sans
+accès Internet, car depuis Docker sous WSL les téléchargements PyPI se coupent. Voir `docker_wheels/README.md`.
+Arrêter : `wsl docker compose down` (les données de la base sont conservées).
+
+- **Interface analystes** : http://localhost:8000
+- API JSON : http://localhost:8000/api (santé : `/api/health`, documentation interactive : `/docs`)
+- PostgreSQL : `localhost:5432` (accessible uniquement depuis la machine locale)
+- Les migrations sont appliquées automatiquement au démarrage du backend.
+- Données de démonstration (inventées) pour voir les écrans remplis :
+  `wsl docker compose exec backend python -m scripts.load_synthetic_demo_data`
+
+## Tests (sans Docker)
+
+```powershell
+pip install -r requirements.txt
+python -m pytest
+```
+
+Les tests PostgreSQL (`tests/postgresql_integration/`) sont ignorés tant que `TEST_POSTGRESQL_DATABASE_URL` n'est pas
+défini : voir [docs/technical/testing.md](./docs/technical/testing.md).
+
+## API disponible (sans authentification : usage local uniquement)
+
+Sous `/api` : `/executions-import` (imports), `/logs` (alertes), `/incidents` (création, suivi, playbook, escalade),
+`/parametres/playbooks`, `/parametres/reponse-incidents/delais`, `/parametres/journal-audit`, `/tableau-de-bord`,
+`/collecte` (collecte des alertes).
+Détail interactif : `/docs`. **Pas prêt pour la production** (ni authentification, ni autorisations, ni durcissement).
+
+## Organisation
+
+| Dossier | Contenu |
+|---|---|
+| `backend/core/` | Configuration, connexion DB, valeurs communes |
+| `backend/features/` | Une fonctionnalité = un module indépendant (`import_runs`, `source_logs`, `incidents`, `playbooks`, `incident_response_settings`, `audit_journal`, `dashboard`, `log_collection`) |
+| `web_interface/` | Interface analystes en Python : une page = un fichier `pages/*.py` + un gabarit `templates/pages/*.html` ; CSS dans `static/css/` |
+| `scripts/` | Outils de développement (données de démonstration synthétiques) |
+| `backend/integrations/` | Adaptateurs externes : `fortianalyzer/` (client réel + démonstration) |
+| `certificates/` | Certificat d'autorité de FortiAnalyzer (facultatif, non commité) |
+| `db/migrations/` | Migrations Alembic (schéma PostgreSQL) |
+| `docs/technical/` | Documentation détaillée (développeurs / IA) |
+| `docs/overview/` | Documentation de vue d'ensemble (humains) |
+| `frontend/` | Squelette non utilisé (l'interface est `web_interface/`) |
+
+## Documentation
+
+- **Comprendre le code pas à pas** : [docs/guide_lecture_code/](./docs/guide_lecture_code/README.md)
+
+- Vue d'ensemble : [docs/overview/project_overview.md](./docs/overview/project_overview.md)
+- Outils (rôle, niveau d'utilisation, intégration) : [vue simple](./docs/overview/tools.md) · [détail technique](./docs/technical/tools.md)
+- Architecture technique : [docs/technical/architecture.md](./docs/technical/architecture.md)
+- Base de données : [docs/technical/database.md](./docs/technical/database.md)
+- Fonctionnalités : [imports](./docs/technical/import_runs.md) · [logs](./docs/technical/source_logs.md) · [incidents](./docs/technical/incidents.md) · [playbooks](./docs/technical/playbooks.md) · [délais et escalade](./docs/technical/incident_response_settings.md) · [journal d'audit](./docs/technical/audit_journal.md) · [tableau de bord](./docs/technical/dashboard.md) · [collecte FortiAnalyzer](./docs/technical/log_collection.md) · [tests](./docs/technical/testing.md)
+- Interface web : [technique](./docs/technical/web_interface.md) · [vue simple](./docs/overview/interface.md)
+- Parcours d'un incident (vue simple) : [docs/overview/incident_workflow.md](./docs/overview/incident_workflow.md)
+- Paramètres, playbooks, délais, audit (vue simple) : [docs/overview/settings_and_playbooks.md](./docs/overview/settings_and_playbooks.md)

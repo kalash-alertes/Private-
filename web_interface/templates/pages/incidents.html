@@ -1,0 +1,133 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import severity_pill, incident_status_pill, assignee_badge, deadline_badge, plan_progress, pagination_footer %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/incidents.css">{% endblock %}
+
+{% block heading_actions %}
+  <a class="button button-secondary" href="/incidents?vue={{ list_view.value }}">{{ icon("sliders_horizontal", 16) }} Réinitialiser</a>
+  <a class="button button-primary" href="#nouvel-incident">{{ icon("plus", 17) }} Nouvel incident</a>
+{% endblock %}
+
+{% block page_body %}
+  <nav class="view-tabs" aria-label="Onglets des incidents">
+    <a href="/incidents?vue=en_cours" class="view-tab{% if list_view.value == 'en_cours' %} active{% endif %}">
+      {{ icon("clock3", 15) }} En cours <span class="view-tab-count">{{ incident_count_by_view['en_cours'] }}</span>
+    </a>
+    <a href="/incidents?vue=traites" class="view-tab{% if list_view.value == 'traites' %} active{% endif %}">
+      {{ icon("circle_check", 15) }} Traités <span class="view-tab-count">{{ incident_count_by_view['traites'] }}</span>
+    </a>
+  </nav>
+
+  <section class="panel incidents-panel">
+    <form class="table-toolbar" method="get" action="/incidents">
+      <input type="hidden" name="vue" value="{{ list_view.value }}">
+      <label class="table-search">
+        {{ icon("search", 15) }}
+        <input name="recherche" value="{{ search_text }}" placeholder="Rechercher (titre, catégorie, responsable)..." maxlength="255" aria-label="Rechercher un incident">
+      </label>
+      <div class="table-tools">
+        <label class="filter-control">
+          {{ icon("filter", 14) }}
+          <select name="criticite" aria-label="Filtrer par sévérité">
+            <option value="">Toutes les sévérités</option>
+            {% for criticality in criticality_levels %}
+              <option value="{{ criticality.value }}" {% if selected_criticality == criticality %}selected{% endif %}>{{ criticality | criticality_label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="filter-control">
+          <select name="statut" aria-label="Filtrer par statut">
+            <option value="">Tous les statuts</option>
+            {% for incident_status, status_label in statuses_of_view %}
+              <option value="{{ incident_status.value }}" {% if selected_status == incident_status %}selected{% endif %}>{{ status_label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="button button-secondary button-small" type="submit">{{ icon("filter", 14) }} Filtrer</button>
+      </div>
+    </form>
+
+    <div class="table-scroll">
+      <table class="incidents-table">
+        <thead>
+          <tr>
+            <th>RÉF.</th><th>SÉVÉRITÉ</th><th>TITRE / CATÉGORIE</th><th>STATUT</th><th>ALERTES</th>
+            <th>PLAN</th><th>DÉLAI</th><th>RESPONSABLE</th><th>MIS À JOUR</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for incident in incidents_page.items %}
+            <tr class="clickable-row">
+              <td><span class="incident-reference">{{ incident.reference }}</span></td>
+              <td>{{ severity_pill(incident.criticite_actuelle) }}</td>
+              <td>
+                <a class="row-link incident-title" href="/incidents/{{ incident.id }}">{{ incident.titre }}</a>
+                <div class="incident-id">{{ incident.categorie }}{% if incident.escalade_le %} · <span class="escalated-text">escaladé</span>{% endif %}</div>
+              </td>
+              <td>
+                {{ incident_status_pill(incident.statut) }}
+                <div class="open-state">{{ "Ouvert" if incident.est_ouvert else "Traité" }}</div>
+              </td>
+              <td><span class="alert-count">{{ icon("bell", 12) }} {{ incident.nombre_alertes }}</span></td>
+              <td>{{ plan_progress(incident.plan) }}</td>
+              <td>{{ deadline_badge(incident) }}</td>
+              <td>{{ assignee_badge(incident.assigne_a) }}</td>
+              <td class="time-cell">{{ incident.updated_at | display_datetime }}</td>
+              <td><span class="row-more">{{ icon("chevron_right", 17) }}</span></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="10" class="empty-state">
+              {% if search_text or selected_criticality or selected_status %}Aucun incident ne correspond aux filtres.
+              {% elif list_view.value == 'en_cours' %}Aucun incident en cours.
+              {% else %}Aucun incident traité.{% endif %}
+            </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {{ pagination_footer(incidents_page, "/incidents", filter_query, "incidents") }}
+  </section>
+{% endblock %}
+
+{% block page_dialogs %}
+  {# Fenêtre sans JavaScript : affichée quand l'adresse se termine par #nouvel-incident (sélecteur CSS :target). #}
+  <div id="nouvel-incident" class="modal-backdrop target-dialog">
+    <a href="#" class="dialog-dismiss-area" aria-label="Fermer"></a>
+    <form class="incident-modal" method="post" action="/incidents">
+      <div class="modal-heading">
+        <div>
+          <span class="modal-icon">{{ icon("plus", 18) }}</span>
+          <h2>Créer un incident</h2>
+          <p>Un incident naît d'une alerte FortiAnalyzer. Titre et catégorie sont déduits de l'alerte s'ils sont vides.</p>
+        </div>
+        <a href="#" class="icon-button" aria-label="Fermer">{{ icon("x", 18) }}</a>
+      </div>
+
+      {% if alerts_without_incident %}
+        <label class="field-label">
+          Alerte d'origine
+          <select name="log_id" required>
+            {% for alert in alerts_without_incident %}
+              <option value="{{ alert.id }}">{{ alert.criticite_source | criticality_label }} · {{ alert.type }} · {{ alert.date_evenement | display_datetime }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field-label">
+          Titre de l'incident
+          <input name="titre" maxlength="255" placeholder="Ex. : Activité réseau inhabituelle">
+        </label>
+        <label class="field-label">
+          Catégorie
+          <input name="categorie" maxlength="255" placeholder="Par défaut : le type de l'alerte (sert à choisir le playbook)">
+        </label>
+        <div class="modal-actions">
+          <a class="button button-secondary" href="#">Annuler</a>
+          <button type="submit" class="button button-primary">{{ icon("plus", 16) }} Créer l'incident</button>
+        </div>
+      {% else %}
+        <p class="dialog-empty-text">Toutes les alertes récentes ont déjà un incident. Les nouvelles alertes apparaîtront ici après le prochain import.</p>
+        <div class="modal-actions"><a class="button button-secondary" href="#">Fermer</a></div>
+      {% endif %}
+    </form>
+  </div>
+{% endblock %}

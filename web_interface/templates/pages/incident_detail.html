@@ -1,0 +1,183 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import severity_pill, incident_status_pill, assignee_badge, deadline_badge %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/incidents.css">{% endblock %}
+
+{% block heading_actions %}
+  <a class="button button-secondary" href="/incidents?vue={{ 'en_cours' if incident.est_ouvert else 'traites' }}">{{ icon("arrow_left", 16) }} Retour aux incidents</a>
+{% endblock %}
+
+{% block page_body %}
+  <div class="incident-summary-strip">
+    <span class="incident-reference">{{ incident.reference }}</span>
+    {{ severity_pill(incident.criticite_actuelle) }}
+    {{ incident_status_pill(incident.statut) }}
+    {{ deadline_badge(incident) }}
+    {% if incident.faux_positif %}<span class="status-pill status-review">Faux positif</span>{% endif %}
+    {% if incident.escalade_le %}<span class="status-pill status-failed">Escaladé le {{ incident.escalade_le | display_datetime }}</span>{% endif %}
+  </div>
+
+  {% if is_closed %}
+    <div class="alert-banner alert-banner-info">
+      {{ icon("lock_keyhole", 17) }}
+      <div><strong>Incident clôturé</strong><p>Il est en lecture seule. Changez son statut pour le rouvrir et le modifier.</p></div>
+    </div>
+  {% endif %}
+
+  <div class="incident-detail-grid">
+    {# ---- Colonne principale : le playbook de l'incident ---- #}
+    <section class="panel playbook-progress-panel" aria-labelledby="playbook-title">
+      {% set playbook = incident_playbook.playbook %}
+      <div class="panel-header">
+        <div>
+          <h2 id="playbook-title">{{ icon("clipboard_list", 15) }} Playbook{% if playbook %} · {{ playbook.nom }}{% endif %}</h2>
+          <p>{% if playbook %}{{ playbook.nombre_etapes_realisees }} étape(s) réalisée(s) sur {{ playbook.nombre_etapes }}{% else %}Aucun playbook n'est associé à cet incident.{% endif %}</p>
+        </div>
+        {% if playbook %}<a class="text-button" href="/parametres/playbooks/{{ playbook.playbook_id }}/modifier">Modifier le playbook {{ icon("chevron_right", 15) }}</a>{% endif %}
+      </div>
+
+      {% if playbook %}
+        {% set completion_percent = (100 * playbook.nombre_etapes_realisees / playbook.nombre_etapes) | round | int if playbook.nombre_etapes else 0 %}
+        <div class="playbook-progress-bar" role="progressbar" aria-valuenow="{{ completion_percent }}" aria-valuemin="0" aria-valuemax="100">
+          <span style="width: {{ completion_percent }}%"></span>
+        </div>
+        {% if playbook.description %}<p class="playbook-description">{{ playbook.description }}</p>{% endif %}
+
+        <ol class="playbook-step-list">
+          {% for step in playbook.etapes %}
+            <li class="playbook-step-item{% if step.est_realisee %} is-completed{% endif %}">
+              <span class="playbook-step-number">{% if step.est_realisee %}{{ icon("circle_check", 18) }}{% else %}{{ step.ordre }}{% endif %}</span>
+              <div class="playbook-step-content">
+                <strong>{{ step.titre }}</strong>
+                {% if step.description %}<p>{{ step.description }}</p>{% endif %}
+                {% if step.est_realisee %}
+                  <small>Réalisée le {{ step.realisee_le | display_datetime }}{% if step.realisee_par %} par {{ step.realisee_par }}{% endif %}</small>
+                {% endif %}
+              </div>
+              {% if not is_closed %}
+                <form method="post" action="/incidents/{{ incident.id }}/playbook/etapes/{{ step.id }}" class="playbook-step-form">
+                  {% if step.est_realisee %}
+                    <input type="hidden" name="realisee" value="non">
+                    <button class="button button-secondary button-small" type="submit">Annuler</button>
+                  {% else %}
+                    <input type="hidden" name="realisee" value="oui">
+                    <input type="text" name="realisee_par" maxlength="255" placeholder="Par (facultatif)" aria-label="Réalisée par" class="compact-input">
+                    <button class="button button-primary button-small" type="submit">{{ icon("circle_check", 14) }} Fait</button>
+                  {% endif %}
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        <p class="playbook-source">{{ icon("file_text", 13) }} Source : {{ playbook.source }}</p>
+      {% else %}
+        <div class="empty-panel">
+          {{ icon("workflow", 28) }}
+          <p>Choisissez un playbook dans « Actions » ci-contre, ou créez-en un pour la catégorie « {{ incident.categorie }} » : il sera proposé automatiquement aux prochains incidents de cette catégorie.</p>
+          <a class="button button-secondary" href="/parametres/playbooks/nouveau">{{ icon("plus", 15) }} Créer un playbook</a>
+        </div>
+      {% endif %}
+    </section>
+
+    {# ---- Colonne latérale : informations et actions ---- #}
+    <aside class="incident-side-column">
+      <section class="panel">
+        <div class="panel-header"><div><h2>Informations</h2></div></div>
+        <dl class="fact-list">
+          <div><dt>Catégorie</dt><dd>{{ incident.categorie }}</dd></div>
+          <div><dt>Sévérité actuelle</dt><dd>{{ severity_pill(incident.criticite_actuelle) }}</dd></div>
+          <div><dt>Sévérité d'origine (FortiAnalyzer)</dt><dd>{{ severity_pill(incident.criticite_source) }}</dd></div>
+          <div><dt>Responsable</dt><dd>{{ assignee_badge(incident.assigne_a) }}</dd></div>
+          <div><dt>Date limite de traitement</dt><dd>{{ incident.date_limite_traitement | display_datetime }}</dd></div>
+          <div><dt>Créé le</dt><dd>{{ incident.created_at | display_datetime }}</dd></div>
+          <div><dt>Mis à jour le</dt><dd>{{ incident.updated_at | display_datetime }}</dd></div>
+          {% if incident.traite_le %}<div><dt>Traité le</dt><dd>{{ incident.traite_le | display_datetime }}</dd></div>{% endif %}
+          {% if incident.faux_positif %}<div><dt>Justification du faux positif</dt><dd>{{ incident.justification }}</dd></div>{% endif %}
+        </dl>
+        <h3 class="side-section-title">Alertes ({{ incident.nombre_alertes }})</h3>
+        {% for alert in incident.alertes %}
+          <div class="alert-reference">
+            {{ severity_pill(alert.criticite_source) }}
+            <div><strong>{{ alert.type }}</strong><small>{{ alert.identifiant_source }} · {{ alert.date_evenement | display_datetime }}</small></div>
+          </div>
+        {% endfor %}
+      </section>
+
+      <section class="panel incident-actions">
+        <div class="panel-header"><div><h2>Actions</h2><p>Chaque changement est tracé dans le journal d'audit.</p></div></div>
+
+        <form method="post" action="/incidents/{{ incident.id }}/statut" class="inline-action-form">
+          <label class="field-label">Statut
+            <select name="statut">
+              {% for status_value, status_label in incident_statuses %}
+                <option value="{{ status_value.value }}" {% if incident.statut == status_value %}selected{% endif %}>{{ status_label }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <button class="button button-secondary" type="submit">Enregistrer</button>
+        </form>
+
+        {% if not is_closed %}
+          <form method="post" action="/incidents/{{ incident.id }}/criticite" class="inline-action-form">
+            <label class="field-label">Sévérité de traitement
+              <select name="criticite_actuelle">
+                {% for criticality in criticality_levels %}
+                  <option value="{{ criticality.value }}" {% if incident.criticite_actuelle == criticality %}selected{% endif %}>{{ criticality | criticality_label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button class="button button-secondary" type="submit">Enregistrer</button>
+          </form>
+
+          <form method="post" action="/incidents/{{ incident.id }}/assignation" class="inline-action-form">
+            <label class="field-label">Responsable
+              <input name="assigne_a" value="{{ incident.assigne_a or '' }}" maxlength="255" placeholder="Vide = non assigné">
+            </label>
+            <button class="button button-secondary" type="submit">Enregistrer</button>
+          </form>
+
+          <form method="post" action="/incidents/{{ incident.id }}/playbook" class="inline-action-form">
+            <label class="field-label">Playbook
+              <select name="playbook_id">
+                <option value="">Aucun playbook</option>
+                {% for available_playbook in available_playbooks %}
+                  <option value="{{ available_playbook.id }}" {% if incident.playbook_id == available_playbook.id %}selected{% endif %}>{{ available_playbook.nom }} ({{ available_playbook.nombre_etapes }} étapes)</option>
+                {% endfor %}
+              </select>
+            </label>
+            <button class="button button-secondary" type="submit">Enregistrer</button>
+          </form>
+
+          <form method="post" action="/incidents/{{ incident.id }}/titre-categorie" class="stacked-action-form">
+            <label class="field-label">Titre<input name="titre" value="{{ incident.titre }}" maxlength="255" required></label>
+            <label class="field-label">Catégorie<input name="categorie" value="{{ incident.categorie }}" maxlength="255" required></label>
+            <button class="button button-secondary" type="submit">Enregistrer le titre et la catégorie</button>
+          </form>
+
+          <form method="post" action="/incidents/{{ incident.id }}/faux-positif" class="stacked-action-form">
+            {% if incident.faux_positif %}
+              <input type="hidden" name="faux_positif" value="non">
+              <label class="field-label">Retirer la qualification de faux positif<textarea name="justification" rows="2" maxlength="5000" placeholder="Motif (facultatif, l'ancien est conservé sinon)"></textarea></label>
+              <button class="button button-secondary" type="submit">Ce n'est plus un faux positif</button>
+            {% else %}
+              <input type="hidden" name="faux_positif" value="oui">
+              <label class="field-label">Déclarer un faux positif<textarea name="justification" rows="2" maxlength="5000" required placeholder="Justification obligatoire"></textarea></label>
+              <button class="button button-secondary" type="submit">Déclarer faux positif</button>
+            {% endif %}
+          </form>
+        {% endif %}
+      </section>
+
+      <section class="panel">
+        <div class="panel-header"><div><h2>Historique</h2><p>Derniers événements de cet incident</p></div></div>
+        <ul class="history-list">
+          {% for audit_event in incident_history.items %}
+            <li><span>{{ audit_event.description }}</span><small>{{ audit_event.date_evenement | display_datetime }} · {{ audit_event.acteur or "Système" }}</small></li>
+          {% else %}
+            <li><span class="muted-text">Aucun événement.</span></li>
+          {% endfor %}
+        </ul>
+      </section>
+    </aside>
+  </div>
+{% endblock %}

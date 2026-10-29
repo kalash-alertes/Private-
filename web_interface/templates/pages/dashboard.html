@@ -1,0 +1,148 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import severity_pill, incident_status_pill, assignee_badge, deadline_badge %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/dashboard.css">{% endblock %}
+
+{% block heading_actions %}
+  <a class="button button-secondary" href="/">{{ icon("refresh_cw", 16) }} Actualiser</a>
+  <a class="button button-primary" href="/incidents#nouvel-incident">{{ icon("plus", 17) }} Nouvel incident</a>
+{% endblock %}
+
+{% block page_body %}
+  <div class="context-strip">
+    <div class="context-left">
+      <span class="live-dot"></span>
+      <strong>Surveillance</strong>
+      <span class="context-separator">/</span>
+      <span>{{ dashboard.nombre_alertes | number }} alerte(s) connue(s), {{ dashboard.nombre_incidents_ouverts | number }} incident(s) ouvert(s)</span>
+    </div>
+    <div class="context-right">
+      <span>{{ icon("lock_keyhole", 13) }} Données de l'application</span>
+    </div>
+  </div>
+
+  <section class="stats-grid" aria-label="Indicateurs clés">
+    <article class="stat-card">
+      <div class="stat-top"><span class="stat-icon icon-blue">{{ icon("shield_alert", 19) }}</span></div>
+      <p class="stat-label">Incidents ouverts</p>
+      <div class="stat-value">{{ dashboard.nombre_incidents_ouverts | number }} <span class="stat-unit">incidents</span></div>
+      <div class="stat-footer">
+        <span class="footer-dot {{ 'red-dot' if dashboard.nombre_incidents_ouverts_delai_depasse else 'green-dot' }}"></span>
+        <span>{{ dashboard.nombre_incidents_ouverts_delai_depasse }} en retard sur leur délai</span>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-top"><span class="stat-icon icon-orange">{{ icon("triangle_alert", 19) }}</span></div>
+      <p class="stat-label">Alertes à traiter</p>
+      <div class="stat-value">{{ dashboard.nombre_alertes_a_traiter | number }} <span class="stat-unit">alertes</span></div>
+      <div class="stat-footer"><span class="footer-dot orange-dot"></span><span>Alertes sans incident</span></div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-top"><span class="stat-icon icon-green">{{ icon("shield_check", 19) }}</span></div>
+      <p class="stat-label">Incidents traités</p>
+      <div class="stat-value">{{ dashboard.nombre_incidents_traites | number }} <span class="stat-unit">traités</span></div>
+      <div class="stat-footer"><span class="footer-dot green-dot"></span><span>Résolus ou clôturés</span></div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-top"><span class="stat-icon icon-purple">{{ icon("clock3", 19) }}</span></div>
+      <p class="stat-label">Temps moyen de traitement</p>
+      <div class="stat-value">{{ dashboard.temps_moyen_traitement_minutes | duration }}</div>
+      <div class="stat-footer"><span class="footer-dot purple-dot"></span><span>De la création au traitement</span></div>
+    </article>
+  </section>
+
+  <section class="middle-grid">
+    <article class="panel chart-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Activité des alertes</h2>
+          <p>Alertes détectées et incidents traités, 7 derniers jours</p>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <span><i class="legend-blue"></i> Alertes détectées</span>
+        <span><i class="legend-teal"></i> Incidents traités</span>
+      </div>
+      <div class="chart-wrap">{{ activity_chart_svg }}</div>
+    </article>
+
+    <article class="panel severity-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Répartition par sévérité</h2>
+          <p>Incidents ouverts</p>
+        </div>
+      </div>
+      <div class="severity-total">
+        <strong>{{ dashboard.nombre_incidents_ouverts | number }}</strong>
+        <span>incidents actifs</span>
+      </div>
+      <div class="severity-stack">
+        {% if dashboard.nombre_incidents_ouverts %}
+          {% for severity in severity_breakdown if severity.count %}
+            <span class="stack-{{ severity.criticality | criticality_css }}" style="width: {{ severity.percent | round(1) }}%"></span>
+          {% endfor %}
+        {% else %}
+          <span class="stack-empty"></span>
+        {% endif %}
+      </div>
+      <div class="severity-list">
+        {% for severity in severity_breakdown %}
+          <div>
+            <span class="severity-name"><i class="dot-{{ severity.criticality | criticality_css }}"></i>{{ severity.criticality | criticality_label }}</span>
+            <strong>{{ severity.count }}<small>{{ severity.percent | round(1) }} %</small></strong>
+          </div>
+        {% endfor %}
+      </div>
+      {% set critical_open_count = dashboard.incidents_ouverts_par_criticite.get("critique", 0) %}
+      <div class="severity-note">
+        {{ icon("shield_check", 15) }}
+        <span>
+          {% if critical_open_count %}{{ critical_open_count }} incident(s) critique(s) nécessitent une attention immédiate.
+          {% else %}Aucun incident critique ouvert.{% endif %}
+        </span>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel incidents-panel">
+    <div class="panel-header incidents-header">
+      <div>
+        <div class="title-with-count">
+          <h2>Incidents ouverts récents</h2>
+          <span class="table-count">{{ recent_open_incidents.total }}</span>
+        </div>
+        <p>Les plus récents d'abord</p>
+      </div>
+      <a class="text-button" href="/incidents">Voir tous les incidents {{ icon("chevron_right", 15) }}</a>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>INCIDENT</th><th>SÉVÉRITÉ</th><th>STATUT</th><th>DÉLAI</th><th>RESPONSABLE</th><th>MIS À JOUR</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for incident in recent_open_incidents.items %}
+            <tr class="clickable-row">
+              <td>
+                <a class="row-link incident-title" href="/incidents/{{ incident.id }}">{{ incident.titre }}</a>
+                <div class="incident-id">{{ incident.reference }} · {{ incident.categorie }}</div>
+              </td>
+              <td>{{ severity_pill(incident.criticite_actuelle) }}</td>
+              <td>{{ incident_status_pill(incident.statut) }}</td>
+              <td>{{ deadline_badge(incident) }}</td>
+              <td>{{ assignee_badge(incident.assigne_a) }}</td>
+              <td class="time-cell">{{ incident.updated_at | display_datetime }}</td>
+              <td><span class="row-more">{{ icon("chevron_right", 17) }}</span></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="7" class="empty-state">Aucun incident ouvert.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock %}

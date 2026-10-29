@@ -1,0 +1,18 @@
+{# Onglets de la section Paramètres. `active_settings_section` est fourni par chaque page de paramètres. #}
+<nav class="settings-tabs" aria-label="Sections des paramètres">
+  {% for section_key, section_label, section_url, section_icon in [
+      ("clients", "Clients", "/parametres/clients", "users"),
+      ("reponse_incidents", "Réponse aux incidents", "/parametres/reponse-incidents", "shield_alert"),
+      ("utilisateurs", "Utilisateurs", "/parametres/utilisateurs", "user"),
+      ("journal_audit", "Journal d'audit", "/parametres/journal-audit", "file_text"),
+  ] %}
+    <a href="{{ section_url }}" class="settings-tab{% if active_settings_section == section_key %} active{% endif %}">{{ icon(section_icon, 15) }} {{ section_label }}</a>
+  {% endfor %}
+</nav>
+
+{% if active_settings_section == "reponse_incidents" %}
+  <nav class="view-tabs" aria-label="Réponse aux incidents">
+    <a href="/parametres/reponse-incidents" class="view-tab{% if active_incident_response_tab == 'delais' %} active{% endif %}">{{ icon("clock3", 15) }} Délais et escalade</a>
+    <a href="/parametres/playbooks" class="view-tab{% if active_incident_response_tab == 'playbooks' %} active{% endif %}">{{ icon("clipboard_list", 15) }} Playbooks</a>
+  </nav>
+{% endif %}

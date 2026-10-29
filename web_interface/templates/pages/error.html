@@ -1,0 +1,24 @@
+{#
+  Page d'erreur de l'interface (ressource introuvable, conflit, saisie invalide dans une adresse).
+  Gabarit autonome : il ne charge pas le menu (qui interroge la base), pour s'afficher même si la base est en cause.
+#}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ error_title }} | FAnalyzer IR</title>
+  <link rel="stylesheet" href="/static/css/foundation.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+</head>
+<body>
+  <main class="error-page">
+    <section class="error-card">
+      <span class="modal-icon">{{ icon("circle_alert", 20) }}</span>
+      <h1>{{ error_title }}</h1>
+      <p>{{ error_message }}</p>
+      <a class="button button-primary" href="/">{{ icon("layout_dashboard", 16) }} Retour au tableau de bord</a>
+    </section>
+  </main>
+</body>
+</html>

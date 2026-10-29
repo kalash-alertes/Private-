@@ -1,0 +1,26 @@
+{# Barre du haut : fil d'Ariane et recherche globale (cherche dans les incidents). #}
+<header class="topbar">
+  <div class="topbar-left">
+    <label for="sidebar-toggle" class="icon-button mobile-menu" aria-label="Ouvrir le menu">{{ icon("menu", 20) }}</label>
+    <div class="breadcrumb">
+      <span>Espace de travail</span>
+      {{ icon("chevron_right", 14) }}
+      <strong>{{ page_title }}</strong>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    {% if is_demo_mode %}
+      <a class="demo-mode-badge" href="/journaux" title="Alertes inventées : APP_IS_IN_DEMO=true dans le .env">DÉMO</a>
+    {% endif %}
+    <form class="global-search" action="/incidents" method="get" role="search">
+      {{ icon("search", 16) }}
+      <input name="recherche" aria-label="Rechercher un incident" placeholder="Rechercher un incident..." maxlength="255">
+    </form>
+    <a class="icon-button top-icon notification-button" href="/alertes" aria-label="Alertes à traiter">
+      {{ icon("bell", 18) }}
+      {% if navigation_counts.alertes %}<i></i>{% endif %}
+    </a>
+    <a class="top-avatar" href="/parametres/utilisateurs" aria-label="Utilisateurs">{{ icon("user", 18) }}</a>
+  </div>
+</header>
