@@ -7,8 +7,8 @@ Une seule ligne du fichier `.env` choisit d'où viennent les alertes :
 
 | `APP_IS_IN_DEMO=` | D'où viennent les alertes |
 |---|---|
-| `true` (par défaut) | **Démonstration** : quelques alertes **inventées** à chaque collecte. Aucun port n'est écouté. Un badge « DÉMO » est affiché en haut de l'écran. |
-| `false` | **Le vrai FortiAnalyzer**, qui transfère ses logs vers le port d'écoute (5140 par défaut). |
+| `true` (par défaut) | **Démonstration** : quelques alertes **inventées** à chaque collecte. Aucun port n'est écouté. Un bandeau rayé orange « MODE DÉMONSTRATION » et un badge « MODE DÉMO » sont affichés en haut de toutes les pages. |
+| `false` | **Le vrai FortiAnalyzer**, qui transfère ses logs vers le port d'écoute (5140 par défaut). Badge vert « EN DIRECT » (point qui pulse) en haut des pages ; rouge « SYSLOG INACTIF » si l'écoute n'a pas pu démarrer. |
 
 Dans les deux cas, la suite est identique : les alertes arrivent dans **Alertes**, chaque collecte est inscrite dans
 **Journaux**, et on crée les incidents comme d'habitude.

@@ -4,6 +4,7 @@ Les pages sont vérifiées par leur code HTTP et la présence de textes clés (p
 Données synthétiques uniquement.
 """
 
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -218,3 +219,37 @@ def test_unknown_pages_show_html_errors_but_api_keeps_json(web_client) -> None:
 def test_page_notice_only_shows_known_messages(web_client) -> None:
     assert "Incident créé." in web_client.get("/incidents?notice=incident_cree").text
     assert "texte-injecte" not in web_client.get("/incidents?notice=texte-injecte").text
+
+
+def test_every_page_shows_the_demo_mode_indicator(web_client) -> None:
+    for page_path in ["/", "/incidents", "/alertes", "/journaux"]:
+        page = web_client.get(page_path).text
+        assert "MODE DÉMONSTRATION" in page and "alert-source-page-demo" in page and "MODE DÉMO" in page
+
+
+@pytest.mark.parametrize(
+    ("is_listening", "expected_mode", "expected_badge"),
+    [(True, "live", "EN DIRECT"), (False, "live-inactive", "SYSLOG INACTIF")],
+)
+def test_real_mode_shows_the_reception_state_instead_of_the_demo_ribbon(
+    web_client, monkeypatch, is_listening, expected_mode, expected_badge
+) -> None:
+    from backend.core.settings import get_application_settings
+    from backend.integrations.fortianalyzer import log_source_selection
+    from backend.integrations.fortianalyzer.fortianalyzer_syslog_receiver import (
+        FortiAnalyzerSyslogReceiver,
+        SyslogReceptionParameters,
+    )
+
+    monkeypatch.setenv("APP_IS_IN_DEMO", "false")
+    get_application_settings.cache_clear()
+    receiver = FortiAnalyzerSyslogReceiver(SyslogReceptionParameters())
+    if is_listening:
+        # Écoute considérée active, sans ouvrir de port ; l'arrêt de l'application appellera shutdown/server_close.
+        receiver._servers = [SimpleNamespace(shutdown=lambda: None, server_close=lambda: None)]
+    monkeypatch.setattr(log_source_selection, "_shared_syslog_receiver", receiver if is_listening else None)
+
+    page = web_client.get("/").text
+
+    assert f"alert-source-page-{expected_mode}" in page and expected_badge in page
+    assert "MODE DÉMONSTRATION" not in page

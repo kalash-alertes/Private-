@@ -49,7 +49,7 @@ services:
       - ./web_interface:/application/web_interface
       - ./db:/application/db
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
       # Réception des logs FortiAnalyzer (syslog, UDP et TCP), sur toutes les interfaces : FortiAnalyzer est une autre
       # machine du réseau. Ouvert même en démonstration, mais rien n'y écoute alors. Restreindre les émetteurs avec
       # SYSLOG_ALLOWED_SENDER_ADDRESSES (et le pare-feu du poste).

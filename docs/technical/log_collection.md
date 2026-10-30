@@ -129,7 +129,7 @@ qu'une fois) et la contrainte UNIQUE sur `identifiant_source` empêche tout doub
   et port d'écoute, protocoles, émetteurs autorisés, `est_a_l_ecoute`, `erreur_reception`, `reception` (compteurs :
   en attente, acceptés, émetteur refusé, illisibles, perdus file pleine), `parametres_manquants`.
 - Page `/journaux` : encadré « Source des alertes » (état de l'écoute et compteurs), bandeau rouge « Réception syslog
-  inactive » avec le motif, bouton `POST /journaux/collecte`. Badge « DÉMO » dans la barre du haut en démonstration.
+  inactive » avec le motif, bouton `POST /journaux/collecte`. Indicateur de source sur toutes les pages (`web_interface/application_layout.py` → `build_alert_source_indicator`) : liseré de 3 px en haut de la fenêtre, badge dans la barre du haut, ligne en bas du menu ; démonstration = ambre rayé + bandeau « MODE DÉMONSTRATION », écoute active = vert « EN DIRECT », mode réel sans écoute = rouge « SYSLOG INACTIF ».
 - `scripts/load_synthetic_demo_data.py` refuse de s'exécuter si `APP_IS_IN_DEMO=false`.
 
 ## Tests

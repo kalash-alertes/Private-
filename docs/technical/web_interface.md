@@ -64,6 +64,16 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
   des fuseaux manque ; `tzdata` est dans `requirements.txt` pour l'image Docker).
 - Libellés : `haute` s'affiche « Haute » (la maquette disait « Élevée ») pour rester aligné sur la base.
 
+## Indicateur de source des alertes
+
+`application_layout.build_alert_source_indicator()` (sans accès à la base, via
+`log_collection.service.describe_collection_configuration`) fournit `alert_source_indicator` (`mode`, `badge_label`,
+`description`) à toutes les pages. `mode` ∈ `demo` / `live` / `live-inactive` sert de classe CSS : `body.alert-source-page-<mode>`
+(liseré fixe de 3 px), badge `.alert-source-badge` dans `partials/topbar.html`, ligne dans `partials/sidebar.html`, et
+bandeau `.demo-mode-ribbon` (seulement en `demo`, `layouts/application_layout.html`). Styles :
+`static/css/application_shell.css` ; animation du point vert désactivée si `prefers-reduced-motion`. La page d'erreur,
+autonome, ne l'affiche pas.
+
 ## Données de démonstration
 
 `python -m scripts.load_synthetic_demo_data` (base migrée, `APPLICATION_ENVIRONMENT` ≠ `production`) : 3 playbooks,

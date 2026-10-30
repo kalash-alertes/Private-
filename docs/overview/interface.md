@@ -21,6 +21,18 @@ OpenSearch Dashboards n'est nécessaire pour traiter les incidents.
 | **Journaux** | L'historique des imports depuis FortiAnalyzer : réussis, échoués, combien d'alertes. |
 | **Paramètres** | Clients (prévu), **Réponse aux incidents** (délais, escalade, playbooks), Utilisateurs (prévu), **Journal d'audit**. |
 
+## Démonstration ou vraies alertes ?
+
+Le haut de chaque page le dit, avec une couleur :
+
+| Ce qu'on voit | Signification |
+|---|---|
+| Bandeau rayé **orange** « MODE DÉMONSTRATION », badge « MODE DÉMO » | Les alertes sont inventées (`APP_IS_IN_DEMO=true`). |
+| Badge **vert** « EN DIRECT », point qui pulse | Vraies alertes : l'application écoute FortiAnalyzer. |
+| Badge **rouge** « SYSLOG INACTIF » | Mode réel, mais l'écoute n'a pas démarré : aucune alerte ne peut arriver (motif dans Journaux). |
+
+Un liseré de la même couleur borde le haut de la fenêtre, et le bas du menu rappelle la source. Un clic mène à Journaux.
+
 ## Ce que l'utilisateur en retire
 
 - Il sait toujours quoi faire ensuite : le playbook de l'incident est la première chose affichée.
