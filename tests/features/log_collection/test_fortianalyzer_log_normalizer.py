@@ -11,12 +11,13 @@ from backend.features.log_collection.fortianalyzer_log_normalizer import (
     compute_source_identifier,
     normalize_fortianalyzer_log,
 )
+from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
 
 PARIS_TIMEZONE = ZoneInfo("Europe/Paris")
 
 
 def normalize(raw_log):
-    return normalize_fortianalyzer_log(raw_log, None, PARIS_TIMEZONE)
+    return normalize_fortianalyzer_log(raw_log, PARIS_TIMEZONE)
 
 
 @pytest.mark.parametrize(
@@ -75,3 +76,18 @@ def test_identifier_is_stable_and_independent_of_field_order() -> None:
     assert first_identifier == compute_source_identifier({"msg": "x", "level": "alert", "itime": 1})
     assert first_identifier != compute_source_identifier({"itime": 2, "level": "alert", "msg": "x"})
     assert first_identifier.startswith("faz-") and len(first_identifier) == 68
+
+
+def test_local_date_uses_the_tz_field_of_the_log_before_the_configured_timezone() -> None:
+    # tz="+0100" (champ des logs transférés par syslog) : 10:05:32 locale = 09:05:32 UTC, quel que soit le fuseau configuré.
+    assert normalize({"level": "alert", "date": "2026-10-30", "time": "10:05:32", "tz": "+0100"}).date_evenement == (
+        datetime(2026, 10, 30, 9, 5, 32, tzinfo=UTC)
+    )
+
+
+def test_identifier_ignores_syslog_reception_metadata() -> None:
+    fortianalyzer_fields = {"itime": 1, "level": "alert", "msg": "x"}
+
+    assert compute_source_identifier(fortianalyzer_fields) == compute_source_identifier(
+        {**fortianalyzer_fields, SYSLOG_RECEPTION_METADATA_FIELD: {"recu_le": "2026-10-30T09:05:33+00:00"}}
+    )

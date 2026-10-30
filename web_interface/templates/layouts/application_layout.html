@@ -17,13 +17,20 @@
   <link rel="stylesheet" href="/static/css/components.css">
   {% block page_stylesheets %}{% endblock %}
 </head>
-<body>
+<body class="alert-source-page-{{ alert_source_indicator.mode }}">
   <input type="checkbox" id="sidebar-toggle" class="sidebar-toggle" aria-hidden="true">
   <div class="app-shell">
     {% include "partials/sidebar.html" %}
     <label for="sidebar-toggle" class="mobile-scrim" aria-label="Fermer le menu"></label>
 
     <main class="main-area">
+      {% if alert_source_indicator.mode == "demo" %}
+        {# Bandeau rayé sur toutes les pages : impossible de prendre des alertes inventées pour de vraies. #}
+        <a class="demo-mode-ribbon" href="/journaux">
+          <strong>MODE DÉMONSTRATION</strong>
+          <span>Les alertes affichées sont inventées. Pour les vrais logs FortiAnalyzer : APP_IS_IN_DEMO=false dans le .env.</span>
+        </a>
+      {% endif %}
       {% include "partials/topbar.html" %}
 
       <div class="page-content">

@@ -8,17 +8,26 @@
   <section class="logs-intro">
     <div>
       <div class="logs-eyebrow">{{ icon("activity", 14) }} SOURCE DES ALERTES</div>
-      <h2>{% if configuration.est_en_mode_demo %}Mode démonstration{% else %}FortiAnalyzer{% endif %}</h2>
+      <h2>{% if configuration.est_en_mode_demo %}Mode démonstration{% else %}Réception syslog FortiAnalyzer{% endif %}</h2>
       <p>
         {% if configuration.est_en_mode_demo %}
-          Les alertes sont <b>inventées</b> (APP_IS_IN_DEMO=true). Pour lire le vrai FortiAnalyzer : renseigner sa
-          connexion dans le fichier .env, mettre APP_IS_IN_DEMO=false, puis redémarrer l'application.
+          Les alertes sont <b>inventées</b> (APP_IS_IN_DEMO=true). Pour recevoir les vrais logs : configurer le transfert
+          syslog dans FortiAnalyzer vers ce poste, mettre APP_IS_IN_DEMO=false dans le .env, puis redémarrer l'application.
         {% else %}
-          {{ configuration.adresse_fortianalyzer or "Adresse non renseignée" }} · ADOM {{ configuration.adom or "—" }}
-          · logs : {{ configuration.types_de_logs | join(", ") or "—" }} · {{ configuration.authentification or "authentification non renseignée" }}
+          {% if configuration.est_a_l_ecoute %}<b>À l'écoute</b>{% else %}<b>Écoute inactive</b>{% endif %}
+          sur {{ configuration.adresse_ecoute or "—" }}:{{ configuration.port_ecoute or "—" }}
+          ({{ configuration.protocoles | join(", ") or "aucun protocole" }})
+          · émetteurs : {{ configuration.emetteurs_autorises | join(", ") if configuration.emetteurs_autorises else "tous acceptés" }}
+          {% if configuration.reception %}
+            <br>Depuis le démarrage : {{ configuration.reception.nb_messages_acceptes | number }} log(s) reçu(s),
+            {{ configuration.reception.nb_logs_en_attente | number }} en attente de collecte
+            {% if configuration.reception.nb_messages_emetteur_refuse %}· {{ configuration.reception.nb_messages_emetteur_refuse | number }} refusé(s) (émetteur non autorisé){% endif %}
+            {% if configuration.reception.nb_messages_illisibles %}· {{ configuration.reception.nb_messages_illisibles | number }} illisible(s){% endif %}
+            {% if configuration.reception.nb_messages_perdus_file_pleine %}· <b>{{ configuration.reception.nb_messages_perdus_file_pleine | number }} perdu(s), file pleine</b>{% endif %}.
+          {% endif %}
         {% endif %}
         <br>Sévérité minimale enregistrée : {{ configuration.severite_minimale | criticality_label }} ·
-        {% if configuration.intervalle_collecte_secondes > 0 %}collecte automatique toutes les {{ (configuration.intervalle_collecte_secondes / 60) | round(1) }} min{% else %}collecte automatique désactivée{% endif %}.
+        {% if configuration.intervalle_collecte_secondes > 0 %}collecte automatique toutes les {{ configuration.intervalle_collecte_secondes | round | int }} s{% else %}collecte automatique désactivée{% endif %}.
       </p>
     </div>
     <div class="collection-actions">
@@ -29,12 +38,15 @@
     </div>
   </section>
 
-  {% if configuration.parametres_manquants %}
+  {% if configuration.parametres_manquants or configuration.erreur_reception %}
     <div class="alert-banner alert-banner-error" role="alert">
       {{ icon("circle_alert", 17) }}
       <div>
-        <strong>Connexion FortiAnalyzer incomplète</strong>
-        <p>À renseigner dans le fichier .env : {{ configuration.parametres_manquants | join(", ") }}. Puis redémarrer : <code>wsl docker compose up -d</code>.</p>
+        <strong>Réception syslog inactive</strong>
+        <p>
+          {% if configuration.parametres_manquants %}À corriger dans le fichier .env : {{ configuration.parametres_manquants | join(", ") }}.{% else %}{{ configuration.erreur_reception }}{% endif %}
+          Puis redémarrer : <code>wsl docker compose up -d</code>.
+        </p>
       </div>
     </div>
   {% endif %}

@@ -27,7 +27,7 @@ Une ligne par tentative de collecte.
 | `statut` | text | `en_cours`, `reussie`, `partielle`, `echouee` |
 | `nb_logs_recus`, `nb_logs_inseres`, `nb_logs_ignores` | int | ≥ 0 ; `ignores` = doublons déjà connus ; `inseres + ignores ≤ recus` |
 | `erreur` | text | détail sans secrets ; obligatoire (non vide) si `partielle`/`echouee`, NULL si `reussie` |
-| `curseur_synchronisation` | text | point de reprise (nature dépendante de l'API FortiAnalyzer) |
+| `curseur_synchronisation` | text | point de reprise : fin de la période de la dernière collecte réussie (ISO 8601, UTC) |
 | `created_at` | timestamptz | |
 
 ## `logs` (feature `source_logs`)

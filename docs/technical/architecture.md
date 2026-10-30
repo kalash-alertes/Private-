@@ -17,7 +17,7 @@ backend/
                              domain_errors.py + http_error_handlers.py (erreurs métier -> 404/409/422),
                              pagination.py (limit/offset), utc_datetime_types.py (dates UTC en entrée/sortie)
   features/<feature>/        models.py, schemas.py, repository.py, service.py, router.py, README.md
-  integrations/fortianalyzer/ Sources d'alertes : client JSON-RPC réel + démonstration (APP_IS_IN_DEMO)
+  integrations/fortianalyzer/ Sources d'alertes : réception syslog réelle + démonstration (APP_IS_IN_DEMO)
 web_interface/               Interface analystes en Python : pages/ (une par page), templates/, static/css/
 scripts/                     Outils de développement (données de démonstration synthétiques)
 db/migrations/               Alembic : env.py lit DATABASE_URL via backend.core.settings

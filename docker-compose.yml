@@ -1,4 +1,5 @@
-# Environnement de développement. Les ports sont liés à localhost uniquement (pas d'exposition réseau).
+# Environnement de développement. Les ports sont liés à localhost uniquement (pas d'exposition réseau), SAUF le port
+# syslog du backend, qui doit être joignable par FortiAnalyzer.
 # L'interface analyste est servie par le backend (http://localhost:8000) ; l'API JSON est sous /api.
 # OpenSearch et Data Prepper (optionnel) seront ajoutés ici avec la collecte. OpenSearch Dashboards n'est plus prévu
 # comme interface : l'interface est web_interface/.
@@ -20,7 +21,7 @@ services:
       retries: 10
 
   backend:
-    # Toutes les valeurs du .env (APP_IS_IN_DEMO, FORTIANALYZER_*, LOG_COLLECTION_*...) sont transmises au conteneur ;
+    # Toutes les valeurs du .env (APP_IS_IN_DEMO, SYSLOG_*, LOG_COLLECTION_*...) sont transmises au conteneur ;
     # les valeurs de `environment` ci-dessous priment (notamment DATABASE_URL, qui vise le service `database`).
     env_file:
       - path: .env
@@ -47,10 +48,13 @@ services:
       - ./backend:/application/backend
       - ./web_interface:/application/web_interface
       - ./db:/application/db
-      # Certificat d'autorité de FortiAnalyzer (facultatif), voir certificates/README.md. Lecture seule.
-      - ./certificates:/application/certificates:ro
     ports:
-      - "127.0.0.1:8000:8000"
+      - "8000:8000"
+      # Réception des logs FortiAnalyzer (syslog, UDP et TCP), sur toutes les interfaces : FortiAnalyzer est une autre
+      # machine du réseau. Ouvert même en démonstration, mais rien n'y écoute alors. Restreindre les émetteurs avec
+      # SYSLOG_ALLOWED_SENDER_ADDRESSES (et le pare-feu du poste).
+      - "${SYSLOG_LISTEN_PORT:-5140}:${SYSLOG_LISTEN_PORT:-5140}/udp"
+      - "${SYSLOG_LISTEN_PORT:-5140}:${SYSLOG_LISTEN_PORT:-5140}/tcp"
 
 volumes:
   postgres_data:

@@ -10,9 +10,9 @@
   </div>
 
   <div class="topbar-actions">
-    {% if is_demo_mode %}
-      <a class="demo-mode-badge" href="/journaux" title="Alertes inventées : APP_IS_IN_DEMO=true dans le .env">DÉMO</a>
-    {% endif %}
+    <a class="alert-source-badge alert-source-{{ alert_source_indicator.mode }}" href="/journaux" title="{{ alert_source_indicator.description }}">
+      <span class="alert-source-dot"></span>{{ alert_source_indicator.badge_label }}
+    </a>
     <form class="global-search" action="/incidents" method="get" role="search">
       {{ icon("search", 16) }}
       <input name="recherche" aria-label="Rechercher un incident" placeholder="Rechercher un incident..." maxlength="255">

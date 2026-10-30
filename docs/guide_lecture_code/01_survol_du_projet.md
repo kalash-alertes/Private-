@@ -231,7 +231,7 @@ Ce schéma résume trois choix que tu retrouveras partout :
 | `dashboard/` | Les chiffres du tableau de bord (aucune table : il assemble les autres). | — |
 | `log_collection/` | La **collecte** des alertes (FortiAnalyzer ou démonstration) : conversion, seuil, enregistrement. | — |
 
-`backend/integrations/fortianalyzer/` : les **sources d'alertes** interchangeables (vrai client JSON-RPC,
+`backend/integrations/fortianalyzer/` : les **sources d'alertes** interchangeables (réception syslog réelle,
 démonstration) et le choix selon `APP_IS_IN_DEMO`. Voir [log_collection.md](../technical/log_collection.md).
 
 `incidents/` est la plus grosse ; son `service.py` a été découpé en plusieurs fichiers, chacun avec un seul rôle :

@@ -30,15 +30,30 @@ class LogCollectionResultRead(BaseModel):
     erreur: str | None
 
 
+class SyslogReceptionStatisticsRead(BaseModel):
+    """Compteurs de la réception syslog depuis le démarrage de l'application."""
+
+    nb_logs_en_attente: int
+    nb_messages_acceptes: int
+    nb_messages_emetteur_refuse: int
+    nb_messages_illisibles: int
+    nb_messages_perdus_file_pleine: int
+
+
 class LogCollectionConfigurationRead(BaseModel):
-    """Configuration visible de la collecte (AUCUN secret : ni mot de passe, ni jeton)."""
+    """Configuration visible de la collecte et état de la réception syslog (aucun secret)."""
 
     est_en_mode_demo: bool
     source: str
-    adresse_fortianalyzer: str | None
-    adom: str | None
-    types_de_logs: list[str]
-    authentification: str | None
+    adresse_ecoute: str | None
+    port_ecoute: int | None
+    protocoles: list[str]
+    # Vide = tous les émetteurs acceptés.
+    emetteurs_autorises: list[str]
+    est_a_l_ecoute: bool
+    # Motif de l'échec du démarrage de l'écoute (port déjà utilisé...), sinon None.
+    erreur_reception: str | None
+    reception: SyslogReceptionStatisticsRead | None
     parametres_manquants: list[str]
     intervalle_collecte_secondes: float
     severite_minimale: str

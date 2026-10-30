@@ -8,8 +8,8 @@ Docker ; voir la section « Versions » en fin de page pour l'écart avec l'envi
 
 | Couche | Outil | Rôle | Statut |
 |---|---|---|---|
-| Source de données | FortiAnalyzer | Système d'origine des alertes | **Intégré** (API JSON-RPC ; première connexion réelle à valider) |
-| Collecte | `backend/features/log_collection` + `backend/integrations/fortianalyzer` (httpx) | Lire l'API FortiAnalyzer (ou la démonstration), normaliser, dédoublonner | **En place** ([log_collection.md](./log_collection.md)) |
+| Source de données | FortiAnalyzer | Système d'origine des alertes | **Intégré** (réception syslog UDP/TCP ; format validé sur une capture réelle) |
+| Collecte | `backend/features/log_collection` + `backend/integrations/fortianalyzer` (socketserver) | Recevoir le syslog de FortiAnalyzer (ou la démonstration), normaliser, dédoublonner | **En place** ([log_collection.md](./log_collection.md)) |
 | Transformation | Data Prepper | Pipeline de transformation optionnel | **Optionnel, non décidé** |
 | Recherche / stockage des logs | OpenSearch | Indexation et recherche des logs | **Prévu** |
 | Interface analystes | Jinja2 (gabarits), python-multipart (formulaires), tzdata (fuseaux) | Pages HTML rendues en Python (`web_interface/`) | En place |
@@ -144,10 +144,10 @@ FastAPI → interface web (`web_interface/`, à la racine) et API JSON (`/api`).
 
 ## Tests
 
-### httpx en production : client FortiAnalyzer
-- **Rôle** : en plus des tests, httpx est le client HTTP du connecteur FortiAnalyzer
-  (`backend/integrations/fortianalyzer/fortianalyzer_json_rpc_client.py`) : HTTPS, vérification TLS (booléen ou
-  fichier CA), délai maximal. En test, `httpx.MockTransport` remplace le réseau par un faux FortiAnalyzer.
+### socketserver (bibliothèque standard) : réception syslog
+- **Rôle** : écoute UDP et TCP des logs transférés par FortiAnalyzer
+  (`backend/integrations/fortianalyzer/fortianalyzer_syslog_receiver.py`). Aucune dépendance ajoutée. Les tests
+  ouvrent de vrais sockets sur 127.0.0.1 (port choisi par le système), jamais vers l'extérieur.
 
 ### pytest et httpx (versions : voir `requirements.txt`)
 - **Rôle** : pytest exécute les tests ; httpx est requis par le `TestClient` de FastAPI pour tester les routes sans

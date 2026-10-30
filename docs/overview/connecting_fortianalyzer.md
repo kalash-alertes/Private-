@@ -1,103 +1,115 @@
 # Brancher l'application sur FortiAnalyzer
 
-L'application peut lire ses alertes à deux endroits, au choix, grâce à une seule ligne du fichier `.env` :
+FortiAnalyzer **envoie lui-même** ses logs à l'application, par le protocole **syslog** (fonction « Log Forwarding »).
+L'application se contente d'**écouter** un port réseau : pas d'identifiant, pas de mot de passe, pas de jeton.
+
+Une seule ligne du fichier `.env` choisit d'où viennent les alertes :
 
 | `APP_IS_IN_DEMO=` | D'où viennent les alertes |
 |---|---|
-| `true` (par défaut) | **Démonstration** : quelques alertes **inventées** à chaque collecte. Aucune connexion à FortiAnalyzer. Un badge « DÉMO » est affiché en haut de l'écran. |
-| `false` | **Le vrai FortiAnalyzer**, avec l'adresse et les identifiants indiqués dans le `.env`. |
+| `true` (par défaut) | **Démonstration** : quelques alertes **inventées** à chaque collecte. Aucun port n'est écouté. Un bandeau rayé orange « MODE DÉMONSTRATION » et un badge « MODE DÉMO » sont affichés en haut de toutes les pages. |
+| `false` | **Le vrai FortiAnalyzer**, qui transfère ses logs vers le port d'écoute (5140 par défaut). Badge vert « EN DIRECT » (point qui pulse) en haut des pages ; rouge « SYSLOG INACTIF » si l'écoute n'a pas pu démarrer. |
 
-Dans les deux cas, la suite est identique : les alertes arrivent dans **Alertes**, chaque passage est inscrit dans
+Dans les deux cas, la suite est identique : les alertes arrivent dans **Alertes**, chaque collecte est inscrite dans
 **Journaux**, et on crée les incidents comme d'habitude.
 
 ---
 
-## 1. Préparer FortiAnalyzer (à faire par l'administrateur FortiAnalyzer)
+## Comment ça marche, en bref
 
-1. Créer un **compte dédié à l'application**, avec des droits en **lecture seule** sur les logs : l'application ne
-   fait que lire, elle n'envoie jamais d'ordre à FortiAnalyzer.
-2. Autoriser ce compte à utiliser l'**API JSON** (option « JSON API Access » en lecture).
-3. Au choix :
-   - **jeton API** (FortiAnalyzer 7.2.2 et plus, recommandé) : générer un jeton pour ce compte ;
-   - **sinon**, noter l'identifiant et le mot de passe du compte.
-4. Noter : l'**adresse** de FortiAnalyzer (ex. `https://192.168.1.50`), l'**ADOM** à lire (`root` si les ADOM ne sont
-   pas activés) et le **fuseau horaire** de FortiAnalyzer.
-5. Si le certificat HTTPS de FortiAnalyzer est **auto-signé** : récupérer le certificat de l'autorité (fichier `.pem`).
+1. FortiAnalyzer envoie chaque log, dès qu'il le reçoit, vers l'adresse du poste, port 5140.
+2. L'application les garde **en attente** dans sa mémoire.
+3. Toutes les 30 secondes (réglable), une **collecte** enregistre ceux qui sont assez graves (par défaut « haute » et
+   « critique ») dans la base. Les autres sont lus puis écartés.
+4. Une collecte où rien n'est arrivé n'apparaît pas dans Journaux (pour ne pas remplir l'historique de lignes vides).
+
+## 1. Configurer FortiAnalyzer (administrateur FortiAnalyzer)
+
+Dans **System Settings > Advanced > Log Forwarding**, créer un transfert :
+- **Server Type** : Syslog ; **Server Address** : l'adresse IP du poste qui fait tourner l'application ;
+- **Server Port** : `5140` (ou la valeur de `SYSLOG_LISTEN_PORT`) ;
+- protocole UDP (par défaut) ou TCP : les deux sont écoutés ;
+- choisir les équipements / types de logs à transférer (le filtrage par sévérité est de toute façon fait par l'application).
+
+Le script `tests/test_connection_fortianlyzer_by_syslog.py` permet de vérifier, **application arrêtée**, que les
+messages arrivent bien sur le poste (il utilise le même port).
 
 ## 2. Remplir le fichier `.env`
 
-Ouvrir `F:\shared_folder\Intelligentsia_SOC\.env` (jamais envoyé sur GitHub) et remplir la partie FortiAnalyzer :
+Ouvrir `F:\shared_folder\Intelligentsia_SOC\.env` (jamais envoyé sur GitHub) :
 
 ```ini
 APP_IS_IN_DEMO=false
+LOG_COLLECTION_INTERVAL_SECONDS=30
 
-FORTIANALYZER_BASE_URL=https://192.168.1.50
-FORTIANALYZER_ADOM=root
-FORTIANALYZER_TIMEZONE=Europe/Paris
-
-# Soit un jeton API…
-FORTIANALYZER_API_TOKEN=le_jeton
-# …soit identifiant + mot de passe (laisser le jeton vide)
-FORTIANALYZER_USERNAME=
-FORTIANALYZER_PASSWORD=
+SYSLOG_LISTEN_PORT=5140
+# Recommandé : n'accepter que FortiAnalyzer (adresse vue par l'application, voir plus bas)
+SYSLOG_ALLOWED_SENDER_ADDRESSES=
 ```
 
-Réglages utiles (déjà remplis avec des valeurs par défaut) :
+Autres réglages (déjà remplis avec des valeurs par défaut) :
 
 | Variable | Rôle | Défaut |
 |---|---|---|
-| `FORTIANALYZER_LOG_TYPES` | Types de logs lus : `event` (système), `attack` (IPS), `virus`, `webfilter`… | `event,attack` |
 | `LOG_COLLECTION_MINIMUM_CRITICALITY` | Sévérité minimale gardée (`information` → `critique`) | `haute` |
-| `LOG_COLLECTION_INTERVAL_SECONDS` | Collecte automatique toutes les N secondes (0 = manuelle) | `300` (5 min) |
-| `LOG_COLLECTION_INITIAL_LOOKBACK_HOURS` | Historique récupéré à la toute première collecte | `24` |
-| `FORTIANALYZER_DEVICE_IDENTIFIER` | Équipements lus | `All_FortiGate` |
-| `FORTIANALYZER_VERIFY_TLS` / `FORTIANALYZER_CA_BUNDLE_PATH` | Vérification du certificat HTTPS | `true` / vide |
+| `SYSLOG_IS_UDP_ENABLED` / `SYSLOG_IS_TCP_ENABLED` | Protocoles écoutés | `true` / `true` |
+| `SYSLOG_LISTEN_ADDRESS` | Interface écoutée | `0.0.0.0` (toutes) |
+| `SYSLOG_MAXIMUM_PENDING_LOGS` | Logs en attente au maximum ; au-delà, ils sont perdus | `100000` |
+| `FORTIANALYZER_TIMEZONE` | Fuseau de secours pour dater un log (rarement utile) | `UTC` |
 
-**Certificat auto-signé** : copier le fichier dans le dossier `certificates\` du projet, puis :
-`FORTIANALYZER_CA_BUNDLE_PATH=/application/certificates/nom_du_fichier.pem`.
-(Mettre `FORTIANALYZER_VERIFY_TLS=false` marche aussi, mais la connexion et le mot de passe pourraient alors être
-interceptés : à réserver à un essai rapide.)
+Les anciennes variables de connexion à l'API (`FORTIANALYZER_BASE_URL`, `FORTIANALYZER_API_TOKEN`…) ne servent plus :
+on peut les supprimer du `.env`.
 
-## 3. Appliquer et vérifier
+## 3. Le réseau : laisser entrer les logs jusqu'à l'application
+
+L'application tourne dans Docker, lui-même dans WSL. Les logs de FortiAnalyzer doivent traverser : **réseau → Windows →
+WSL → conteneur**.
+
+- **Pare-feu Windows** : autoriser l'entrée sur le port 5140 en UDP et TCP.
+- **WSL** : par défaut, WSL ne reçoit pas le trafic qui vient d'autres machines. Le plus simple est le mode réseau
+  « mirrored » : dans `C:\Users\<vous>\.wslconfig`, section `[wsl2]`, ajouter `networkingMode=mirrored`, puis
+  `wsl --shutdown` et relancer. (Sans ce mode, `netsh interface portproxy` ne transfère que le TCP, pas l'UDP.)
+- `docker-compose.yml` publie déjà le port 5140 (UDP et TCP) vers le conteneur.
+- WSL s'arrête quand il est inutilisé, et les conteneurs avec lui : garder une fenêtre WSL ouverte pendant les essais.
+
+## 4. Appliquer et vérifier
 
 ```powershell
 wsl docker compose up -d
 ```
 
-(Cette commande recrée l'application avec le nouveau `.env` ; pas besoin de reconstruire l'image.)
-
 Puis ouvrir **http://localhost:8000/journaux** :
 
-- l'encadré du haut doit afficher **FortiAnalyzer**, l'adresse et l'ADOM, avec le badge « Données réelles » ;
-- s'il manque un réglage, un bandeau rouge dit lequel ;
-- cliquer sur **« Lancer une collecte maintenant »** : une ligne s'ajoute à l'historique.
-  - **Réussie** : la connexion fonctionne ; les alertes sont dans **Alertes**.
-  - **Échouée** : le motif est dans la colonne Erreur (passer la souris dessus pour le lire en entier).
+- l'encadré du haut doit afficher **Réception syslog FortiAnalyzer**, **À l'écoute**, et le badge « Données réelles » ;
+- les compteurs « log(s) reçu(s) » et « en attente » augmentent quand FortiAnalyzer envoie ;
+- une ligne **Réussie** apparaît dans l'historique à chaque collecte qui a reçu des logs ; les alertes graves sont dans
+  **Alertes** ;
+- **« Lancer une collecte maintenant »** force une collecte (inscrite même si rien n'est arrivé).
 
-Les messages de l'application sont aussi visibles avec `wsl docker compose logs -f backend`.
+Pour remplir `SYSLOG_ALLOWED_SENDER_ADDRESSES` : ouvrir une alerte reçue, regarder `reception_syslog` →
+`adresse_emetteur` dans les données brutes (avec Docker, ce peut être une adresse interne plutôt que celle de
+FortiAnalyzer).
 
-## 4. En cas d'échec
+Les messages de l'application : `wsl docker compose logs -f backend`.
 
-| Motif affiché | Que faire |
+## 5. En cas de problème
+
+| Ce qu'on voit | Que faire |
 |---|---|
-| `configuration incomplète … FORTIANALYZER_…` | Remplir la variable citée dans le `.env`, puis `wsl docker compose up -d`. |
-| `FortiAnalyzer injoignable (ConnectError)` | Vérifier l'adresse et le port ; depuis le poste, tester l'ouverture de l'adresse dans un navigateur. Le conteneur passe par le réseau de WSL : FortiAnalyzer doit être joignable depuis le poste. |
-| `injoignable (ConnectError)` juste après un changement de certificat, ou erreur SSL | Certificat non reconnu : voir « Certificat auto-signé » ci-dessus. |
-| `délai dépassé` | FortiAnalyzer lent ou période trop longue : augmenter `FORTIANALYZER_REQUEST_TIMEOUT_SECONDS`. |
-| `erreur FortiAnalyzer -11` (ou autre code) à la connexion | Identifiants refusés ou compte sans accès API. |
-| `erreur FortiAnalyzer …` à la recherche | ADOM inconnu, droits insuffisants sur les logs, ou type de log invalide dans `FORTIANALYZER_LOG_TYPES`. |
-| `plus de 50000 logs sur la période` | Réduire `LOG_COLLECTION_INITIAL_LOOKBACK_HOURS`, relever la sévérité minimale ou ajouter un filtre. |
-| Collecte **partielle**, « log(s) invalide(s) » | Certains logs n'ont pas de sévérité ou de date lisible : transmettre un exemple (anonymisé) pour adapter la conversion. |
+| Bandeau rouge « Réception syslog inactive … Impossible d'écouter » | Le port est déjà pris (par exemple par le script de test) : l'arrêter, puis `wsl docker compose up -d`. |
+| Bandeau rouge « À corriger dans le fichier .env » | Corriger la variable citée, puis `wsl docker compose up -d`. |
+| « À l'écoute » mais 0 log reçu | Les messages n'arrivent pas : vérifier le transfert dans FortiAnalyzer (adresse, port), le pare-feu Windows, le mode réseau de WSL (section 3). |
+| Logs « refusé(s) (émetteur non autorisé) » | L'adresse vue par l'application n'est pas dans `SYSLOG_ALLOWED_SENDER_ADDRESSES` : la corriger ou vider la variable. |
+| Logs « illisible(s) » | Ce ne sont pas des logs Fortinet (`clé=valeur`) : vérifier le format choisi dans FortiAnalyzer. |
+| Logs « perdu(s), file pleine » | La collecte ne suit pas : réduire `LOG_COLLECTION_INTERVAL_SECONDS` ou filtrer davantage côté FortiAnalyzer. |
+| Beaucoup de logs reçus, aucune alerte | Normal pour les logs de trafic (sévérité « notice » = faible) : seules les sévérités ≥ `LOG_COLLECTION_MINIMUM_CRITICALITY` sont gardées. |
 
-## 5. À savoir
+## 6. À savoir
 
-- Une collecte qui échoue est **rejouée** à la suivante sur la même période : rien n'est perdu.
-- Une même alerte n'est **jamais enregistrée deux fois**, même si deux collectes se chevauchent.
+- Une même alerte n'est **jamais enregistrée deux fois**, même si FortiAnalyzer la renvoie.
 - La sévérité d'origine de FortiAnalyzer est conservée telle quelle ; elle peut être réévaluée dans l'incident.
-- Le mot de passe et le jeton ne sont **jamais affichés** dans l'interface, ni écrits dans les journaux.
-- **Première connexion réelle à valider ensemble** : le client a été écrit d'après la documentation publique de
-  Fortinet et testé contre un faux serveur, pas encore contre votre FortiAnalyzer. Les noms de champs peuvent varier
-  selon la version : si la première collecte échoue ou classe mal les sévérités, partager le motif de l'erreur
-  (et un exemple de log anonymisé).
+- Les logs **en attente** sont en mémoire : s'ils n'ont pas encore été collectés quand l'application s'arrête, ils sont
+  perdus pour l'application (FortiAnalyzer les garde). D'où une collecte toutes les 30 secondes.
+- Le syslog n'est ni authentifié ni chiffré : limiter les émetteurs (`SYSLOG_ALLOWED_SENDER_ADDRESSES`) et le pare-feu.
 - Revenir à la démonstration : `APP_IS_IN_DEMO=true`, puis `wsl docker compose up -d`. Les alertes réelles déjà
   enregistrées restent en base.

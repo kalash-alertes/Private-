@@ -30,6 +30,10 @@
   </nav>
 
   <div class="sidebar-bottom">
+    <a class="system-status alert-source-status alert-source-{{ alert_source_indicator.mode }}" href="/journaux" title="{{ alert_source_indicator.description }}">
+      <span class="alert-source-dot"></span>
+      <span>{% if alert_source_indicator.mode == "demo" %}Alertes de démonstration{% elif alert_source_indicator.mode == "live" %}FortiAnalyzer à l'écoute{% else %}Réception syslog inactive{% endif %}</span>
+    </a>
     <div class="system-status">
       <span class="online-indicator"></span>
       <span>Base de données connectée</span>

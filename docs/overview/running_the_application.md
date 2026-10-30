@@ -69,8 +69,8 @@ wsl docker compose up --build -d
 ## 4. Voir des données de test (démonstration)
 
 Avec `APP_IS_IN_DEMO=true` (valeur par défaut du `.env`), l'application **invente quelques alertes à chaque collecte**
-(toutes les 5 minutes, ou bouton « Lancer une collecte maintenant » dans **Journaux**). Un badge « DÉMO » est affiché
-en haut. Pour lire le vrai FortiAnalyzer : [connecting_fortianalyzer.md](./connecting_fortianalyzer.md).
+(toutes les 30 secondes, ou bouton « Lancer une collecte maintenant » dans **Journaux**). Un bandeau rayé orange
+« MODE DÉMONSTRATION » est affiché en haut de chaque page. Pour lire le vrai FortiAnalyzer : [connecting_fortianalyzer.md](./connecting_fortianalyzer.md).
 
 En plus, pour remplir tous les écrans d'un coup (playbooks, incidents à différents stades) :
 

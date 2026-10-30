@@ -1,7 +1,7 @@
 """Erreurs de l'intégration FortiAnalyzer.
 
 Leurs messages finissent dans l'historique des imports (`executions_import.erreur`) : ils ne doivent JAMAIS contenir
-de mot de passe, de jeton ni d'identifiant de session. Ils citent seulement l'opération et le code renvoyé.
+de secret. Ils citent seulement l'opération et la cause (réglage manquant, port occupé...).
 """
 
 
@@ -10,12 +10,8 @@ class FortiAnalyzerError(Exception):
 
 
 class FortiAnalyzerConfigurationError(FortiAnalyzerError):
-    """La configuration (.env) est incomplète ou incohérente : aucune connexion n'a été tentée."""
+    """La configuration (.env) est incomplète ou incohérente."""
 
 
-class FortiAnalyzerConnectionError(FortiAnalyzerError):
-    """FortiAnalyzer est injoignable ou répond hors protocole (réseau, TLS, délai dépassé, HTTP ≠ 200, JSON invalide)."""
-
-
-class FortiAnalyzerApiError(FortiAnalyzerError):
-    """FortiAnalyzer a répondu, mais avec un code d'erreur (identifiants refusés, ADOM inconnu, droits insuffisants...)."""
+class SyslogReceptionError(FortiAnalyzerError):
+    """La réception syslog n'est pas active (port déjà utilisé, droits insuffisants, application pas démarrée...)."""
