@@ -7,23 +7,28 @@ Règles (PROVISOIRES : à confirmer sur les vrais logs du FortiAnalyzer de l'éq
   emergency, alert, critical → critique · error, high → haute · warning, medium → moyenne · notice, low → faible ·
   information, info, debug → information. Une valeur inconnue rend le log invalide (il est compté, pas enregistré).
 - **Date de l'événement** : `eventtime` (horodatage de l'équipement, en s, ms, µs ou ns selon la version), sinon
-  `itime` (réception par FortiAnalyzer, en secondes), sinon `date` + `time` dans le fuseau FORTIANALYZER_TIMEZONE.
+  `itime` (réception par FortiAnalyzer, en secondes), sinon `date` + `time` dans le fuseau du champ `tz` du log
+  (ex. `+0100`), à défaut FORTIANALYZER_TIMEZONE.
+  Le champ `timestamp` des logs transférés par syslog n'est PAS utilisé : sur le FortiAnalyzer de l'équipe, il est
+  décalé du fuseau (heure locale écrite comme si c'était de l'UTC), alors que `eventtime` est juste.
 - **Type** (sert aussi de catégorie d'incident, donc au choix du playbook) : `subtype` (ips, virus, system...), sinon
-  `type`, sinon le type de log recherché.
+  `type`, sinon « inconnu ».
 - **Identifiant de déduplication** : FortiAnalyzer ne fournit pas d'identifiant unique garanti entre équipements ; on
-  calcule une empreinte SHA-256 du log complet (champs triés). Le même log relu à la collecte suivante (périodes qui
-  se chevauchent) donne la même empreinte : il n'est pas recréé. Si FortiAnalyzer ajoute un champ variable à chaque
-  lecture, cette règle devra être revue (exclure ce champ de l'empreinte).
+  calcule une empreinte SHA-256 du log complet (champs triés), SANS les métadonnées de réception syslog ajoutées par
+  l'application (émetteur, heure de réception) : le même log envoyé deux fois (retransmission, double transfert)
+  donne la même empreinte et n'est pas recréé.
 """
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone, tzinfo
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from backend.core.criticality import CriticalityLevel
+from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
 
 FORTIANALYZER_SEVERITY_TO_CRITICALITY = {
     "emergency": CriticalityLevel.CRITICAL,
@@ -41,6 +46,8 @@ FORTIANALYZER_SEVERITY_TO_CRITICALITY = {
 }
 SOURCE_IDENTIFIER_PREFIX = "faz-"
 MAXIMUM_TYPE_LENGTH = 255
+# Champ `tz` des logs Fortinet : décalage UTC, ex. « +0100 » ou « -0530 ».
+FORTINET_TIMEZONE_OFFSET_REGEX = re.compile(r"^([+-])(\d{2}):?(\d{2})$")
 
 
 class InvalidFortiAnalyzerLogError(ValueError):
@@ -56,22 +63,26 @@ class NormalizedFortiAnalyzerLog:
     donnees_brutes: dict[str, Any]
 
 
-def normalize_fortianalyzer_log(
-    raw_log: dict[str, Any], searched_log_type: str | None, fortianalyzer_timezone: ZoneInfo
-) -> NormalizedFortiAnalyzerLog:
+def normalize_fortianalyzer_log(raw_log: dict[str, Any], fortianalyzer_timezone: ZoneInfo) -> NormalizedFortiAnalyzerLog:
     """Convertit le log. Lève InvalidFortiAnalyzerLogError si un champ indispensable manque ou est illisible."""
     return NormalizedFortiAnalyzerLog(
         identifiant_source=compute_source_identifier(raw_log),
         date_evenement=_read_event_datetime(raw_log, fortianalyzer_timezone),
-        type=_read_event_type(raw_log, searched_log_type),
+        type=_read_event_type(raw_log),
         criticite_source=_read_criticality(raw_log),
         donnees_brutes=raw_log,
     )
 
 
 def compute_source_identifier(raw_log: dict[str, Any]) -> str:
-    """Empreinte stable du log (mêmes champs et valeurs ⇒ même identifiant, quel que soit l'ordre des champs)."""
-    canonical_log_text = json.dumps(raw_log, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
+    """Empreinte stable du log (mêmes champs et valeurs ⇒ même identifiant, quel que soit l'ordre des champs).
+
+    Les métadonnées de réception syslog sont exclues : elles décrivent l'arrivée du log, pas le log lui-même.
+    """
+    fortianalyzer_fields = {key: value for key, value in raw_log.items() if key != SYSLOG_RECEPTION_METADATA_FIELD}
+    canonical_log_text = json.dumps(
+        fortianalyzer_fields, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str
+    )
     return SOURCE_IDENTIFIER_PREFIX + hashlib.sha256(canonical_log_text.encode("utf-8")).hexdigest()
 
 
@@ -99,8 +110,18 @@ def _read_event_datetime(raw_log: dict[str, Any], fortianalyzer_timezone: ZoneIn
             local_datetime = datetime.strptime(f"{raw_log['date']} {raw_log['time']}", "%Y-%m-%d %H:%M:%S")
         except ValueError as conversion_error:
             raise InvalidFortiAnalyzerLogError("Champs date/time illisibles.") from conversion_error
-        return local_datetime.replace(tzinfo=fortianalyzer_timezone).astimezone(UTC)
+        return local_datetime.replace(tzinfo=_read_log_timezone(raw_log, fortianalyzer_timezone)).astimezone(UTC)
     raise InvalidFortiAnalyzerLogError("Aucune date (champs eventtime, itime, date/time absents).")
+
+
+def _read_log_timezone(raw_log: dict[str, Any], fortianalyzer_timezone: ZoneInfo) -> tzinfo:
+    """Fuseau du champ `tz` du log s'il est lisible, sinon le fuseau configuré."""
+    offset_match = FORTINET_TIMEZONE_OFFSET_REGEX.match(str(raw_log.get("tz") or "").strip())
+    if offset_match is None:
+        return fortianalyzer_timezone
+    sign, hours, minutes = offset_match.groups()
+    offset = timedelta(hours=int(hours), minutes=int(minutes))
+    return timezone(-offset if sign == "-" else offset)
 
 
 def _convert_epoch_to_datetime(epoch_value: float) -> datetime:
@@ -110,9 +131,9 @@ def _convert_epoch_to_datetime(epoch_value: float) -> datetime:
     return datetime.fromtimestamp(epoch_value, tz=UTC)
 
 
-def _read_event_type(raw_log: dict[str, Any], searched_log_type: str | None) -> str:
+def _read_event_type(raw_log: dict[str, Any]) -> str:
     for type_field in ("subtype", "type"):
         type_value = str(raw_log.get(type_field) or "").strip()
         if type_value:
             return type_value[:MAXIMUM_TYPE_LENGTH]
-    return (searched_log_type or "inconnu")[:MAXIMUM_TYPE_LENGTH]
+    return "inconnu"

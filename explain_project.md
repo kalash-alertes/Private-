@@ -180,14 +180,19 @@ documentation correspondant à la version installée.
 Le collecteur est un programme que nous allons développer. Ce n'est ni
 une base de données ni une interface graphique.
 
-Ses responsabilités prévues sont :
+**Décision (octobre 2026)** : FortiAnalyzer transmet ses logs par
+**syslog** (fonction « Log Forwarding ») et non par son API. Le
+collecteur écoute donc un port (UDP/TCP) au lieu d'interroger l'API ;
+il n'a ni authentification, ni pagination, ni curseur de recherche.
+Détails : `docs/technical/log_collection.md`.
 
-1.  s'authentifier auprès de l'API FortiAnalyzer ;
-2.  interroger les données selon une période ou un curseur de
-    synchronisation ;
-3.  récupérer uniquement les événements répondant au périmètre V1,
+Ses responsabilités sont :
+
+1.  écouter le port syslog et n'accepter que les émetteurs autorisés ;
+2.  lire les champs Fortinet (`clé=valeur`) de chaque message reçu ;
+3.  ne garder que les événements répondant au périmètre V1,
     notamment la criticité critique ;
-4.  gérer la pagination si l'API renvoie les résultats par pages ;
+4.  enregistrer régulièrement les logs reçus (collecte périodique) ;
 5.  normaliser les champs nécessaires sans déformer le contenu d'origine
     ;
 6.  identifier les événements de manière stable pour éviter les doublons

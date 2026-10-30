@@ -53,7 +53,7 @@ Une fonctionnalité n'est pas « terminée » tant que ses deux docs et ses test
 ## 6. Sécurité
 
 - Aucun secret en dur ni dans les logs. Tout passe par variables d'environnement (`.env`, jamais commité ; modèle : `.env.example`).
-- Valider toute donnée externe (API FortiAnalyzer, requêtes HTTP) avec Pydantic.
+- Valider toute donnée externe (syslog FortiAnalyzer, requêtes HTTP) avec Pydantic.
 - Aucune action destructrice automatique sur l'infrastructure.
 - Ne jamais présenter une procédure de réponse inventée comme vérité : toute procédure cite sa source.
 

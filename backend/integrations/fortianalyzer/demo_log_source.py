@@ -36,7 +36,7 @@ class DemoCriticalLogSource:
     def source_description(self) -> str:
         return DEMO_SOURCE_DESCRIPTION
 
-    def fetch_logs_between(self, period_start: datetime, period_end: datetime) -> list[RawFortiAnalyzerLog]:
+    def take_new_logs(self, period_start: datetime, period_end: datetime) -> list[RawFortiAnalyzerLog]:
         """Invente de 1 à 4 logs datés dans la période (certains en dessous du seuil de sévérité, comme en réel)."""
         start_timestamp, end_timestamp = int(period_start.timestamp()), int(period_end.timestamp())
         demo_logs = []

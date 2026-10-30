@@ -1,6 +1,6 @@
 """Niveaux de criticité communs aux logs (criticité source) et aux incidents (criticité réévaluée).
 
-Valeurs PROVISOIRES : à confirmer après examen des niveaux réellement fournis par l'API FortiAnalyzer
+Valeurs PROVISOIRES : à confirmer après examen des niveaux réellement fournis par les logs FortiAnalyzer
 (voir explain_project.md, section 15). Toute modification nécessite une migration (contrainte CHECK).
 """
 

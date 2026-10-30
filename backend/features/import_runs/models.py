@@ -52,6 +52,6 @@ class ImportRun(DatabaseModelBase):
     # Logs déjà connus (doublons) : voir la règle de déduplication dans la doc technique.
     nb_logs_ignores: Mapped[int] = mapped_column(default=0)
     erreur: Mapped[str | None] = mapped_column(Text)
-    # Point de reprise de la synchronisation. Sa nature (timestamp, identifiant...) dépend de l'API FortiAnalyzer.
+    # Point de reprise : fin de la période de la collecte (ISO 8601, UTC), écrit par log_collection.
     curseur_synchronisation: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(TimestampWithTimezoneColumnType, server_default=func.now())

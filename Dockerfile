@@ -30,5 +30,6 @@ RUN chmod -R a+rX /application
 RUN useradd --create-home backend_runner
 USER backend_runner
 
-EXPOSE 8000
+# 8000 : interface et API ; 5140 : réception syslog des logs FortiAnalyzer (SYSLOG_LISTEN_PORT).
+EXPOSE 8000 5140/udp 5140/tcp
 CMD ["uvicorn", "backend.main:application", "--host", "0.0.0.0", "--port", "8000"]

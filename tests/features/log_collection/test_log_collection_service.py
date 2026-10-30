@@ -1,4 +1,4 @@
-"""Tests de la collecte : enregistrement, doublons, seuil de sévérité, logs invalides, pannes, point de reprise.
+"""Tests de la collecte : enregistrement, doublons, seuil de sévérité, logs invalides, pannes, passages vides, période.
 
 Les sources sont des faux (aucun appel réseau) ; les logs sont synthétiques.
 """
@@ -7,11 +7,15 @@ from datetime import UTC, datetime, timedelta
 
 from backend.core.pagination import PaginationParameters
 from backend.core.settings import ApplicationSettings
+from backend.features.import_runs import service as import_runs_service
 from backend.features.import_runs.models import ImportRunStatus
+from backend.features.import_runs.schemas import ImportRunListFilters
 from backend.features.log_collection import service as log_collection_service
 from backend.features.source_logs import service as source_logs_service
 from backend.features.source_logs.schemas import SourceLogListFilters
-from backend.integrations.fortianalyzer.fortianalyzer_errors import FortiAnalyzerApiError
+from backend.integrations.fortianalyzer import log_source_selection
+from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
+from backend.integrations.fortianalyzer.fortianalyzer_errors import SyslogReceptionError
 
 COLLECTION_TIME = datetime(2026, 10, 29, 12, 0, tzinfo=UTC)
 SYNTHETIC_LOG_TIME = int((COLLECTION_TIME - timedelta(minutes=30)).timestamp())
@@ -27,7 +31,7 @@ class FakeLogSource:
         self.error = error
         self.requested_periods: list[tuple[datetime, datetime]] = []
 
-    def fetch_logs_between(self, period_start, period_end):
+    def take_new_logs(self, period_start, period_end):
         self.requested_periods.append((period_start, period_end))
         if self.error:
             raise self.error
@@ -58,11 +62,29 @@ def test_severe_logs_are_stored_once_and_weaker_ones_are_skipped(database_sessio
     assert (first_result.nb_logs_lus_sur_la_source, first_result.nb_logs_sous_le_seuil) == (3, 1)
     # Historique : les logs sous le seuil sont écartés comme par un filtre, ils ne comptent pas comme « reçus ».
     assert (first_result.nb_logs_recus, first_result.nb_logs_inseres) == (2, 2)
-    # Deuxième passage : mêmes logs (périodes qui se chevauchent) ⇒ aucun doublon.
+    # Deuxième passage : mêmes logs (renvoyés par FortiAnalyzer) ⇒ aucun doublon.
     assert (second_result.nb_logs_inseres, second_result.nb_logs_ignores) == (0, 2)
     stored_logs = source_logs_service.list_source_logs(database_session, SourceLogListFilters(), PaginationParameters())
     assert stored_logs.total == 2
     assert {log.type for log in stored_logs.items} == {"ips"}
+
+
+def test_same_log_received_twice_by_syslog_is_stored_once(database_session) -> None:
+    def received_copy(reception_time: str) -> dict:
+        return {
+            **synthetic_log(),
+            SYSLOG_RECEPTION_METADATA_FIELD: {"adresse_emetteur": "192.0.2.104", "recu_le": reception_time},
+        }
+
+    result = collect(database_session, FakeLogSource([received_copy("10:00:00"), received_copy("10:00:05")]))
+
+    # L'heure de réception diffère, mais elle est exclue de l'empreinte : le second exemplaire est un doublon.
+    assert (result.nb_logs_inseres, result.nb_logs_ignores) == (1, 1)
+    stored_log_id = source_logs_service.list_source_logs(
+        database_session, SourceLogListFilters(), PaginationParameters()
+    ).items[0].id
+    stored_log = source_logs_service.fetch_source_log_detail(database_session, stored_log_id)
+    assert stored_log.donnees_brutes[SYSLOG_RECEPTION_METADATA_FIELD]["adresse_emetteur"] == "192.0.2.104"
 
 
 def test_minimum_criticality_is_configurable(database_session) -> None:
@@ -82,54 +104,64 @@ def test_invalid_logs_make_the_collection_partial(database_session) -> None:
     assert "Aucune date" in result.erreur
 
 
-def test_source_failure_is_recorded_without_secret_and_does_not_advance_the_cursor(database_session) -> None:
-    failing_source = FakeLogSource(error=FortiAnalyzerApiError("connexion : erreur FortiAnalyzer -11 password=secret"))
+def test_source_failure_is_recorded_and_does_not_advance_the_cursor(database_session) -> None:
+    failing_source = FakeLogSource(error=SyslogReceptionError("La réception syslog n'est pas active."))
     first_result = collect(database_session, failing_source)
     retry_source = FakeLogSource([synthetic_log()])
     collect(database_session, retry_source, current_time=COLLECTION_TIME + timedelta(hours=1))
 
     assert first_result.statut == ImportRunStatus.FAILED
-    assert "-11" in first_result.erreur and "secret" not in first_result.erreur
-    # Après un échec, le point de reprise n'avance pas : la collecte suivante relit la période initiale (24 h).
+    assert "pas active" in first_result.erreur
+    # Après un échec, le point de reprise n'avance pas : la collecte suivante repart de la période initiale.
     retried_period_start, retried_period_end = retry_source.requested_periods[0]
-    assert retried_period_end - retried_period_start == timedelta(hours=24)
+    assert retried_period_end - retried_period_start == log_collection_service.FIRST_COLLECTION_PERIOD
 
 
-def test_next_collection_resumes_from_the_cursor_with_an_overlap(database_session) -> None:
+def test_next_collection_starts_where_the_previous_one_ended(database_session) -> None:
     collect(database_session, FakeLogSource([]))
     next_source = FakeLogSource([])
     collect(database_session, next_source, current_time=COLLECTION_TIME + timedelta(minutes=5))
 
-    period_start, period_end = next_source.requested_periods[0]
-    assert period_start == COLLECTION_TIME - log_collection_service.CURSOR_OVERLAP
-    assert period_end == COLLECTION_TIME + timedelta(minutes=5)
+    assert next_source.requested_periods[0] == (COLLECTION_TIME, COLLECTION_TIME + timedelta(minutes=5))
 
 
-def test_incomplete_real_configuration_is_recorded_as_a_failed_collection(database_session, monkeypatch) -> None:
+def test_automatic_collection_with_nothing_received_records_nothing(database_session) -> None:
+    result = log_collection_service.collect_critical_logs(
+        database_session, FakeLogSource([]), build_settings(), COLLECTION_TIME, is_recorded_when_nothing_received=False
+    )
+
+    assert result is None
+    assert import_runs_service.list_import_runs(
+        database_session, ImportRunListFilters(), PaginationParameters()
+    ).total == 0
+
+
+def test_real_mode_without_reception_fails_manually_and_stays_silent_automatically(database_session, monkeypatch) -> None:
     monkeypatch.setenv("APP_IS_IN_DEMO", "false")
-    monkeypatch.setenv("FORTIANALYZER_BASE_URL", "")
+    monkeypatch.setattr(log_source_selection, "_shared_syslog_receiver", None)
+    monkeypatch.setattr(log_source_selection, "_shared_syslog_receiver_startup_error", "port 5140 déjà utilisé")
     from backend.core.settings import get_application_settings
 
     get_application_settings.cache_clear()
-    result = log_collection_service.collect_critical_logs_from_configured_source(database_session)
+    automatic_result = log_collection_service.collect_critical_logs_from_configured_source(
+        database_session, is_recorded_when_nothing_received=False
+    )
+    manual_result = log_collection_service.collect_critical_logs_from_configured_source(database_session)
 
-    assert result.statut == ImportRunStatus.FAILED
-    assert "FORTIANALYZER_BASE_URL" in result.erreur
+    assert automatic_result is None
+    assert manual_result.statut == ImportRunStatus.FAILED
+    assert "port 5140 déjà utilisé" in manual_result.erreur
 
 
-def test_configuration_description_never_contains_secrets() -> None:
+def test_configuration_description_in_real_mode() -> None:
     description = log_collection_service.describe_collection_configuration(
-        build_settings(
-            app_is_in_demo=False,
-            fortianalyzer_base_url="https://faz.synthetique.test",
-            fortianalyzer_username="api.lecture",
-            fortianalyzer_password="mot-de-passe-synthetique",
-        )
+        build_settings(app_is_in_demo=False, syslog_is_tcp_enabled=False, syslog_allowed_sender_addresses="192.0.2.104")
     )
 
-    assert "mot-de-passe-synthetique" not in description.model_dump_json()
+    assert description.est_en_mode_demo is False
+    assert (description.port_ecoute, description.protocoles) == (5140, ["UDP"])
+    assert description.emetteurs_autorises == ["192.0.2.104"]
     assert description.parametres_manquants == []
-    assert description.authentification == "Identifiant « api.lecture » + mot de passe"
 
 
 def test_collection_routes_in_demo_mode(api_client) -> None:

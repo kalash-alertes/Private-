@@ -1,12 +1,11 @@
 """Configuration de l'application, lue depuis les variables d'environnement (voir .env.example).
 
-Les secrets (mot de passe et jeton FortiAnalyzer) sont des `SecretStr` : ils ne s'affichent jamais en clair dans un
-`print`, un log ou un message d'erreur (`**********`). Leur valeur n'est lue qu'au moment de l'appel réseau.
+La réception des logs ne demande aucun secret : FortiAnalyzer les envoie par syslog sur un port d'écoute.
 """
 
 from functools import lru_cache
 
-from pydantic import SecretStr, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from backend.core.criticality import CriticalityLevel
@@ -25,38 +24,31 @@ class ApplicationSettings(BaseSettings):
     automatic_escalation_interval_seconds: float = 0
 
     # --- Source des alertes ---
-    # true : alertes de DÉMONSTRATION inventées (aucune connexion à FortiAnalyzer).
-    # false : alertes réelles lues sur le FortiAnalyzer décrit ci-dessous.
+    # true : alertes de DÉMONSTRATION inventées (aucun port syslog ouvert).
+    # false : alertes réelles, transférées par FortiAnalyzer en syslog sur le port décrit ci-dessous.
     app_is_in_demo: bool = True
 
     # --- Collecte des alertes ---
-    # Intervalle de la collecte automatique, en secondes. 0 = boucle désactivée (collecte manuelle uniquement).
+    # Intervalle de la collecte automatique, en secondes : vide la file des logs reçus par syslog et les enregistre.
+    # 0 = boucle désactivée (collecte manuelle uniquement ; en mode réel, les logs s'accumulent alors en mémoire).
     log_collection_interval_seconds: float = 0
-    # Première collecte (aucune collecte réussie auparavant) : nombre d'heures d'historique à récupérer.
-    log_collection_initial_lookback_hours: float = 24
     # Sévérité minimale enregistrée (information, faible, moyenne, haute, critique) : seuls les logs critiques
-    # intéressent l'application (cadrage) ; les autres sont comptés comme « reçus » mais pas enregistrés.
+    # intéressent l'application (cadrage) ; les autres sont lus mais pas enregistrés.
     log_collection_minimum_criticality: str = "haute"
 
-    # --- Connexion FortiAnalyzer (utilisée seulement si app_is_in_demo = false) ---
-    fortianalyzer_base_url: str = ""
-    # Authentification : jeton API (FortiAnalyzer 7.2.2 et plus, recommandé) OU identifiant + mot de passe.
-    fortianalyzer_api_token: SecretStr = SecretStr("")
-    fortianalyzer_username: str = ""
-    fortianalyzer_password: SecretStr = SecretStr("")
-    fortianalyzer_adom: str = "root"
-    # Vérification du certificat HTTPS. Préférer un fichier d'autorité (CA) à la désactivation.
-    fortianalyzer_verify_tls: bool = True
-    fortianalyzer_ca_bundle_path: str = ""
-    # Types de logs interrogés, séparés par des virgules (ex. event, attack, virus, traffic).
-    fortianalyzer_log_types: str = "event,attack"
-    # Équipements interrogés : identifiant FortiAnalyzer (All_FortiGate = tous les FortiGate de l'ADOM).
-    fortianalyzer_device_identifier: str = "All_FortiGate"
-    # Filtre de recherche facultatif, dans la syntaxe de FortiAnalyzer (laissé vide : filtrage par sévérité côté app).
-    fortianalyzer_search_filter: str = ""
-    # Fuseau horaire dans lequel FortiAnalyzer interprète les bornes de recherche.
+    # --- Réception syslog (utilisée seulement si app_is_in_demo = false) ---
+    syslog_listen_address: str = "0.0.0.0"
+    # 514 est le port standard mais demande des droits administrateur ; 5140 n'en demande pas.
+    syslog_listen_port: int = 5140
+    syslog_is_udp_enabled: bool = True
+    syslog_is_tcp_enabled: bool = True
+    # Adresses IP autorisées à envoyer des logs, séparées par des virgules (vide = toutes). Le syslog n'est pas
+    # authentifié : renseigner l'adresse de FortiAnalyzer évite qu'une autre machine injecte de faux logs.
+    syslog_allowed_sender_addresses: str = ""
+    # Nombre maximal de logs en attente de collecte (au-delà, les messages sont perdus et comptés).
+    syslog_maximum_pending_logs: int = 100_000
+    # Fuseau des champs `date` + `time` d'un log, quand il n'a ni `eventtime`, ni `itime`, ni `tz`.
     fortianalyzer_timezone: str = "UTC"
-    fortianalyzer_request_timeout_seconds: float = 30
 
     @field_validator("log_collection_minimum_criticality")
     @classmethod
@@ -69,8 +61,8 @@ class ApplicationSettings(BaseSettings):
         return [origin.strip() for origin in self.cors_allowed_origins.split(",") if origin.strip()]
 
     @property
-    def fortianalyzer_log_types_list(self) -> list[str]:
-        return [log_type.strip() for log_type in self.fortianalyzer_log_types.split(",") if log_type.strip()]
+    def syslog_allowed_sender_addresses_list(self) -> list[str]:
+        return [address.strip() for address in self.syslog_allowed_sender_addresses.split(",") if address.strip()]
 
 
 @lru_cache

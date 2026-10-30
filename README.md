@@ -55,7 +55,6 @@ Détail interactif : `/docs`. **Pas prêt pour la production** (ni authentificat
 | `web_interface/` | Interface analystes en Python : une page = un fichier `pages/*.py` + un gabarit `templates/pages/*.html` ; CSS dans `static/css/` |
 | `scripts/` | Outils de développement (données de démonstration synthétiques) |
 | `backend/integrations/` | Adaptateurs externes : `fortianalyzer/` (client réel + démonstration) |
-| `certificates/` | Certificat d'autorité de FortiAnalyzer (facultatif, non commité) |
 | `db/migrations/` | Migrations Alembic (schéma PostgreSQL) |
 | `docs/technical/` | Documentation détaillée (développeurs / IA) |
 | `docs/overview/` | Documentation de vue d'ensemble (humains) |

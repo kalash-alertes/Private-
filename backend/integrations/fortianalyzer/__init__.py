@@ -1,1 +1,1 @@
-"""Intégration FortiAnalyzer : sources d'alertes interchangeables (client réel JSON-RPC, source de démonstration)."""
+"""Intégration FortiAnalyzer : sources d'alertes interchangeables (réception syslog réelle, source de démonstration)."""
