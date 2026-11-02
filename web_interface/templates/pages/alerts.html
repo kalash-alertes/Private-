@@ -21,7 +21,11 @@
     <article class="summary-card alert-summary-low">
       <span>Faible {{ icon("circle_check", 18) }}</span>
       <strong>{{ severity_counts.low | number }}</strong>
-      <small>Faibles et informatives</small>
+      {% if is_low_case_collected %}
+        <small>Faibles et informatives</small>
+      {% else %}
+        <small>Non collectées (seuil : {{ minimum_collected_criticality | criticality_label }} et plus)</small>
+      {% endif %}
     </article>
     <article class="summary-card alert-summary-total">
       <span>Total des alertes {{ icon("bell", 18) }}</span>

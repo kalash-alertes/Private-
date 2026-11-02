@@ -13,9 +13,10 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
-from backend.core.criticality import CriticalityLevel
+from backend.core.criticality import CriticalityLevel, is_at_least_as_severe
 from backend.core.database import get_database_session
 from backend.core.pagination import PaginationParameters
+from backend.core.settings import get_application_settings
 from backend.features.dashboard import service as dashboard_service
 from backend.features.incidents import service as incidents_service
 from backend.features.source_logs import service as source_logs_service
@@ -61,6 +62,9 @@ def show_alerts_page(
         low=sum(source_alert_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["faible"]),
     )
     dashboard = dashboard_service.build_dashboard(database_session, activity_day_count=1)
+    # Seuil de collecte : la case Faible indique « non collectées » quand faible et information sont écartés
+    # (défaut `moyenne`), pour qu'un 0 ne soit pas pris pour une panne.
+    minimum_collected_criticality = CriticalityLevel(get_application_settings().log_collection_minimum_criticality)
     return render_page(
         request,
         "alerts.html",
@@ -78,6 +82,8 @@ def show_alerts_page(
             "selected_criticality": criticite,
             "filter_query": urlencode({"criticite": criticite.value} if criticite else {}),
             "severity_counts": severity_counts,
+            "minimum_collected_criticality": minimum_collected_criticality,
+            "is_low_case_collected": is_at_least_as_severe(CriticalityLevel.LOW, minimum_collected_criticality),
             "alert_charts": build_alert_chart_svgs(severity_counts),
             "alert_counts": {
                 "total": dashboard.nombre_alertes,

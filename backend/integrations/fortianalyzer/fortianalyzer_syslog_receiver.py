@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 
 from pydantic import ValidationError
 
-from backend.integrations.fortianalyzer.critical_log_source import RawFortiAnalyzerLog
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import RawFortiAnalyzerLog
 from backend.integrations.fortianalyzer.fortianalyzer_errors import SyslogReceptionError
 from backend.integrations.fortianalyzer.fortianalyzer_syslog_message_parser import (
     MAXIMUM_SYSLOG_MESSAGE_CHARACTERS,
@@ -70,7 +70,7 @@ class SyslogReceptionStatistics:
 
 
 class FortiAnalyzerSyslogReceiver:
-    """Source d'alertes réelle (respecte le contrat `CriticalLogSource`)."""
+    """Source d'alertes réelle (respecte le contrat `FortiAnalyzerLogSource`)."""
 
     def __init__(
         self,

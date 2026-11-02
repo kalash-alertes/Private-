@@ -1,7 +1,7 @@
 """Choix de la source d'alertes selon la configuration : démonstration (APP_IS_IN_DEMO=true) ou réception syslog réelle.
 
 C'est le SEUL endroit qui lit `app_is_in_demo` pour choisir la source : le reste de l'application reçoit une
-`CriticalLogSource` sans savoir laquelle.
+`FortiAnalyzerLogSource` sans savoir laquelle.
 
 La réception syslog est un récepteur PARTAGÉ : démarré une seule fois au lancement de l'application
 (`start_shared_syslog_receiver`), il accumule les logs entre deux collectes ; chaque collecte reçoit ce même récepteur.
@@ -11,8 +11,8 @@ import logging
 import threading
 
 from backend.core.settings import ApplicationSettings
-from backend.integrations.fortianalyzer.critical_log_source import CriticalLogSource
-from backend.integrations.fortianalyzer.demo_log_source import DemoCriticalLogSource
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import FortiAnalyzerLogSource
+from backend.integrations.fortianalyzer.demo_log_source import DemoFortiAnalyzerLogSource
 from backend.integrations.fortianalyzer.fortianalyzer_errors import (
     FortiAnalyzerConfigurationError,
     SyslogReceptionError,
@@ -101,14 +101,14 @@ def read_shared_syslog_receiver_startup_error() -> str | None:
     return _shared_syslog_receiver_startup_error
 
 
-def build_critical_log_source(settings: ApplicationSettings) -> CriticalLogSource:
+def build_fortianalyzer_log_source(settings: ApplicationSettings) -> FortiAnalyzerLogSource:
     """Retourne la source à utiliser.
 
     Lève FortiAnalyzerConfigurationError si le mode réel est mal configuré, SyslogReceptionError si la réception
     syslog n'a pas démarré (motif du démarrage raté repris dans le message).
     """
     if settings.app_is_in_demo:
-        return DemoCriticalLogSource()
+        return DemoFortiAnalyzerLogSource()
     missing_settings = list_missing_syslog_settings(settings)
     if missing_settings:
         raise FortiAnalyzerConfigurationError(

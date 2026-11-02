@@ -2,7 +2,7 @@
 
 ## Le parcours d'une alerte
 
-1. **Import** : un programme (le « collecteur », à venir) récupère les alertes de FortiAnalyzer (tous niveaux de sévérité).
+1. **Import** : un programme (le « collecteur », à venir) récupère les alertes de FortiAnalyzer (dangerosité moyenne, haute et critique).
    Chaque passage est noté dans l'**historique des imports** : quand, réussi ou non, combien d'alertes reçues,
    nouvelles, déjà connues. En cas d'échec, une explication est enregistrée (sans mot de passe ni jeton).
 2. **Log** : chaque alerte n'est enregistrée **qu'une seule fois**, même si elle est revue plusieurs fois.

@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import SYSLOG_RECEPTION_METADATA_FIELD
 from backend.integrations.fortianalyzer.fortianalyzer_errors import SyslogReceptionError
 from backend.integrations.fortianalyzer.fortianalyzer_syslog_message_parser import (
     ReceivedSyslogMessage,

@@ -11,7 +11,7 @@ from backend.features.log_collection.fortianalyzer_log_normalizer import (
     compute_source_identifier,
     normalize_fortianalyzer_log,
 )
-from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import SYSLOG_RECEPTION_METADATA_FIELD
 
 PARIS_TIMEZONE = ZoneInfo("Europe/Paris")
 

@@ -1,6 +1,6 @@
 # Feature `source_logs`
 
-**Rôle** : logs connus de l'application (tous niveaux de sévérité) (table `logs`), déduplication via `identifiant_source`.
+**Rôle** : logs connus de l'application (niveaux au-dessus du seuil de collecte) (table `logs`), déduplication via `identifiant_source`.
 Aucune route d'ingestion : l'enregistrement passe par `service.store_source_log_if_new` (collecteur).
 
 **Fichiers** : `models.py` · `schemas.py` (`NewSourceLogData`, `SourceLogMetadataRead`, `SourceLogDetailRead`, filtres) ·

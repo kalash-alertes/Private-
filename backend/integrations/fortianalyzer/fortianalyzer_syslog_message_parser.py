@@ -16,7 +16,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD, RawFortiAnalyzerLog
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import SYSLOG_RECEPTION_METADATA_FIELD, RawFortiAnalyzerLog
 
 # Garde-fou : un log Fortinet fait quelques kilo-octets ; au-delà, le message est refusé (erreur ou envoi hostile).
 MAXIMUM_SYSLOG_MESSAGE_CHARACTERS = 65_535

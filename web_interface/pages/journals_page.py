@@ -63,5 +63,5 @@ def run_log_collection_from_page(
     database_session: Annotated[Session, Depends(get_database_session)],
 ) -> RedirectResponse:
     """Lance une collecte maintenant ; son résultat (réussi ou échoué, avec le motif) apparaît en tête de l'historique."""
-    log_collection_service.collect_critical_logs_from_configured_source(database_session)
+    log_collection_service.collect_fortianalyzer_logs_from_configured_source(database_session)
     return RedirectResponse("/journaux?notice=collecte_executee", status_code=303)

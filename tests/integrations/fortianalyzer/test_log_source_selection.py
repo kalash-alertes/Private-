@@ -7,14 +7,14 @@ import pytest
 
 from backend.core.settings import ApplicationSettings
 from backend.integrations.fortianalyzer import log_source_selection
-from backend.integrations.fortianalyzer.demo_log_source import DemoCriticalLogSource
+from backend.integrations.fortianalyzer.demo_log_source import DemoFortiAnalyzerLogSource
 from backend.integrations.fortianalyzer.fortianalyzer_errors import (
     FortiAnalyzerConfigurationError,
     SyslogReceptionError,
 )
 from backend.integrations.fortianalyzer.fortianalyzer_syslog_receiver import FortiAnalyzerSyslogReceiver
 from backend.integrations.fortianalyzer.log_source_selection import (
-    build_critical_log_source,
+    build_fortianalyzer_log_source,
     build_syslog_reception_parameters,
     list_missing_syslog_settings,
 )
@@ -39,7 +39,7 @@ def test_demo_mode_uses_the_demo_source_and_never_opens_a_port() -> None:
     settings = build_settings(app_is_in_demo=True)
     log_source_selection.start_shared_syslog_receiver(settings)
 
-    assert isinstance(build_critical_log_source(settings), DemoCriticalLogSource)
+    assert isinstance(build_fortianalyzer_log_source(settings), DemoFortiAnalyzerLogSource)
     assert log_source_selection.read_shared_syslog_reception_statistics() is None
 
 
@@ -53,14 +53,14 @@ def test_invalid_syslog_settings_are_listed_and_refused() -> None:
         "SYSLOG_IS_UDP_ENABLED ou SYSLOG_IS_TCP_ENABLED (au moins un des deux à true)",
     ]
     with pytest.raises(FortiAnalyzerConfigurationError, match="SYSLOG_LISTEN_PORT"):
-        build_critical_log_source(settings)
+        build_fortianalyzer_log_source(settings)
 
 
 def test_real_mode_without_started_reception_reports_the_startup_error() -> None:
     log_source_selection._shared_syslog_receiver_startup_error = "Impossible d'écouter sur 0.0.0.0:5140"
 
     with pytest.raises(SyslogReceptionError, match="Impossible d'écouter"):
-        build_critical_log_source(build_settings(app_is_in_demo=False))
+        build_fortianalyzer_log_source(build_settings(app_is_in_demo=False))
 
 
 def test_real_mode_returns_the_shared_receiver_once_started(monkeypatch) -> None:
@@ -69,7 +69,7 @@ def test_real_mode_returns_the_shared_receiver_once_started(monkeypatch) -> None
     settings = build_settings(app_is_in_demo=False)
     log_source_selection.start_shared_syslog_receiver(settings)
 
-    first_source, second_source = build_critical_log_source(settings), build_critical_log_source(settings)
+    first_source, second_source = build_fortianalyzer_log_source(settings), build_fortianalyzer_log_source(settings)
 
     assert isinstance(first_source, FortiAnalyzerSyslogReceiver) and first_source is second_source
 
@@ -92,7 +92,7 @@ def test_demo_source_returns_marked_logs_inside_the_period() -> None:
     period_end = datetime(2026, 10, 29, 12, 0, tzinfo=UTC)
     period_start = period_end - timedelta(hours=1)
 
-    demo_logs = DemoCriticalLogSource(random.Random(7)).take_new_logs(period_start, period_end)
+    demo_logs = DemoFortiAnalyzerLogSource(random.Random(7)).take_new_logs(period_start, period_end)
 
     assert 1 <= len(demo_logs) <= 4
     assert all(log["demonstration"] is True and log["devid"].startswith("DEMO-") for log in demo_logs)

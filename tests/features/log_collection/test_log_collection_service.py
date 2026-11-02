@@ -14,7 +14,7 @@ from backend.features.log_collection import service as log_collection_service
 from backend.features.source_logs import service as source_logs_service
 from backend.features.source_logs.schemas import SourceLogListFilters
 from backend.integrations.fortianalyzer import log_source_selection
-from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import SYSLOG_RECEPTION_METADATA_FIELD
 from backend.integrations.fortianalyzer.fortianalyzer_errors import SyslogReceptionError
 
 COLLECTION_TIME = datetime(2026, 10, 29, 12, 0, tzinfo=UTC)
@@ -47,35 +47,50 @@ def synthetic_log(level: str = "critical", message: str = "synthétique", subtyp
 
 
 def collect(database_session, log_source, current_time=COLLECTION_TIME, **settings_values):
-    return log_collection_service.collect_critical_logs(
+    return log_collection_service.collect_fortianalyzer_logs(
         database_session, log_source, build_settings(**settings_values), current_time=current_time
     )
 
 
-def test_by_default_every_fortianalyzer_severity_is_stored_with_its_criticality(database_session) -> None:
-    # Toutes les valeurs connues des champs `level` (syslog) et `severity` (IPS) : aucune n'est écartée par défaut.
-    expected_criticality_by_value = {
-        "emergency": "critique", "alert": "critique", "critical": "critique",
-        "error": "haute", "high": "haute",
-        "warning": "moyenne", "medium": "moyenne",
-        "notice": "faible", "low": "faible",
-        "information": "information", "info": "information", "debug": "information",
-    }
-    logs = [synthetic_log(value, f"niveau {value}") for value in expected_criticality_by_value]
+# Toutes les valeurs connues des champs `level` (syslog) et `severity` (IPS), avec la criticité attendue.
+EXPECTED_CRITICALITY_BY_FORTIANALYZER_SEVERITY = {
+    "emergency": "critique", "alert": "critique", "critical": "critique",
+    "error": "haute", "high": "haute",
+    "warning": "moyenne", "medium": "moyenne",
+    "notice": "faible", "low": "faible",
+    "information": "information", "info": "information", "debug": "information",
+}
 
-    result = collect(database_session, FakeLogSource(logs))
 
-    assert (result.nb_logs_inseres, result.nb_logs_sous_le_seuil, result.nb_logs_invalides) == (12, 0, 0)
+def read_stored_criticality_by_message(database_session) -> dict[str, str]:
     stored_logs = source_logs_service.list_source_logs(
         database_session, SourceLogListFilters(), PaginationParameters(limit=50)
     ).items
-    stored_criticality_by_message = {
+    return {
         source_logs_service.fetch_source_log_detail(database_session, log.id).donnees_brutes["msg"]: log.criticite_source.value
         for log in stored_logs
     }
-    assert stored_criticality_by_message == {
-        f"niveau {value}": criticality for value, criticality in expected_criticality_by_value.items()
+
+
+def test_every_fortianalyzer_severity_is_stored_with_its_criticality_when_everything_is_kept(database_session) -> None:
+    logs = [synthetic_log(value, f"niveau {value}") for value in EXPECTED_CRITICALITY_BY_FORTIANALYZER_SEVERITY]
+
+    result = collect(database_session, FakeLogSource(logs), log_collection_minimum_criticality="information")
+
+    assert (result.nb_logs_inseres, result.nb_logs_sous_le_seuil, result.nb_logs_invalides) == (12, 0, 0)
+    assert read_stored_criticality_by_message(database_session) == {
+        f"niveau {value}": criticality for value, criticality in EXPECTED_CRITICALITY_BY_FORTIANALYZER_SEVERITY.items()
     }
+
+
+def test_by_default_only_medium_high_and_critical_logs_are_stored(database_session) -> None:
+    # Seuil par défaut `moyenne` : niveaux de dangerosité 2, 3 et 4 gardés ; faible (1) et information (0) écartés.
+    logs = [synthetic_log(value, f"niveau {value}") for value in EXPECTED_CRITICALITY_BY_FORTIANALYZER_SEVERITY]
+
+    result = collect(database_session, FakeLogSource(logs))
+
+    assert (result.nb_logs_inseres, result.nb_logs_sous_le_seuil, result.nb_logs_invalides) == (7, 5, 0)
+    assert set(read_stored_criticality_by_message(database_session).values()) == {"moyenne", "haute", "critique"}
 
 
 def test_severe_logs_are_stored_once_and_weaker_ones_are_skipped(database_session) -> None:
@@ -157,7 +172,7 @@ def test_next_collection_starts_where_the_previous_one_ended(database_session) -
 
 
 def test_automatic_collection_with_nothing_received_records_nothing(database_session) -> None:
-    result = log_collection_service.collect_critical_logs(
+    result = log_collection_service.collect_fortianalyzer_logs(
         database_session, FakeLogSource([]), build_settings(), COLLECTION_TIME, is_recorded_when_nothing_received=False
     )
 
@@ -174,10 +189,10 @@ def test_real_mode_without_reception_fails_manually_and_stays_silent_automatical
     from backend.core.settings import get_application_settings
 
     get_application_settings.cache_clear()
-    automatic_result = log_collection_service.collect_critical_logs_from_configured_source(
+    automatic_result = log_collection_service.collect_fortianalyzer_logs_from_configured_source(
         database_session, is_recorded_when_nothing_received=False
     )
-    manual_result = log_collection_service.collect_critical_logs_from_configured_source(database_session)
+    manual_result = log_collection_service.collect_fortianalyzer_logs_from_configured_source(database_session)
 
     assert automatic_result is None
     assert manual_result.statut == ImportRunStatus.FAILED

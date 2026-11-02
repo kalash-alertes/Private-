@@ -1,12 +1,12 @@
 # Intégration `fortianalyzer`
 
 **Rôle** : fournir les alertes à la collecte (`backend/features/log_collection`), depuis deux sources interchangeables
-qui respectent le même contrat (`critical_log_source.py`). En mode réel, FortiAnalyzer **envoie** ses logs par syslog :
+qui respectent le même contrat (`fortianalyzer_log_source.py`). En mode réel, FortiAnalyzer **envoie** ses logs par syslog :
 l'application écoute un port (UDP/TCP, 5140 par défaut) ; aucune API n'est interrogée.
 
 | Fichier | Rôle |
 |---|---|
-| `critical_log_source.py` | Le contrat `CriticalLogSource` (`take_new_logs`) ; nom du champ des métadonnées de réception |
+| `fortianalyzer_log_source.py` | Le contrat `FortiAnalyzerLogSource` (`take_new_logs`) ; nom du champ des métadonnées de réception |
 | `fortianalyzer_syslog_receiver.py` | La vraie source : écoute syslog UDP/TCP, filtre des émetteurs, file d'attente en mémoire |
 | `fortianalyzer_syslog_message_parser.py` | Validation Pydantic d'un message reçu et lecture des champs Fortinet `clé=valeur` |
 | `demo_log_source.py` | Source de démonstration (logs inventés au format FortiAnalyzer) |

@@ -51,9 +51,10 @@ construite, testée et comprise progressivement.
 
 ### Fonctions prévues
 
-1.  **Collecter les logs** de FortiAnalyzer. *Décision du 2026-11-02 : tous les niveaux de sévérité
-    sont collectés (et non plus seulement les logs critiques), puis rangés en Critique / Moyenne /
-    Faible dans l'interface. Un seuil reste réglable (`LOG_COLLECTION_MINIMUM_CRITICALITY`).*
+1.  **Collecter les logs** de FortiAnalyzer. *Décision du 2026-11-02 : sur les cinq niveaux de
+    dangerosité (information (0), faible (1), moyenne (2), haute (3), critique (4)), seuls les niveaux 2, 3 et 4 (moyenne, haute, critique) sont
+    collectés, et non plus seulement les logs critiques. Le seuil reste réglable
+    (`LOG_COLLECTION_MINIMUM_CRITICALITY`, défaut `moyenne`).*
 2.  **Éviter les doublons** lorsque la même alerte est rencontrée
     plusieurs fois.
 3.  **Conserver les informations utiles** sur les logs collectés et
@@ -389,7 +390,7 @@ toute la complexité de la pile.
 
 Le collecteur interroge FortiAnalyzer et récupère les événements
 correspondant au périmètre défini. Pour la V1, le périmètre initial était
-limité aux logs critiques ; depuis le 2026-11-02, tous les niveaux de sévérité sont collectés.
+limité aux logs critiques ; depuis le 2026-11-02, les niveaux moyenne, haute et critique sont collectés.
 
 ### Étape 2 --- Contrôle et normalisation
 

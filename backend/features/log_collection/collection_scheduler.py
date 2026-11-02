@@ -25,7 +25,7 @@ async def run_log_collection_periodically(
 
     def collect_with_new_session() -> LogCollectionResultRead | None:
         with database_session_factory() as database_session:
-            return service.collect_critical_logs_from_configured_source(
+            return service.collect_fortianalyzer_logs_from_configured_source(
                 database_session, is_recorded_when_nothing_received=False
             )
 

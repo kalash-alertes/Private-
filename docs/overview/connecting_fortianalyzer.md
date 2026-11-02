@@ -19,9 +19,10 @@ Dans les deux cas, la suite est identique : les alertes arrivent dans **Alertes*
 
 1. FortiAnalyzer envoie chaque log, dès qu'il le reçoit, vers l'adresse du poste, port 5140.
 2. L'application les garde **en attente** dans sa mémoire.
-3. Toutes les 30 secondes (réglable), une **collecte** enregistre **tous les logs** dans la base, quel que soit leur
-   niveau. La page **Alertes** les range en trois cases : **Critique** (critique et haute), **Moyenne**, **Faible**
-   (faible et information). On peut relever le seuil pour écarter les moins graves (`LOG_COLLECTION_MINIMUM_CRITICALITY`).
+3. Toutes les 30 secondes (réglable), une **collecte** enregistre dans la base les logs de dangerosité **moyenne,
+   haute et critique**. Il y a cinq niveaux : information (0), faible (1), moyenne (2), haute (3), critique (4). Par défaut, seuls les niveaux 2, 3 et 4 sont gardés ;
+   faible et information sont lus puis écartés. La page **Alertes** range les logs gardés en **Critique** (critique et
+   haute) et **Moyenne** ; la case **Faible** indique « Non collectées ». Seuil réglable : `LOG_COLLECTION_MINIMUM_CRITICALITY`.
 4. Une collecte où rien n'est arrivé n'apparaît pas dans Journaux (pour ne pas remplir l'historique de lignes vides).
 
 ## 1. Configurer FortiAnalyzer (administrateur FortiAnalyzer)
@@ -52,7 +53,7 @@ Autres réglages (déjà remplis avec des valeurs par défaut) :
 
 | Variable | Rôle | Défaut |
 |---|---|---|
-| `LOG_COLLECTION_MINIMUM_CRITICALITY` | Sévérité minimale gardée (`information` → `critique`) ; `information` = tous les logs | `information` |
+| `LOG_COLLECTION_MINIMUM_CRITICALITY` | Sévérité minimale gardée (`information` → `critique`) ; `moyenne` = niveaux 2, 3, 4 ; `information` = tous les logs | `moyenne` |
 | `SYSLOG_IS_UDP_ENABLED` / `SYSLOG_IS_TCP_ENABLED` | Protocoles écoutés | `true` / `true` |
 | `SYSLOG_LISTEN_ADDRESS` | Interface écoutée | `0.0.0.0` (toutes) |
 | `SYSLOG_MAXIMUM_PENDING_LOGS` | Logs en attente au maximum ; au-delà, ils sont perdus | `100000` |
@@ -121,8 +122,7 @@ Les messages de l'application : `wsl docker compose logs -f backend`.
 | Logs « refusé(s) (émetteur non autorisé) » | L'adresse vue par l'application n'est pas dans `SYSLOG_ALLOWED_SENDER_ADDRESSES` : la corriger ou vider la variable. |
 | Logs « illisible(s) » | Ce ne sont pas des logs Fortinet (`clé=valeur`) : vérifier le format choisi dans FortiAnalyzer. |
 | Logs « perdu(s), file pleine » | La collecte ne suit pas : réduire `LOG_COLLECTION_INTERVAL_SECONDS` ou filtrer davantage côté FortiAnalyzer. |
-| Beaucoup de logs reçus, aucune alerte | Le seuil `LOG_COLLECTION_MINIMUM_CRITICALITY` a été relevé : les logs moins graves (ex. trafic « notice » = faible) sont écartés. Remettre `information` pour tout garder. |
-| Trop d'alertes faibles (logs de trafic) | Tous les niveaux sont gardés par défaut : relever `LOG_COLLECTION_MINIMUM_CRITICALITY` (ex. `moyenne`), ou filtrer les types de logs transférés côté FortiAnalyzer. |
+| Beaucoup de logs reçus, aucune alerte | Normal pour les logs de trafic (« notice » = faible) : seuls les niveaux ≥ `LOG_COLLECTION_MINIMUM_CRITICALITY` (défaut `moyenne`) sont gardés. Mettre `faible` ou `information` pour en garder davantage. |
 
 ## 6. À savoir
 

@@ -4,7 +4,7 @@ En mode réel, FortiAnalyzer transfère ses logs par syslog : un récepteur (dé
 `start_log_reception`) les accumule en mémoire, et chaque collecte vide cette file. En démonstration, la source
 invente quelques logs à chaque collecte.
 
-Déroulé de `collect_critical_logs` :
+Déroulé de `collect_fortianalyzer_logs` :
 1. période de la collecte : depuis la fin de la dernière collecte réussie (point de reprise), sinon depuis
    `FIRST_COLLECTION_PERIOD` ; jusqu'à maintenant. Elle sert à l'historique et à dater les logs de démonstration ;
 2. les logs arrivés sont pris sur la source. Si aucun n'est arrivé et que `is_recorded_when_nothing_received` est
@@ -17,8 +17,8 @@ Déroulé de `collect_critical_logs` :
    (réception inactive, base indisponible...). Le point de reprise n'avance que si la collecte n'a pas échoué.
 
 Aucune action n'est jamais envoyée à FortiAnalyzer : l'application ne fait qu'écouter.
-Fonctions publiques : `collect_critical_logs_from_configured_source` (source choisie par le .env),
-`collect_critical_logs` (source fournie, utilisée par les tests), `describe_collection_configuration`,
+Fonctions publiques : `collect_fortianalyzer_logs_from_configured_source` (source choisie par le .env),
+`collect_fortianalyzer_logs` (source fournie, utilisée par les tests), `describe_collection_configuration`,
 `start_log_reception`, `stop_log_reception`.
 """
 
@@ -45,11 +45,11 @@ from backend.features.log_collection.schemas import (
 )
 from backend.features.source_logs import service as source_logs_service
 from backend.features.source_logs.schemas import NewSourceLogData
-from backend.integrations.fortianalyzer.critical_log_source import CriticalLogSource, RawFortiAnalyzerLog
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import FortiAnalyzerLogSource, RawFortiAnalyzerLog
 from backend.integrations.fortianalyzer.demo_log_source import DEMO_SOURCE_DESCRIPTION
 from backend.integrations.fortianalyzer.fortianalyzer_errors import FortiAnalyzerError
 from backend.integrations.fortianalyzer.log_source_selection import (
-    build_critical_log_source,
+    build_fortianalyzer_log_source,
     build_syslog_reception_parameters,
     list_missing_syslog_settings,
     read_shared_syslog_reception_statistics,
@@ -113,7 +113,7 @@ def stop_log_reception() -> None:
     stop_shared_syslog_receiver()
 
 
-def collect_critical_logs_from_configured_source(
+def collect_fortianalyzer_logs_from_configured_source(
     database_session: Session, is_recorded_when_nothing_received: bool = True
 ) -> LogCollectionResultRead | None:
     """Collecte avec la source du .env (démonstration ou réception syslog).
@@ -124,7 +124,7 @@ def collect_critical_logs_from_configured_source(
     """
     settings = get_application_settings()
     try:
-        log_source = build_critical_log_source(settings)
+        log_source = build_fortianalyzer_log_source(settings)
     except FortiAnalyzerError as unavailability_error:
         if not is_recorded_when_nothing_received:
             # Boucle automatique : la panne est déjà affichée dans la page Journaux (bandeau) ; l'inscrire toutes les
@@ -132,14 +132,14 @@ def collect_critical_logs_from_configured_source(
             log_collection_logger.warning("Collecte automatique impossible : %s", unavailability_error)
             return None
         log_source = UnavailableLogSource(unavailability_error)
-    return collect_critical_logs(
+    return collect_fortianalyzer_logs(
         database_session, log_source, settings, is_recorded_when_nothing_received=is_recorded_when_nothing_received
     )
 
 
-def collect_critical_logs(
+def collect_fortianalyzer_logs(
     database_session: Session,
-    log_source: CriticalLogSource,
+    log_source: FortiAnalyzerLogSource,
     settings: ApplicationSettings,
     current_time: datetime | None = None,
     is_recorded_when_nothing_received: bool = True,
@@ -299,7 +299,7 @@ def _read_fortianalyzer_timezone(settings: ApplicationSettings) -> ZoneInfo:
 def _finish_failed_collection(
     database_session: Session,
     import_run_id: UUID,
-    log_source: CriticalLogSource,
+    log_source: FortiAnalyzerLogSource,
     period: CollectionPeriod,
     counters: LogCollectionCounters,
     collection_error: Exception,
@@ -319,7 +319,7 @@ def _finish_failed_collection(
 def _finish_collection(
     database_session: Session,
     import_run_id: UUID,
-    log_source: CriticalLogSource,
+    log_source: FortiAnalyzerLogSource,
     period: CollectionPeriod,
     counters: LogCollectionCounters,
     final_status: FinishedImportRunStatus,

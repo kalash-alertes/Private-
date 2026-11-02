@@ -25,4 +25,4 @@ def read_collection_configuration() -> LogCollectionConfigurationRead:
 @log_collection_router.post("", response_model=LogCollectionResultRead)
 def run_log_collection(database_session: DatabaseSession) -> LogCollectionResultRead:
     """Lance une collecte maintenant ; le bilan indique le statut (une panne de la source donne « echouee »)."""
-    return service.collect_critical_logs_from_configured_source(database_session)
+    return service.collect_fortianalyzer_logs_from_configured_source(database_session)

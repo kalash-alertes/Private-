@@ -4,7 +4,7 @@ Code : `backend/features/source_logs/`. Table : `logs` (voir [database.md](./dat
 
 ## Rôle
 
-Conserver les métadonnées des logs collectés (tous niveaux de sévérité), sans doublon, et les exposer en consultation.
+Conserver les métadonnées des logs collectés (niveaux au-dessus du seuil de collecte, `moyenne` par défaut), sans doublon, et les exposer en consultation.
 **Aucune route HTTP d'ingestion** : l'enregistrement est réservé au futur collecteur, via le service.
 
 ## Fonctions publiques (`service.py`)

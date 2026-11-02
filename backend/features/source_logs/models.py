@@ -1,4 +1,4 @@
-"""Table `logs` : logs critiques connus de l'application (métadonnées + référence OpenSearch)."""
+"""Table `logs` : logs collectés connus de l'application (métadonnées + référence OpenSearch)."""
 
 from datetime import datetime
 from uuid import UUID, uuid4

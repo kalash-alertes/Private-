@@ -12,6 +12,7 @@ import pytest
 
 from backend.core.criticality import CriticalityLevel
 from backend.core.pagination import PaginationParameters
+from backend.core.settings import get_application_settings
 from backend.features.audit_journal import service as audit_journal_service
 from backend.features.audit_journal.schemas import AuditEventListFilters
 from backend.features.incidents import service as incidents_service
@@ -130,7 +131,9 @@ def test_alerts_page_shows_three_severity_groups_and_both_charts(web_client, dat
     assert 'class="alert-donut-chart"' in response.text
     assert "Répartition circulaire" in response.text
     assert "Critique" in response.text and "Moyenne" in response.text and "Faible" in response.text
-    assert "Critiques et hautes" in response.text and "Faibles et informatives" in response.text
+    assert "Critiques et hautes" in response.text
+    # Seuil par défaut `moyenne` : la case Faible signale que ces niveaux ne sont pas collectés.
+    assert "Non collectées (seuil : Moyenne et plus)" in response.text
     assert "Source : Haute" in response.text and "Source : Information" in response.text
     assert "2</strong>" in response.text and "5</strong>" in response.text
 
@@ -174,6 +177,17 @@ def test_alerts_page_puts_every_source_level_in_its_severity_case(web_client, da
     for criticality, log_count in log_count_by_level.items():
         filtered_page = web_client.get(f"/alertes?criticite={criticality.value}").text
         assert f'<span class="table-count">{log_count}</span>' in filtered_page, criticality
+
+
+def test_low_case_is_labelled_normally_when_every_level_is_collected(web_client, monkeypatch) -> None:
+    monkeypatch.setenv("LOG_COLLECTION_MINIMUM_CRITICALITY", "information")
+    get_application_settings.cache_clear()
+    try:
+        page = web_client.get("/alertes").text
+    finally:
+        get_application_settings.cache_clear()
+
+    assert "Faibles et informatives" in page and "Non collectées" not in page
 
 
 def test_dashboard_uses_global_theme_and_shows_alert_source(web_client) -> None:

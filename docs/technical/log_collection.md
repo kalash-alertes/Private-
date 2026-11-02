@@ -13,14 +13,14 @@ flowchart LR
     faz[FortiAnalyzer<br/>Log Forwarding] -- "syslog UDP/TCP :5140" --> rcv
     subgraph integrations/fortianalyzer
         rcv["FortiAnalyzerSyslogReceiver<br/>(file en mémoire)"] --> parser[fortianalyzer_syslog_message_parser]
-        sel["log_source_selection<br/>build_critical_log_source"]
-        demo[DemoCriticalLogSource]
+        sel["log_source_selection<br/>build_fortianalyzer_log_source"]
+        demo[DemoFortiAnalyzerLogSource]
     end
     env[".env<br/>APP_IS_IN_DEMO"] --> sel
     sel -- "true" --> demo
     sel -- "false" --> rcv
     demo --> svc
-    rcv -- "take_new_logs()" --> svc["log_collection.service<br/>collect_critical_logs"]
+    rcv -- "take_new_logs()" --> svc["log_collection.service<br/>collect_fortianalyzer_logs"]
     svc --> norm[fortianalyzer_log_normalizer]
     svc --> ir["import_runs.service<br/>(exécution, curseur)"]
     svc --> sl["source_logs.service<br/>store_source_log_if_new"]
@@ -30,14 +30,14 @@ flowchart LR
     main["main.py (lifespan)"] -- "start/stop_log_reception" --> sel
 ```
 
-- **Contrat** `CriticalLogSource` (`critical_log_source.py`) : `source_description` + `take_new_logs(début, fin)` qui
+- **Contrat** `FortiAnalyzerLogSource` (`fortianalyzer_log_source.py`) : `source_description` + `take_new_logs(début, fin)` qui
   retourne **et retire** les logs arrivés depuis l'appel précédent, ou lève une `FortiAnalyzerError`. La démonstration
   se sert des bornes pour dater ses logs ; le récepteur syslog les ignore (il vide sa file).
 - **Récepteur partagé** : démarré une seule fois au lancement (`backend/main.py` → `log_collection.service.start_log_reception`
   → `log_source_selection.start_shared_syslog_receiver`), arrêté à l'extinction. En démonstration, aucun port n'est ouvert.
   Un démarrage raté (port occupé, droits) ne bloque pas l'application : le motif est mémorisé
   (`read_shared_syslog_receiver_startup_error`) et affiché dans Journaux ; une collecte manuelle échoue avec ce motif.
-- **Choix de la source** : uniquement dans `log_source_selection.build_critical_log_source(settings)`.
+- **Choix de la source** : uniquement dans `log_source_selection.build_fortianalyzer_log_source(settings)`.
 - **Dépendances** : la feature utilise les services publics de `import_runs` et `source_logs` ; elle n'a pas de table.
 
 ## Configuration (`backend/core/settings.py`, modèle : `.env.example`)
@@ -46,7 +46,7 @@ flowchart LR
 |---|---|---|
 | `APP_IS_IN_DEMO` | `true` | `true` : démonstration ; `false` : réception syslog |
 | `LOG_COLLECTION_INTERVAL_SECONDS` | `0` (`.env.example` : `30`) | Vidage de la file toutes les N s (0 = manuel) |
-| `LOG_COLLECTION_MINIMUM_CRITICALITY` | `information` (= tous les logs, décision 2026-11-02 ; avant : `haute`) | Seuil d'enregistrement (validé au démarrage) |
+| `LOG_COLLECTION_MINIMUM_CRITICALITY` | `moyenne` (niveaux 2, 3, 4 ; décision 2026-11-02 ; avant : `haute`) | Seuil d'enregistrement (validé au démarrage). Rangs : `CRITICALITY_RANK` (`backend/core/criticality.py`) |
 | `SYSLOG_LISTEN_ADDRESS` | `0.0.0.0` | Interface d'écoute |
 | `SYSLOG_LISTEN_PORT` | `5140` | Port (UDP et TCP) ; 514 demande des droits administrateur |
 | `SYSLOG_IS_UDP_ENABLED` / `SYSLOG_IS_TCP_ENABLED` | `true` / `true` | Protocoles écoutés (au moins un) |
@@ -117,11 +117,20 @@ tous lus et convertis, empreintes toutes distinctes ; sévérités : 1 178 faibl
 4. Fin : `reussie` (curseur = fin de période), `partielle` si des logs sont invalides (5 motifs au plus dans
    `erreur`), `echouee` si l'enregistrement échoue.
 
-Avec le seuil par défaut (`information`), `nb_logs_sous_le_seuil` vaut toujours 0 : chaque log valide est enregistré
-avec sa criticité source (correspondance dans `fortianalyzer_log_normalizer.py`), et la page Alertes le range ensuite
-dans sa case (`web_interface/pages/alerts_page.py`, `ALERT_SEVERITY_GROUP_LEVELS`). Tests :
-`test_by_default_every_fortianalyzer_severity_is_stored_with_its_criticality` (collecte) et
-`test_alerts_page_puts_every_source_level_in_its_severity_case` (interface).
+Seuil par défaut `moyenne` : `faible` et `information` sont comptés dans `nb_logs_sous_le_seuil` et non enregistrés.
+Chaque log gardé l'est avec sa criticité source (correspondance dans `fortianalyzer_log_normalizer.py`), puis la page
+Alertes le range dans sa case (`web_interface/pages/alerts_page.py`, `ALERT_SEVERITY_GROUP_LEVELS`). Si le seuil
+écarte `faible`, la case Faible affiche « Non collectées (seuil : … et plus) ». Tests :
+`test_by_default_only_medium_high_and_critical_logs_are_stored`,
+`test_every_fortianalyzer_severity_is_stored_with_its_criticality_when_everything_is_kept` (collecte) ;
+`test_alerts_page_puts_every_source_level_in_its_severity_case`,
+`test_low_case_is_labelled_normally_when_every_level_is_collected` (interface).
+
+Noms : la collecte s'appelle `collect_fortianalyzer_logs` / `collect_fortianalyzer_logs_from_configured_source`, le
+contrat des sources `FortiAnalyzerLogSource` (`backend/integrations/fortianalyzer/fortianalyzer_log_source.py`), son
+choix `build_fortianalyzer_log_source`, la source de démonstration `DemoFortiAnalyzerLogSource` (anciennement
+`collect_critical_logs`, `CriticalLogSource`, `critical_log_source.py`, `build_critical_log_source`,
+`DemoCriticalLogSource` : renommés le 2026-11-02, la collecte ne se limitant plus aux logs critiques).
 
 Compteurs de l'historique : `nb_logs_recus` = logs **retenus** (lus − sous le seuil), car `import_runs` exige pour une
 réussite `recus = inseres + ignores`. Le bilan (`LogCollectionResultRead`) détaille aussi `nb_logs_lus_sur_la_source`,

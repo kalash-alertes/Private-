@@ -1,6 +1,6 @@
 """Pagination commune à toutes les listes de l'API (par décalage : `limit` + `offset`).
 
-Choix : la pagination par décalage suffit pour les volumes V1 (logs critiques uniquement). Si les volumes deviennent
+Choix : la pagination par décalage suffit pour les volumes V1 (logs de sévérité moyenne et plus). Si les volumes deviennent
 importants, passer à une pagination par curseur (le tri est déjà déterministe : date puis identifiant).
 """
 

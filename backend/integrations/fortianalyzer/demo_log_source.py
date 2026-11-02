@@ -9,7 +9,7 @@ import random
 from datetime import datetime
 from uuid import uuid4
 
-from backend.integrations.fortianalyzer.critical_log_source import RawFortiAnalyzerLog
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import RawFortiAnalyzerLog
 
 DEMO_SOURCE_DESCRIPTION = "Démonstration (alertes inventées, aucune connexion à FortiAnalyzer)"
 
@@ -27,8 +27,8 @@ DEMO_LOG_TEMPLATES = [
 MAXIMUM_DEMO_LOGS_PER_COLLECTION = 4
 
 
-class DemoCriticalLogSource:
-    """Respecte le contrat `CriticalLogSource`. `random_generator` permet des tests reproductibles."""
+class DemoFortiAnalyzerLogSource:
+    """Respecte le contrat `FortiAnalyzerLogSource`. `random_generator` permet des tests reproductibles."""
 
     def __init__(self, random_generator: random.Random | None = None) -> None:
         self._random = random_generator or random.Random()
@@ -38,7 +38,7 @@ class DemoCriticalLogSource:
         return DEMO_SOURCE_DESCRIPTION
 
     def take_new_logs(self, period_start: datetime, period_end: datetime) -> list[RawFortiAnalyzerLog]:
-        """Invente de 1 à 4 logs datés dans la période, de tous les niveaux de sévérité (comme en réel)."""
+        """Invente de 1 à 4 logs datés dans la période, de tous niveaux (les plus faibles sont écartés par le seuil, comme en réel)."""
         start_timestamp, end_timestamp = int(period_start.timestamp()), int(period_end.timestamp())
         demo_logs = []
         for _ in range(self._random.randint(1, MAXIMUM_DEMO_LOGS_PER_COLLECTION)):

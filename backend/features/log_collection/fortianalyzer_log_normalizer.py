@@ -28,7 +28,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from backend.core.criticality import CriticalityLevel
-from backend.integrations.fortianalyzer.critical_log_source import SYSLOG_RECEPTION_METADATA_FIELD
+from backend.integrations.fortianalyzer.fortianalyzer_log_source import SYSLOG_RECEPTION_METADATA_FIELD
 
 FORTIANALYZER_SEVERITY_TO_CRITICALITY = {
     "emergency": CriticalityLevel.CRITICAL,

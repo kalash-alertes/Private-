@@ -1,1 +1,1 @@
-"""Fonctionnalité `source_logs` : logs critiques connus de l'application (table `logs`)."""
+"""Fonctionnalité `source_logs` : logs collectés connus de l'application (table `logs`)."""

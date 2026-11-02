@@ -32,10 +32,10 @@ class ApplicationSettings(BaseSettings):
     # Intervalle de la collecte automatique, en secondes : vide la file des logs reçus par syslog et les enregistre.
     # 0 = boucle désactivée (collecte manuelle uniquement ; en mode réel, les logs s'accumulent alors en mémoire).
     log_collection_interval_seconds: float = 0
-    # Sévérité minimale enregistrée (information, faible, moyenne, haute, critique). Par défaut `information` : TOUS
-    # les logs sont enregistrés (décision 2026-11-02, remplace le cadrage initial « logs critiques uniquement ») et
-    # l'interface les range en Critique / Moyenne / Faible. Un niveau plus haut écarte les logs moins graves.
-    log_collection_minimum_criticality: str = "information"
+    # Sévérité minimale enregistrée. Niveaux (rang de dangerosité) : information (0), faible (1), moyenne (2),
+    # haute (3), critique (4). Par défaut `moyenne` : seuls les niveaux 2, 3 et 4 sont enregistrés, faible et
+    # information sont lus puis écartés (décision 2026-11-02). `information` = tout garder.
+    log_collection_minimum_criticality: str = "moyenne"
 
     # --- Réception syslog (utilisée seulement si app_is_in_demo = false) ---
     syslog_listen_address: str = "0.0.0.0"

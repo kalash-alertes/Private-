@@ -26,7 +26,7 @@
             {% if configuration.reception.nb_messages_perdus_file_pleine %}· <b>{{ configuration.reception.nb_messages_perdus_file_pleine | number }} perdu(s), file pleine</b>{% endif %}.
           {% endif %}
         {% endif %}
-        <br>{% if configuration.severite_minimale == "information" %}Tous les niveaux de sévérité sont enregistrés{% else %}Sévérité minimale enregistrée : {{ configuration.severite_minimale | criticality_label }}{% endif %} ·
+        <br>{% if configuration.severite_minimale == "information" %}Tous les niveaux de sévérité sont enregistrés{% else %}Sévérité minimale enregistrée : {{ configuration.severite_minimale | criticality_label }} et plus (les niveaux inférieurs sont écartés){% endif %} ·
         {% if configuration.intervalle_collecte_secondes > 0 %}collecte automatique toutes les {{ configuration.intervalle_collecte_secondes | round | int }} s{% else %}collecte automatique désactivée{% endif %}.
       </p>
     </div>

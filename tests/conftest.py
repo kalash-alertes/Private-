@@ -44,6 +44,8 @@ SETTINGS_FORCED_FOR_TESTS = {
     "AUTOMATIC_ESCALATION_INTERVAL_SECONDS": "0",
     "LOG_COLLECTION_INTERVAL_SECONDS": "0",
     "APP_IS_IN_DEMO": "true",
+    # Seuil par défaut du code (niveaux moyenne, haute, critique), quel que soit le .env du poste.
+    "LOG_COLLECTION_MINIMUM_CRITICALITY": "moyenne",
 }
 
 

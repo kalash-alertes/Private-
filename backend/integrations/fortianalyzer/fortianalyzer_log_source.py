@@ -16,7 +16,7 @@ RawFortiAnalyzerLog = dict[str, Any]
 SYSLOG_RECEPTION_METADATA_FIELD = "reception_syslog"
 
 
-class CriticalLogSource(Protocol):
+class FortiAnalyzerLogSource(Protocol):
     """Une source capable de remettre les logs arrivés depuis la collecte précédente."""
 
     @property
