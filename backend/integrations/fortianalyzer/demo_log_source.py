@@ -22,6 +22,7 @@ DEMO_LOG_TEMPLATES = [
     ("event", "vpn", "level", "error", "Tunnel VPN tombé de façon inattendue (démonstration)"),
     ("utm", "webfilter", "level", "warning", "Accès à un site classé à risque (démonstration)"),
     ("event", "system", "level", "notice", "Configuration modifiée (démonstration)"),
+    ("event", "user", "level", "information", "Connexion administrateur réussie (démonstration)"),
 ]
 MAXIMUM_DEMO_LOGS_PER_COLLECTION = 4
 
@@ -37,7 +38,7 @@ class DemoCriticalLogSource:
         return DEMO_SOURCE_DESCRIPTION
 
     def take_new_logs(self, period_start: datetime, period_end: datetime) -> list[RawFortiAnalyzerLog]:
-        """Invente de 1 à 4 logs datés dans la période (certains en dessous du seuil de sévérité, comme en réel)."""
+        """Invente de 1 à 4 logs datés dans la période, de tous les niveaux de sévérité (comme en réel)."""
         start_timestamp, end_timestamp = int(period_start.timestamp()), int(period_end.timestamp())
         demo_logs = []
         for _ in range(self._random.randint(1, MAXIMUM_DEMO_LOGS_PER_COLLECTION)):

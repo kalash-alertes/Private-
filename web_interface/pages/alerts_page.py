@@ -1,4 +1,7 @@
-"""Page « Alertes » (`/alertes`) : logs critiques importés de FortiAnalyzer, avec leur incident éventuel.
+"""Page « Alertes » (`/alertes`) : logs importés de FortiAnalyzer (tous niveaux), avec leur incident éventuel.
+
+Les cinq niveaux source sont rangés dans trois cases (ALERT_SEVERITY_GROUP_LEVELS) : Critique = critique + haute,
+Moyenne = moyenne, Faible = faible + information. Le niveau source n'est jamais modifié, il reste affiché.
 
 Une alerte sans incident est « à traiter » : un bouton crée l'incident (formulaire vers `POST /incidents`).
 """

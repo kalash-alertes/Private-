@@ -135,6 +135,47 @@ def test_alerts_page_shows_three_severity_groups_and_both_charts(web_client, dat
     assert "2</strong>" in response.text and "5</strong>" in response.text
 
 
+def read_alert_summary_card_count(page_html: str, card_class: str) -> int:
+    card_match = re.search(rf'<article class="summary-card {card_class}">.*?<strong>([\d\s ]+)</strong>', page_html, re.S)
+    assert card_match, card_class
+    return int(re.sub(r"\D", "", card_match.group(1)))
+
+
+def test_alerts_page_puts_every_source_level_in_its_severity_case(web_client, database_session) -> None:
+    # Effectifs distincts par niveau pour vérifier chaque somme : Critique = critique + haute (3 + 2),
+    # Moyenne = moyenne (4), Faible = faible + information (1 + 6).
+    log_count_by_level = {
+        CriticalityLevel.CRITICAL: 3,
+        CriticalityLevel.HIGH: 2,
+        CriticalityLevel.MEDIUM: 4,
+        CriticalityLevel.LOW: 1,
+        CriticalityLevel.INFORMATION: 6,
+    }
+    for criticality, log_count in log_count_by_level.items():
+        for index in range(log_count):
+            store_synthetic_source_log(
+                database_session, identifier_suffix=f"{criticality.value}-{index}", criticite_source=criticality
+            )
+    end_test_session_transaction(database_session)
+
+    page = web_client.get("/alertes").text
+
+    assert read_alert_summary_card_count(page, "alert-summary-critical") == 5
+    assert read_alert_summary_card_count(page, "alert-summary-medium") == 4
+    assert read_alert_summary_card_count(page, "alert-summary-low") == 7
+    assert read_alert_summary_card_count(page, "alert-summary-total") == 16
+    # Chaque ligne : pastille de la case, et rappel du niveau source quand il est regroupé.
+    rows = re.findall(r"<tr>\s*<td><div class=\"incident-title\">.*?</tr>", page, re.S)
+    assert len(rows) == 16
+    pills = [re.search(r'aria-label="Niveau (\w+)"', row).group(1) for row in rows]
+    assert (pills.count("Critique"), pills.count("Moyenne"), pills.count("Faible")) == (5, 4, 7)
+    assert page.count("Source : Haute") == 2 and page.count("Source : Information") == 6
+    # Le filtre par niveau source fonctionne pour chaque niveau.
+    for criticality, log_count in log_count_by_level.items():
+        filtered_page = web_client.get(f"/alertes?criticite={criticality.value}").text
+        assert f'<span class="table-count">{log_count}</span>' in filtered_page, criticality
+
+
 def test_dashboard_uses_global_theme_and_shows_alert_source(web_client) -> None:
     """Le dashboard suit le thème sauge commun (plus de thème noir/blanc dédié) et garde l'indicateur de source."""
     dashboard = web_client.get("/").text

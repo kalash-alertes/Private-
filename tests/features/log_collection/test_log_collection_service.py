@@ -52,11 +52,42 @@ def collect(database_session, log_source, current_time=COLLECTION_TIME, **settin
     )
 
 
+def test_by_default_every_fortianalyzer_severity_is_stored_with_its_criticality(database_session) -> None:
+    # Toutes les valeurs connues des champs `level` (syslog) et `severity` (IPS) : aucune n'est écartée par défaut.
+    expected_criticality_by_value = {
+        "emergency": "critique", "alert": "critique", "critical": "critique",
+        "error": "haute", "high": "haute",
+        "warning": "moyenne", "medium": "moyenne",
+        "notice": "faible", "low": "faible",
+        "information": "information", "info": "information", "debug": "information",
+    }
+    logs = [synthetic_log(value, f"niveau {value}") for value in expected_criticality_by_value]
+
+    result = collect(database_session, FakeLogSource(logs))
+
+    assert (result.nb_logs_inseres, result.nb_logs_sous_le_seuil, result.nb_logs_invalides) == (12, 0, 0)
+    stored_logs = source_logs_service.list_source_logs(
+        database_session, SourceLogListFilters(), PaginationParameters(limit=50)
+    ).items
+    stored_criticality_by_message = {
+        source_logs_service.fetch_source_log_detail(database_session, log.id).donnees_brutes["msg"]: log.criticite_source.value
+        for log in stored_logs
+    }
+    assert stored_criticality_by_message == {
+        f"niveau {value}": criticality for value, criticality in expected_criticality_by_value.items()
+    }
+
+
 def test_severe_logs_are_stored_once_and_weaker_ones_are_skipped(database_session) -> None:
     log_source = FakeLogSource([synthetic_log("critical", "a"), synthetic_log("error", "b"), synthetic_log("notice", "c")])
 
-    first_result = collect(database_session, log_source)
-    second_result = collect(database_session, log_source, current_time=COLLECTION_TIME + timedelta(minutes=5))
+    first_result = collect(database_session, log_source, log_collection_minimum_criticality="haute")
+    second_result = collect(
+        database_session,
+        log_source,
+        current_time=COLLECTION_TIME + timedelta(minutes=5),
+        log_collection_minimum_criticality="haute",
+    )
 
     assert first_result.statut == ImportRunStatus.SUCCEEDED
     assert (first_result.nb_logs_lus_sur_la_source, first_result.nb_logs_sous_le_seuil) == (3, 1)
