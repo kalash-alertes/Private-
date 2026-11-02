@@ -59,6 +59,46 @@ def test_static_stylesheets_are_served(web_client) -> None:
     assert response.status_code == 200 and "severity-pill" in response.text
 
 
+def test_dashboard_themes_are_scoped_to_the_dashboard(web_client) -> None:
+    dashboard = web_client.get("/").text
+    incidents_page = web_client.get("/incidents").text
+
+    assert 'data-dashboard-theme="dark"' in dashboard
+    assert 'data-theme-choice="light"' in dashboard and 'data-theme-choice="dark"' in dashboard
+    assert 'aria-label="Apparence du tableau de bord"' in dashboard
+    assert "dashboard_theme.js" in dashboard and "dashboard_theme.css" in dashboard
+    assert "data-dashboard-theme" not in incidents_page
+    assert "dashboard_theme.js" not in incidents_page and "dashboard_theme.css" not in incidents_page
+    assert "Aucun incident ouvert." in dashboard and 'href="/alertes"' in dashboard
+
+
+@pytest.mark.parametrize(
+    "asset_path, expected_content",
+    [
+        ("/static/css/dashboard_theme.css", '[data-dashboard-theme="light"]'),
+        ("/static/css/dashboard.css", ".stats-grid"),
+        ("/static/js/dashboard_theme.js", "soc-dashboard-theme"),
+    ],
+)
+def test_dashboard_theme_assets_are_served(web_client, asset_path, expected_content) -> None:
+    response = web_client.get(asset_path)
+    assert response.status_code == 200 and expected_content in response.text
+
+
+def test_dashboard_keeps_live_incident_data_and_links(web_client, database_session) -> None:
+    playbooks_service.create_playbook(database_session, build_synthetic_playbook_request())
+    storage_result = store_synthetic_source_log(database_session)
+    end_test_session_transaction(database_session)
+    incident_location = web_client.post("/incidents", data={"log_id": str(storage_result.source_log_id)}).headers["location"]
+
+    dashboard = web_client.get("/").text
+
+    assert "INC-000001" in dashboard
+    assert incident_location.split("?")[0] in dashboard
+    assert 'href="/incidents?vue=traites"' in dashboard
+    assert "Activité des alertes" in dashboard and "Répartition par sévérité" in dashboard
+
+
 def test_incident_is_created_from_an_alert_and_opens_on_its_playbook(web_client, database_session) -> None:
     playbook = playbooks_service.create_playbook(database_session, build_synthetic_playbook_request())
     storage_result = store_synthetic_source_log(database_session)

@@ -4,12 +4,13 @@
   Menu mobile sans JavaScript : la case à cocher #sidebar-toggle ouvre/ferme le menu (voir application_shell.css).
 #}
 <!doctype html>
-<html lang="fr">
+<html lang="fr" {% block document_attributes %}{% endblock %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#101827">
   <title>{{ page_title }} | {{ application_name }}</title>
+  {% block page_head_scripts %}{% endblock %}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap">
   <link rel="stylesheet" href="/static/css/foundation.css">

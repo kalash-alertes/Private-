@@ -21,6 +21,18 @@ OpenSearch Dashboards n'est nécessaire pour traiter les incidents.
 | **Journaux** | L'historique des imports depuis FortiAnalyzer : réussis, échoués, combien d'alertes. |
 | **Paramètres** | Clients (prévu), **Réponse aux incidents** (délais, escalade, playbooks), Utilisateurs (prévu), **Journal d'audit**. |
 
+## Un tableau de bord noir ou blanc
+
+Sur le **Tableau de bord**, les boutons **Blanc** et **Noir** permettent de choisir une apparence claire ou sombre.
+Le navigateur mémorise votre choix ; au premier accès, l'apparence suit celle de votre système. Si le navigateur
+interdit la mémorisation, un message vous en informe. Sans JavaScript, l'écran reste utilisable en noir.
+
+Les cartes donnent accès aux incidents ouverts, aux alertes à traiter et aux incidents traités. Le graphique couvre
+les sept derniers jours, et la liste du bas ouvre directement chaque incident. Il s'agit toujours des données de
+l'application : changer les couleurs ne modifie ni les alertes ni leur traitement.
+
+Cette première refonte concerne **uniquement le tableau de bord**. Les autres écrans conservent leur apparence.
+
 ## Démonstration ou vraies alertes ?
 
 Le haut de chaque page le dit, avec une couleur :

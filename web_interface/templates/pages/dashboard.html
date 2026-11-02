@@ -1,29 +1,39 @@
 {% extends "layouts/application_layout.html" %}
 {% from "partials/display_macros.html" import severity_pill, incident_status_pill, assignee_badge, deadline_badge %}
 
-{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/dashboard.css">{% endblock %}
+{% block document_attributes %}data-dashboard-theme="dark"{% endblock %}
+{% block page_head_scripts %}<script src="/static/js/dashboard_theme.js"></script>{% endblock %}
+{% block page_stylesheets %}
+  <link rel="stylesheet" href="/static/css/dashboard_theme.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+{% endblock %}
 
 {% block heading_actions %}
+  <div class="theme-switch" role="group" aria-label="Apparence du tableau de bord" hidden>
+    <button type="button" data-theme-choice="light" aria-pressed="false"><span class="theme-swatch swatch-light" aria-hidden="true"></span>Blanc</button>
+    <button type="button" data-theme-choice="dark" aria-pressed="true"><span class="theme-swatch swatch-dark" aria-hidden="true"></span>Noir</button>
+  </div>
   <a class="button button-secondary" href="/">{{ icon("refresh_cw", 16) }} Actualiser</a>
   <a class="button button-primary" href="/incidents#nouvel-incident">{{ icon("plus", 17) }} Nouvel incident</a>
 {% endblock %}
 
 {% block page_body %}
+  <p class="theme-storage-notice" role="status" hidden></p>
   <div class="context-strip">
     <div class="context-left">
-      <span class="live-dot"></span>
-      <strong>Surveillance</strong>
+      {{ icon("activity", 16) }}
+      <strong>Vue opérationnelle</strong>
       <span class="context-separator">/</span>
       <span>{{ dashboard.nombre_alertes | number }} alerte(s) connue(s), {{ dashboard.nombre_incidents_ouverts | number }} incident(s) ouvert(s)</span>
     </div>
     <div class="context-right">
-      <span>{{ icon("lock_keyhole", 13) }} Données de l'application</span>
+      <a href="/journaux" class="source-context alert-source-{{ alert_source_indicator.mode }}"><span class="alert-source-dot"></span>{{ alert_source_indicator.badge_label }}</a>
     </div>
   </div>
 
   <section class="stats-grid" aria-label="Indicateurs clés">
-    <article class="stat-card">
-      <div class="stat-top"><span class="stat-icon icon-blue">{{ icon("shield_alert", 19) }}</span></div>
+    <article class="stat-card stat-blue">
+      <div class="stat-top"><span class="stat-icon icon-blue">{{ icon("shield_alert", 19) }}</span><a class="stat-shortcut" href="/incidents" aria-label="Consulter les incidents ouverts">{{ icon("arrow_up_right", 18) }}</a></div>
       <p class="stat-label">Incidents ouverts</p>
       <div class="stat-value">{{ dashboard.nombre_incidents_ouverts | number }} <span class="stat-unit">incidents</span></div>
       <div class="stat-footer">
@@ -32,21 +42,21 @@
       </div>
     </article>
 
-    <article class="stat-card">
-      <div class="stat-top"><span class="stat-icon icon-orange">{{ icon("triangle_alert", 19) }}</span></div>
+    <article class="stat-card stat-orange">
+      <div class="stat-top"><span class="stat-icon icon-orange">{{ icon("triangle_alert", 19) }}</span><a class="stat-shortcut" href="/alertes" aria-label="Consulter les alertes à traiter">{{ icon("arrow_up_right", 18) }}</a></div>
       <p class="stat-label">Alertes à traiter</p>
       <div class="stat-value">{{ dashboard.nombre_alertes_a_traiter | number }} <span class="stat-unit">alertes</span></div>
       <div class="stat-footer"><span class="footer-dot orange-dot"></span><span>Alertes sans incident</span></div>
     </article>
 
-    <article class="stat-card">
-      <div class="stat-top"><span class="stat-icon icon-green">{{ icon("shield_check", 19) }}</span></div>
+    <article class="stat-card stat-green">
+      <div class="stat-top"><span class="stat-icon icon-green">{{ icon("shield_check", 19) }}</span><a class="stat-shortcut" href="/incidents?vue=traites" aria-label="Consulter les incidents traités">{{ icon("arrow_up_right", 18) }}</a></div>
       <p class="stat-label">Incidents traités</p>
       <div class="stat-value">{{ dashboard.nombre_incidents_traites | number }} <span class="stat-unit">traités</span></div>
       <div class="stat-footer"><span class="footer-dot green-dot"></span><span>Résolus ou clôturés</span></div>
     </article>
 
-    <article class="stat-card">
+    <article class="stat-card stat-purple">
       <div class="stat-top"><span class="stat-icon icon-purple">{{ icon("clock3", 19) }}</span></div>
       <p class="stat-label">Temps moyen de traitement</p>
       <div class="stat-value">{{ dashboard.temps_moyen_traitement_minutes | duration }}</div>
@@ -61,6 +71,7 @@
           <h2>Activité des alertes</h2>
           <p>Alertes détectées et incidents traités, 7 derniers jours</p>
         </div>
+        <span class="period-label">{{ icon("calendar_days", 14) }} 7 jours</span>
       </div>
       <div class="chart-legend">
         <span><i class="legend-blue"></i> Alertes détectées</span>
@@ -98,8 +109,8 @@
         {% endfor %}
       </div>
       {% set critical_open_count = dashboard.incidents_ouverts_par_criticite.get("critique", 0) %}
-      <div class="severity-note">
-        {{ icon("shield_check", 15) }}
+      <div class="severity-note{% if critical_open_count %} has-critical{% endif %}">
+        {{ icon("shield_alert" if critical_open_count else "shield_check", 15) }}
         <span>
           {% if critical_open_count %}{{ critical_open_count }} incident(s) critique(s) nécessitent une attention immédiate.
           {% else %}Aucun incident critique ouvert.{% endif %}
@@ -139,7 +150,7 @@
               <td><span class="row-more">{{ icon("chevron_right", 17) }}</span></td>
             </tr>
           {% else %}
-            <tr><td colspan="7" class="empty-state">Aucun incident ouvert.</td></tr>
+            <tr><td colspan="7" class="empty-state"><div class="dashboard-empty-icon">{{ icon("shield_check", 28) }}</div><strong>Aucun incident ouvert.</strong><p>Les prochains incidents à examiner apparaîtront ici.</p><a class="text-button" href="/alertes">Consulter les alertes {{ icon("arrow_up_right", 15) }}</a></td></tr>
           {% endfor %}
         </tbody>
       </table>
