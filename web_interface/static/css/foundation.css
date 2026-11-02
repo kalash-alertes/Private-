@@ -1,24 +1,24 @@
 /*
   Fondations : couleurs (jetons), typographie, remise à zéro.
-  Thème sombre repris de la maquette de l'équipe (dashboard/src/styles.css, branche main).
 */
 :root {
   font-family: 'DM Sans', sans-serif;
-  color: #e7edf7;
-  background: #0b1220;
+  color: #382833;
+  background: #f4f7f2;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --bg: #0b1220;
-  --sidebar: #101827;
-  --panel: #111c2d;
-  --panel2: #142035;
-  --border: #263349;
-  --muted: #8290a5;
-  --text: #e8eef8;
-  --blue: #6d9cff;
-  --teal: #35c6ad;
-  --danger: #ff647c;
+  --bg: #f4f7f2;
+  --sidebar: #edf2eb;
+  --panel: #fcfdfa;
+  --panel2: #f4f7f2;
+  --border: #dce5da;
+  --muted: #637168;
+  --text: #303b33;
+  --blue: #66836c;
+  --teal: #43836d;
+  --danger: #c94c68;
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -27,7 +27,7 @@ a { color: inherit; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
-  outline: 2px solid #6d9cff;
+  outline: 2px solid #66836c;
   outline-offset: 2px;
 }
 .muted-text { color: var(--muted); }

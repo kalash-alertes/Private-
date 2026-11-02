@@ -1,4 +1,4 @@
-"""Tables `incidents` (suivi métier d'un incident issu d'un log) et `etapes_realisees_incident` (avancement du playbook)."""
+"""Incident tables, playbook progress, and per-incident response checklist completion."""
 
 from datetime import datetime
 from enum import StrEnum
@@ -110,3 +110,27 @@ class IncidentPlaybookStepCompletion(DatabaseModelBase):
     etape_playbook_id: Mapped[UUID] = mapped_column(ForeignKey("etapes_playbook.id", ondelete="CASCADE"))
     realisee_le: Mapped[datetime] = mapped_column(TimestampWithTimezoneColumnType, server_default=func.now())
     realisee_par: Mapped[str | None] = mapped_column(String(255))
+
+
+class IncidentResponseChecklistItem(DatabaseModelBase):
+    """A suggested response task and its completion state for one incident."""
+
+    __tablename__ = "incident_response_checklist"
+    __table_args__ = (
+        UniqueConstraint("incident_id", "cle", name="uq_incident_response_checklist_incident_id_cle"),
+        UniqueConstraint("incident_id", "ordre", name="uq_incident_response_checklist_incident_id_ordre"),
+        CheckConstraint("ordre >= 1", name="ordre_positive"),
+        CheckConstraint("cle <> ''", name="cle_not_blank"),
+        CheckConstraint("titre <> ''", name="titre_not_blank"),
+        CheckConstraint("description <> ''", name="description_not_blank"),
+        CheckConstraint("terminee_par IS NULL OR terminee_par <> ''", name="terminee_par_not_blank"),
+    )
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
+    incident_id: Mapped[UUID] = mapped_column(ForeignKey("incidents.id", ondelete="CASCADE"))
+    ordre: Mapped[int] = mapped_column(Integer)
+    cle: Mapped[str] = mapped_column(String(64))
+    titre: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(Text)
+    terminee_le: Mapped[datetime | None] = mapped_column(TimestampWithTimezoneColumnType)
+    terminee_par: Mapped[str | None] = mapped_column(String(255))

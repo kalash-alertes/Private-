@@ -15,7 +15,7 @@ RUN if ls docker_wheels/*.whl > /dev/null 2>&1; then \
     fi \
     && rm -rf docker_wheels
 
-COPY alembic.ini .
+COPY --chmod=644 alembic.ini .
 COPY backend ./backend
 COPY web_interface ./web_interface
 COPY db ./db

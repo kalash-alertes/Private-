@@ -105,6 +105,28 @@ class IncidentPlaybookStepCompletionRequest(BaseModel):
     realisee_par: AssigneeIdentifier | None = None
 
 
+class IncidentResponseChecklistCompletionRequest(BaseModel):
+    """Mark a suggested incident response task complete or incomplete."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    terminee: bool
+    terminee_par: AssigneeIdentifier | None = None
+
+
+class IncidentResponseChecklistItemRead(BaseModel):
+    """One response checklist task and its incident-specific completion state."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    cle: str
+    titre: str
+    description: str
+    terminee_le: StoredUtcDatetime | None
+    terminee_par: str | None
+
+
 class IncidentRead(BaseModel):
     """Champs stockés d'un incident, plus la référence lisible et l'état ouvert/traité qui en découlent."""
 

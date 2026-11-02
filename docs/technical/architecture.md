@@ -6,6 +6,10 @@ Python 3.12, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, Pydantic v2, Jinja2 
 Compose (`database` + `backend`). Le backend sert à la fois l'**interface web** (racine `/`) et l'**API JSON** (`/api`).
 OpenSearch et Data Prepper (optionnel) seront ajoutés avec la collecte. **OpenSearch Dashboards n'est plus l'interface
 prévue** : décision du 2026-10-29, l'interface est `web_interface/` (voir [web_interface.md](./web_interface.md)).
+L'image Docker exécute le backend avec un utilisateur non-root ; `alembic.ini` est donc copié avec des permissions de
+lecture afin que les migrations démarrent avant le serveur. Le service Compose ajoute aussi le GID
+`DOCKER_SHARED_GROUP_ID` (968 par défaut) aux groupes du backend pour lire les sources montées depuis un dossier
+partagé ; ce GID peut être remplacé dans l'environnement de Compose si l'hôte utilise un autre groupe.
 
 ## Organisation du code
 

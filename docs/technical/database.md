@@ -1,6 +1,6 @@
 # Base de données PostgreSQL (V1)
 
-Schéma géré par Alembic : [0001_create_initial_tables.py](../../db/migrations/versions/0001_create_initial_tables.py), [0002_add_consistency_constraints.py](../../db/migrations/versions/0002_add_consistency_constraints.py), [0003_add_settings_playbooks_audit_journal.py](../../db/migrations/versions/0003_add_settings_playbooks_audit_journal.py). Modèles : `backend/features/*/models.py`.
+Schéma géré par Alembic : [0001_create_initial_tables.py](../../db/migrations/versions/0001_create_initial_tables.py), [0002_add_consistency_constraints.py](../../db/migrations/versions/0002_add_consistency_constraints.py), [0003_add_settings_playbooks_audit_journal.py](../../db/migrations/versions/0003_add_settings_playbooks_audit_journal.py), [0004_add_incident_response_checklist.py](../../db/migrations/versions/0004_add_incident_response_checklist.py). Modèles : `backend/features/*/models.py`.
 Conventions : clés UUID, dates `TIMESTAMPTZ` (UTC), noms de contraintes préfixés (`pk_`, `fk_`, `uq_`, `ck_`, `ix_`).
 
 ```mermaid
@@ -11,6 +11,7 @@ erDiagram
     playbooks |o--o{ incidents : "guide"
     incidents ||--o{ etapes_realisees_incident : "avance"
     etapes_playbook ||--o{ etapes_realisees_incident : "cochée dans"
+    incidents ||--o{ incident_response_checklist : "suivi de réponse"
 ```
 
 Tables sans lien : `delais_reponse_incidents` (une règle par criticité), `journal_audit` (référence libre
@@ -72,6 +73,14 @@ Migration 0003 sur des incidents existants : numérotés par date de création, 
 
 `incident_id` FK CASCADE, `etape_playbook_id` FK CASCADE, `UNIQUE(incident_id, etape_playbook_id)`, `realisee_le`,
 `realisee_par` (NULL ou non vide). Absence de ligne = étape non réalisée.
+
+## `incident_response_checklist` (feature `incidents`, 0004)
+
+Une ligne par tâche suggérée et par incident. `incident_id` FK CASCADE, UUID `id`, `ordre`, clé `cle`, `titre`,
+`description`, `terminee_le` et `terminee_par`. Unicité de la clé et de l'ordre par incident ; l'ordre est positif,
+les champs de texte sont non vides et l'auteur est NULL ou non vide. Une nouvelle checklist de sept tâches est créée dans la transaction
+de l'incident ; la migration initialise également tous les incidents déjà en base. Les changements effectifs sont
+datés et écrits au journal d'audit. Ces tâches sont un aide-mémoire générique, pas une procédure officielle.
 
 ## `playbooks` / `etapes_playbook` (feature `playbooks`, 0003)
 

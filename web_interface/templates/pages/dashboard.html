@@ -22,36 +22,37 @@
   </div>
 
   <section class="stats-grid" aria-label="Indicateurs clés">
-    <article class="stat-card">
+    <a class="stat-card stat-card-link" href="/incidents?vue=en_cours" aria-label="Voir les incidents ouverts">
       <div class="stat-top"><span class="stat-icon icon-blue">{{ icon("shield_alert", 19) }}</span></div>
       <p class="stat-label">Incidents ouverts</p>
       <div class="stat-value">{{ dashboard.nombre_incidents_ouverts | number }} <span class="stat-unit">incidents</span></div>
       <div class="stat-footer">
         <span class="footer-dot {{ 'red-dot' if dashboard.nombre_incidents_ouverts_delai_depasse else 'green-dot' }}"></span>
-        <span>{{ dashboard.nombre_incidents_ouverts_delai_depasse }} en retard sur leur délai</span>
+        <span>{{ dashboard.nombre_incidents_ouverts_delai_depasse }} en retard · Voir les incidents</span>
+        {{ icon("chevron_right", 14) }}
       </div>
-    </article>
+    </a>
 
-    <article class="stat-card">
+    <a class="stat-card stat-card-link" href="/alertes" aria-label="Voir toutes les alertes">
       <div class="stat-top"><span class="stat-icon icon-orange">{{ icon("triangle_alert", 19) }}</span></div>
       <p class="stat-label">Alertes à traiter</p>
       <div class="stat-value">{{ dashboard.nombre_alertes_a_traiter | number }} <span class="stat-unit">alertes</span></div>
-      <div class="stat-footer"><span class="footer-dot orange-dot"></span><span>Alertes sans incident</span></div>
-    </article>
+      <div class="stat-footer"><span class="footer-dot orange-dot"></span><span>Voir toutes les alertes</span>{{ icon("chevron_right", 14) }}</div>
+    </a>
 
-    <article class="stat-card">
+    <a class="stat-card stat-card-link" href="/incidents?vue=traites" aria-label="Voir les incidents traités">
       <div class="stat-top"><span class="stat-icon icon-green">{{ icon("shield_check", 19) }}</span></div>
       <p class="stat-label">Incidents traités</p>
       <div class="stat-value">{{ dashboard.nombre_incidents_traites | number }} <span class="stat-unit">traités</span></div>
-      <div class="stat-footer"><span class="footer-dot green-dot"></span><span>Résolus ou clôturés</span></div>
-    </article>
+      <div class="stat-footer"><span class="footer-dot green-dot"></span><span>Voir les incidents traités</span>{{ icon("chevron_right", 14) }}</div>
+    </a>
 
-    <article class="stat-card">
+    <a class="stat-card stat-card-link" href="/incidents?vue=traites" aria-label="Voir les incidents traités associés au temps moyen">
       <div class="stat-top"><span class="stat-icon icon-purple">{{ icon("clock3", 19) }}</span></div>
       <p class="stat-label">Temps moyen de traitement</p>
       <div class="stat-value">{{ dashboard.temps_moyen_traitement_minutes | duration }}</div>
-      <div class="stat-footer"><span class="footer-dot purple-dot"></span><span>De la création au traitement</span></div>
-    </article>
+      <div class="stat-footer"><span class="footer-dot purple-dot"></span><span>Voir les incidents traités</span>{{ icon("chevron_right", 14) }}</div>
+    </a>
   </section>
 
   <section class="middle-grid">

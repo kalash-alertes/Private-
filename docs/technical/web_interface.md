@@ -12,16 +12,17 @@ lucide extraites de son build (`icon_shapes.py`, généré), le graphique rechar
 Conséquences :
 - un seul service à déployer (le backend sert pages, CSS et API) ; pas de CORS pour l'interface ;
 - l'API JSON est déplacée sous **`/api`** (la racine est aux pages) ; elle reste utilisable par un autre client ;
-- les pages appellent directement les `service.py` publics des fonctionnalités (pas d'appel HTTP interne).
+- Les pages appellent directement les `service.py` publics des fonctionnalités (pas d'appel HTTP interne). Le thème
+global est sauge clair ; les graphiques de synthèse sont des SVG produits en Python, sans JavaScript.
 
 ## Routes des pages
 
 | Page | GET | POST (formulaires) |
 |---|---|---|
-| Tableau de bord | `/` | — |
+| Tableau de bord | `/` | — ; les cartes ouvrent Alertes, Incidents ouverts ou Incidents traités |
 | Incidents | `/incidents?vue=en_cours\|traites&recherche=&criticite=&statut=&offset=` | `/incidents` (création depuis une alerte) |
-| Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}` |
-| Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) |
+| Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}`, `/checklist/{item_id}` |
+| Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) ; indicateurs par sévérité, graphique en barres et diagramme circulaire |
 | Journaux | `/journaux?statut=&offset=` (historique des imports) | — |
 | Paramètres | `/parametres` → `/parametres/reponse-incidents` | `/parametres/reponse-incidents/delais/{criticite}`, `/parametres/reponse-incidents/escalade` |
 | Playbooks | `/parametres/playbooks`, `/nouveau`, `/{id}/modifier` | `/nouveau`, `/{id}/modifier`, `/{id}/supprimer` |
@@ -44,6 +45,12 @@ une ligne ouvre la fiche, dont le premier panneau est le **playbook** de l'incid
   serveur réaffiche le formulaire modifié sans enregistrer. Un bouton « Enregistrer » caché est placé en premier pour
   que la touche Entrée enregistre. Chaque étape garde son `id` caché (préserve son suivi dans les incidents).
 - **Lignes cliquables** : le lien du titre s'étend sur toute la ligne (`::after`).
+- **Cartes du tableau de bord** : incidents ouverts → `/incidents?vue=en_cours`, alertes à traiter → `/alertes`,
+  incidents traités et temps moyen → `/incidents?vue=traites`.
+- **Checklist de réponse** : chaque incident reçoit sept tâches suggérées, indépendantes du playbook et stockées dans
+  `incident_response_checklist`. Une case est enregistrée par formulaire POST ; les changements effectifs sont datés,
+  audités et bloqués après clôture. C'est un aide-mémoire générique, à adapter aux règles internes, et non une procédure
+  officielle.
 
 ## Erreurs
 
@@ -63,6 +70,14 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 - Dates stockées en UTC, affichées en `Europe/Paris` (`display_formatting.DISPLAY_TIMEZONE`, repli UTC si la base
   des fuseaux manque ; `tzdata` est dans `requirements.txt` pour l'image Docker).
 - Libellés : `haute` s'affiche « Haute » (la maquette disait « Élevée ») pour rester aligné sur la base.
+- Sur la page Alertes, les sévérités sont regroupées sans modifier leur valeur source : **Critique** inclut `critique`
+  et `haute`, **Moyenne** inclut `moyenne`, et **Faible** inclut `faible` et `information`. Les badges précisent le
+  niveau source lorsqu'il est regroupé. Le total des groupes est calculé à partir des comptes filtrés par niveau.
+- `alert_charts_svg.py` dessine le graphique en barres et l'anneau circulaire à partir de ces trois comptes. Les SVG
+  portent un nom accessible ; la légende HTML expose les comptes même sans interprétation visuelle du graphique.
+- `static/css/pink_theme.css`, chargée en dernier dans le layout commun, applique les surfaces sauge pâle et les
+  couleurs de texte à contraste élevé sur toutes les pages. Les indicateurs de criticité conservent leurs couleurs
+  sémantiques.
 
 ## Données de démonstration
 
@@ -71,6 +86,6 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 
 ## Tests
 
-`tests/web_interface/test_web_pages.py` : chaque page s'affiche sur une base vide, parcours complets via les
-formulaires (création, actions, étapes, playbook, délais, escalade), erreurs HTML vs JSON, messages limités aux clés
-connues. Vérification visuelle dans un navigateur : non automatisée.
+`tests/web_interface/test_web_pages.py` : chaque page s'affiche sur une base vide, liens des cartes du tableau de bord,
+parcours complets via les formulaires (création, actions, étapes, checklist, playbook, délais, escalade), erreurs HTML
+vs JSON, messages limités aux clés connues. Vérification visuelle dans un navigateur : non automatisée.

@@ -2,6 +2,9 @@
 
 .stats-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 15px; margin-bottom: 17px; }
 .stat-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; min-width: 0; padding: 17px 17px 14px; min-height: 151px; }
+.stat-card-link { display: block; color: inherit; text-decoration: none; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.stat-card-link:hover { border-color: #b7cbb8; box-shadow: 0 7px 20px #33483a12; transform: translateY(-2px); }
+.stat-card-link:focus-visible { outline: 2px solid #587760; outline-offset: 3px; }
 .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .stat-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; }
 .icon-blue { color: #83adff; background: #21375a; }
@@ -12,6 +15,7 @@
 .stat-value { font: 800 25px Manrope, sans-serif; letter-spacing: -.6px; color: #f1f5fc; }
 .stat-unit { font: 500 10px 'DM Sans', sans-serif; color: #8290a5; letter-spacing: 0; }
 .stat-footer { display: flex; align-items: center; gap: 7px; margin-top: 11px; color: #77869c; font-size: 9px; }
+.stat-card-link .stat-footer svg { flex-shrink: 0; margin-left: auto; color: #617f68; }
 .footer-dot { width: 6px; height: 6px; border-radius: 50%; }
 .orange-dot { background: #ffb46b; } .green-dot { background: #4ccba6; } .purple-dot { background: #b89aff; } .red-dot { background: #ff647c; }
 

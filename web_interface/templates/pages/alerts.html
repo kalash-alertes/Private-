@@ -1,21 +1,67 @@
 {% extends "layouts/application_layout.html" %}
-{% from "partials/display_macros.html" import severity_pill, pagination_footer %}
+{% from "partials/display_macros.html" import alert_severity_group_pill, pagination_footer %}
 
-{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/incidents.css">{% endblock %}
+{% block page_stylesheets %}
+  <link rel="stylesheet" href="/static/css/incidents.css">
+  <link rel="stylesheet" href="/static/css/alerts.css">
+{% endblock %}
 
 {% block page_body %}
-  <section class="summary-cards" aria-label="Résumé des alertes">
-    <article class="summary-card"><span>Total des alertes {{ icon("bell", 18, css_class="summary-icon-blue") }}</span><strong>{{ alert_counts.total | number }}</strong></article>
-    <article class="summary-card"><span>Alertes critiques {{ icon("circle_alert", 18, css_class="summary-icon-red") }}</span><strong>{{ alert_counts.critiques | number }}</strong></article>
-    <article class="summary-card"><span>À traiter {{ icon("clock3", 18, css_class="summary-icon-purple") }}</span><strong>{{ alert_counts.a_traiter | number }}</strong></article>
-    <article class="summary-card"><span>Avec incident {{ icon("circle_check", 18, css_class="summary-icon-green") }}</span><strong>{{ alert_counts.traitees | number }}</strong></article>
+  <section class="summary-cards alert-summary-cards" aria-label="Résumé des alertes par sévérité">
+    <article class="summary-card alert-summary-critical">
+      <span>Critique {{ icon("circle_alert", 18) }}</span>
+      <strong>{{ severity_counts.critical | number }}</strong>
+      <small>Critiques et hautes</small>
+    </article>
+    <article class="summary-card alert-summary-medium">
+      <span>Moyenne {{ icon("clock3", 18) }}</span>
+      <strong>{{ severity_counts.medium | number }}</strong>
+      <small>Alertes de niveau moyen</small>
+    </article>
+    <article class="summary-card alert-summary-low">
+      <span>Faible {{ icon("circle_check", 18) }}</span>
+      <strong>{{ severity_counts.low | number }}</strong>
+      <small>Faibles et informatives</small>
+    </article>
+    <article class="summary-card alert-summary-total">
+      <span>Total des alertes {{ icon("bell", 18) }}</span>
+      <strong>{{ alert_counts.total | number }}</strong>
+      <small>{{ alert_counts.a_traiter | number }} à traiter</small>
+    </article>
+  </section>
+
+  <section class="alert-charts-grid" aria-label="Graphiques des alertes">
+    <article class="panel alert-chart-panel">
+      <div class="panel-header">
+        <div><h2>Alertes par niveau</h2><p>Nombre d'alertes classées par sévérité.</p></div>
+      </div>
+      <div class="alert-chart-content">
+        {{ alert_charts.bars }}
+        <ul class="alert-chart-legend" aria-label="Détail des alertes par niveau">
+          <li><span class="alert-legend-marker alert-legend-critical"></span><span>Critique</span><strong>{{ severity_counts.critical | number }}</strong></li>
+          <li><span class="alert-legend-marker alert-legend-medium"></span><span>Moyenne</span><strong>{{ severity_counts.medium | number }}</strong></li>
+          <li><span class="alert-legend-marker alert-legend-low"></span><span>Faible</span><strong>{{ severity_counts.low | number }}</strong></li>
+        </ul>
+      </div>
+    </article>
+    <article class="panel alert-chart-panel alert-pie-panel">
+      <div class="panel-header">
+        <div><h2>Répartition circulaire</h2><p>Part de chaque niveau parmi toutes les alertes.</p></div>
+      </div>
+      <div class="alert-donut-content">
+        {{ alert_charts.donut }}
+        {% if not severity_counts.total %}
+          <p class="alert-chart-empty">Aucune alerte à répartir.</p>
+        {% endif %}
+      </div>
+    </article>
   </section>
 
   <section class="panel incidents-panel">
     <div class="panel-header incidents-header">
       <div>
         <div class="title-with-count"><h2>Liste des alertes</h2><span class="table-count">{{ alerts_page.total }}</span></div>
-        <p>Les plus récentes d'abord. La sévérité d'origine FortiAnalyzer n'est jamais modifiée.</p>
+        <p>Chaque alerte est classée en critique, moyenne ou faible. Les plus récentes apparaissent d'abord.</p>
       </div>
     </div>
     <form class="table-toolbar" method="get" action="/alertes">
@@ -40,7 +86,7 @@
             {% set incident_id = incident_id_by_alert_id.get(alert.id) %}
             <tr>
               <td><div class="incident-title">{{ alert.type }}</div><div class="incident-id">{{ alert.identifiant_source }}</div></td>
-              <td>{{ severity_pill(alert.criticite_source) }}</td>
+              <td class="alert-severity-cell">{{ alert_severity_group_pill(alert.criticite_source) }}</td>
               <td class="time-cell">{{ alert.date_evenement | display_datetime }}</td>
               <td class="time-cell">{{ alert.arrivee_db | display_datetime }}</td>
               <td>

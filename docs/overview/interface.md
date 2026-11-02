@@ -6,7 +6,7 @@ C'est l'écran de travail de l'équipe SOC : voir les alertes, ouvrir et suivre 
 (playbooks) et régler l'application. Elle s'ouvre dans un navigateur à l'adresse du backend
 (`http://localhost:8000` en développement).
 
-Son apparence reprend la maquette réalisée par l'équipe (thème sombre « FAnalyzer IR »). Elle est fabriquée en Python
+Son apparence utilise un thème sauge clair et reposant, avec des couleurs de sévérité distinctes pour rester facile à lire. Elle est fabriquée en Python
 par le serveur : il n'y a pas de programme séparé à installer ou à lancer, et aucun outil externe comme
 OpenSearch Dashboards n'est nécessaire pour traiter les incidents.
 
@@ -14,10 +14,10 @@ OpenSearch Dashboards n'est nécessaire pour traiter les incidents.
 
 | Écran | Ce qu'on y fait |
 |---|---|
-| **Tableau de bord** | Voir d'un coup d'œil : incidents ouverts (et en retard), alertes à traiter, temps moyen de traitement, activité des 7 derniers jours, répartition par sévérité. |
+| **Tableau de bord** | Voir d'un coup d'œil : incidents ouverts (et en retard), alertes à traiter, temps moyen de traitement, activité des 7 derniers jours, répartition par sévérité. Les cartes ouvrent directement la bonne liste : alertes, incidents en cours ou incidents traités. |
 | **Incidents** | Deux onglets : **En cours** et **Traités**. Pour chaque incident : référence, sévérité, titre, catégorie, statut, alertes, avancement du plan, délai (respecté ou dépassé), responsable, dernière mise à jour. Recherche et filtres. |
-| **Fiche d'un incident** | Un clic sur un incident ouvre **son playbook** : les étapes à suivre, à cocher au fur et à mesure. À côté : les informations, les actions (statut, sévérité, responsable, faux positif…) et l'historique. |
-| **Alertes** | Les alertes reçues de FortiAnalyzer. Un bouton crée l'incident d'une alerte. |
+| **Fiche d'un incident** | Un clic sur un incident ouvre **son playbook** et une checklist de réponse de sept points, cochable et mémorisée pour cet incident. À côté : les informations, les actions (statut, sévérité, responsable, faux positif…) et l'historique. La checklist est un aide-mémoire à adapter aux procédures internes. |
+| **Alertes** | Un graphique en barres et un diagramme circulaire montrent les alertes critiques, moyennes et faibles. La liste présente le niveau de chaque alerte ; un bouton crée l'incident correspondant. Les niveaux « haute » sont regroupés avec les critiques, et les niveaux « information » avec les faibles, sans changer leur niveau source. |
 | **Journaux** | L'historique des imports depuis FortiAnalyzer : réussis, échoués, combien d'alertes. |
 | **Paramètres** | Clients (prévu), **Réponse aux incidents** (délais, escalade, playbooks), Utilisateurs (prévu), **Journal d'audit**. |
 

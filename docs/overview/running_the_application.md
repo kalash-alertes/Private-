@@ -44,9 +44,12 @@ Au démarrage, l'application **crée ou met à jour les tables automatiquement**
 | Redémarrer l'application seule | `wsl docker compose restart backend` |
 
 Pendant le développement, le code du dossier est **monté dans le conteneur** et l'application **redémarre toute seule**
-quand un fichier Python change : pas besoin de reconstruire l'image pour voir une modification.
+quand un fichier Python change : pas besoin de reconstruire l'image pour voir une modification. La configuration
+Alembic est incluse dans l'image avec des permissions de lecture compatibles avec l'utilisateur non-root du backend.
+Le groupe du dossier partagé est `968` par défaut ; si nécessaire, définissez `DOCKER_SHARED_GROUP_ID` dans
+l'environnement avant de démarrer Docker Compose.
 
-**Reconstruire l'image** (`--build`) seulement si `requirements.txt` ou le `Dockerfile` change :
+**Reconstruire l'image** (`--build`) si `requirements.txt`, le `Dockerfile` ou `alembic.ini` change :
 
 ```powershell
 powershell -File scripts\download_docker_wheels.ps1   # seulement si requirements.txt a changé

@@ -17,7 +17,8 @@ JavaScript. Le visuel reprend la maquette de l'équipe (`dashboard/` sur `main`)
 | `template_rendering.py` | configuration Jinja2 + filtres d'affichage |
 | `display_formatting.py` | libellés français, classes des pastilles, dates (Europe/Paris), durées |
 | `icons.py` / `icon_shapes.py` | icônes SVG (lucide) ; `icon_shapes.py` est généré depuis la maquette |
-| `activity_chart_svg.py` | graphique du tableau de bord en SVG |
+| `activity_chart_svg.py` | graphique d'activité du tableau de bord en SVG |
+| `alert_charts_svg.py` | graphiques Alertes (barres et cercle), générés côté serveur |
 | `form_values.py`, `page_notices.py` | lecture des formulaires, messages de confirmation |
 | `web_interface_registration.py` | branchement sur l'application, pages d'erreur HTML |
 
@@ -34,6 +35,12 @@ JavaScript. Le visuel reprend la maquette de l'équipe (`dashboard/` sur `main`)
 - Aucune règle métier dans les pages : elles appellent les services du backend, qui valident et tracent tout.
 - Ajouter une page : un fichier dans `pages/`, un gabarit dans `templates/pages/`, l'ajouter à `PAGE_ROUTERS`
   (`web_interface_registration.py`), et au menu si besoin (`application_layout.py`).
+- Les cartes d'indicateurs du tableau de bord ouvrent la vue correspondante (incidents ouverts, alertes, incidents traités).
+- La fiche d'incident présente le playbook et un aide-mémoire de réponse cochable, enregistré par incident.
+- La page Alertes regroupe les niveaux en trois catégories d'affichage : « critique » rassemble critique et haute,
+  « moyenne » conserve le niveau moyen, et « faible » rassemble faible et information. Les niveaux source restent
+  inchangés et sont indiqués lorsqu'ils sont regroupés.
+- Le thème sauge clair est global (`static/css/pink_theme.css`) ; les graphiques des pages sont rendus en SVG côté serveur.
 
 **Voir l'interface remplie** (base de développement) : `python -m scripts.load_synthetic_demo_data` (données synthétiques).
 

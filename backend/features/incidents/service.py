@@ -27,6 +27,7 @@ from backend.core.pagination import PaginatedResponse, PaginationParameters
 from backend.features.audit_journal.models import AuditEventType
 from backend.features.incidents import repository
 from backend.features.incidents.incident_audit_trail import record_incident_audit_event
+from backend.features.incidents.incident_response_checklist import initialize_incident_response_checklist
 from backend.features.incidents.incident_views import build_incident_detail, build_incident_list_items
 from backend.features.incidents.models import (
     HANDLED_INCIDENT_STATUSES,
@@ -83,6 +84,7 @@ def create_incident_from_source_log(
         raise ResourceConflictError(
             f"Le log {log_id} a déjà un incident ({existing_incident.id if existing_incident else 'inconnu'})."
         )
+    initialize_incident_response_checklist(database_session, incident.id)
     record_incident_audit_event(
         database_session, incident, AuditEventType.INCIDENT_CREATED, f"incident créé à partir du log {log_id}."
     )
