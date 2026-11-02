@@ -77,11 +77,15 @@ Avec `APP_IS_IN_DEMO=true` (valeur par défaut du `.env`), l'application **inven
 
 En plus, pour remplir tous les écrans d'un coup (playbooks, incidents à différents stades) :
 
-Tant que le collecteur FortiAnalyzer n'est pas branché, la base est vide. Pour voir les écrans remplis :
-
 ```powershell
 wsl docker compose exec backend python -m scripts.load_synthetic_demo_data
 ```
+
+> **Uniquement en mode démonstration.** Si le `.env` contient `APP_IS_IN_DEMO=false` (vrais logs FortiAnalyzer),
+> le script refuse avec « Refusé : APP_IS_IN_DEMO=false » et ne crée rien : on ne mélange jamais des données
+> inventées avec de vraies alertes. Pour charger les données de test : mettre `APP_IS_IN_DEMO=true` dans le `.env`,
+> redémarrer (`wsl docker compose up -d`), puis relancer la commande. Après `docker compose down -v` (volume
+> supprimé), la base repart vide : il faut relancer la commande.
 
 Puis rafraîchir http://localhost:8000. Le script crée :
 

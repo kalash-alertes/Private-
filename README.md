@@ -27,7 +27,7 @@ Arrêter : `wsl docker compose down` (les données de la base sont conservées).
 - PostgreSQL : `localhost:5432` (accessible uniquement depuis la machine locale)
 - Les migrations sont appliquées automatiquement au démarrage du backend.
 - Données de démonstration (inventées) pour voir les écrans remplis :
-  `wsl docker compose exec backend python -m scripts.load_synthetic_demo_data`
+  `wsl docker compose exec backend python -m scripts.load_synthetic_demo_data` (uniquement avec `APP_IS_IN_DEMO=true` dans le `.env`, sinon le script refuse)
 
 ## Tests (sans Docker)
 
