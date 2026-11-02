@@ -63,5 +63,7 @@ def migrated_postgresql_database_engine() -> Iterator[Engine]:
 def postgresql_session_factory(migrated_postgresql_database_engine) -> Iterator[sessionmaker[Session]]:
     """Fabrique de sessions sur une base vidée de ses données avant chaque test."""
     with migrated_postgresql_database_engine.begin() as connection:
-        connection.execute(text("TRUNCATE incidents, logs, executions_import"))
+        # CASCADE : vide aussi les tables qui référencent celles-ci (étapes réalisées, checklist de réponse...),
+        # sinon PostgreSQL refuse le TRUNCATE dès qu'une nouvelle table pointe vers `incidents` ou `logs`.
+        connection.execute(text("TRUNCATE incidents, logs, executions_import CASCADE"))
     yield sessionmaker(bind=migrated_postgresql_database_engine, expire_on_commit=False)

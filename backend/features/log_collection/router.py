@@ -17,7 +17,8 @@ DatabaseSession = Annotated[Session, Depends(get_database_session)]
 
 @log_collection_router.get("/configuration", response_model=LogCollectionConfigurationRead)
 def read_collection_configuration() -> LogCollectionConfigurationRead:
-    """Mode (démonstration ou FortiAnalyzer), adresse, ADOM, variables manquantes. Aucun secret."""
+    """Mode (démonstration ou réception syslog), écoute (adresse, port, protocoles), émetteurs autorisés, état et
+    compteurs de réception, variables manquantes. Aucun secret."""
     return service.describe_collection_configuration(get_application_settings())
 
 
