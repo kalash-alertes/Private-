@@ -35,6 +35,10 @@ services:
       APPLICATION_ENVIRONMENT: ${APPLICATION_ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+      # Repris ici (et pas seulement via env_file) pour qu'une machine puisse forcer le mode au lancement, sans toucher
+      # au .env : `APP_IS_IN_DEMO=true docker compose up -d`. Utile quand plusieurs VM partagent le même dossier
+      # (dossier partagé VirtualBox), donc le même .env. Ordre : variable du shell, puis .env, puis `true`.
+      APP_IS_IN_DEMO: ${APP_IS_IN_DEMO:-true}
     # Les dossiers montés depuis le dossier partagé sont accessibles via leur groupe hôte.
     group_add:
       - "${DOCKER_SHARED_GROUP_ID:-968}"

@@ -72,6 +72,24 @@ WSL → conteneur**.
 - `docker-compose.yml` publie déjà le port 5140 (UDP et TCP) vers le conteneur.
 - WSL s'arrête quand il est inutilisé, et les conteneurs avec lui : garder une fenêtre WSL ouverte pendant les essais.
 
+### Si l'application tourne dans une VM Kali (VirtualBox)
+
+Les logs doivent traverser : **réseau → PC hôte → VirtualBox → VM Kali → conteneur**. Quelle adresse donner à
+FortiAnalyzer dépend du mode réseau de la VM (VirtualBox > Configuration > Réseau > Carte 1) :
+
+| Mode réseau de la VM | Adresse à mettre dans FortiAnalyzer | À faire en plus |
+|---|---|---|
+| **NAT** (par défaut) | L'adresse IP du **PC hôte** (la VM n'est pas joignable depuis le réseau) | Dans VirtualBox, *Avancé > Redirection de ports* : deux règles, **UDP** 5140 → 5140 et **TCP** 5140 → 5140 (IP hôte et IP invité vides). Autoriser le port 5140 (UDP et TCP) dans le pare-feu Windows de l'hôte. |
+| **Accès par pont** (*Bridged*, recommandé) | L'adresse IP de la **VM** sur le réseau : `ip -4 addr` dans Kali (souvent `192.168.x.x`) | Rien d'autre (Kali n'a pas de pare-feu actif par défaut). Certains réseaux d'entreprise / Wi-Fi refusent ce mode : utiliser alors NAT. |
+
+Points d'attention :
+- **En NAT, l'application ne voit pas l'adresse de FortiAnalyzer** mais celle de VirtualBox (en général `10.0.2.2`).
+  Pour `SYSLOG_ALLOWED_SENDER_ADDRESSES`, mettre l'adresse effectivement vue (voir plus bas) ou laisser vide.
+- **Une seule application par port sur un même PC hôte** : si l'hôte fait déjà tourner l'application (WSL en mode
+  « mirrored » sur 5140), la redirection VirtualBox vers la VM sur 5140 entre en conflit. Changer le port de l'un des deux.
+- **Plusieurs collègues = plusieurs destinations** : FortiAnalyzer envoie vers chaque adresse configurée. Chaque PC qui
+  doit recevoir les vraies alertes a besoin de son propre transfert (*Log Forwarding*) dans FortiAnalyzer.
+
 ## 4. Appliquer et vérifier
 
 ```powershell

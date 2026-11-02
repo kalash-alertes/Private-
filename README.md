@@ -10,6 +10,7 @@ Lire [AGENTS.md](./AGENTS.md) avant tout changement (nommage, modularité, comme
 
 Guide complet (première fois, tous les jours, données de test, dépannage) :
 **[docs/overview/running_the_application.md](./docs/overview/running_the_application.md)**.
+Sur une VM Kali (VirtualBox) : **[docs/overview/running_on_kali_virtualbox.md](./docs/overview/running_on_kali_virtualbox.md)**.
 Brancher le vrai FortiAnalyzer (`APP_IS_IN_DEMO=false`) : **[docs/overview/connecting_fortianalyzer.md](./docs/overview/connecting_fortianalyzer.md)**.
 
 ```powershell

@@ -80,7 +80,8 @@ Limites assumées :
 - **File en mémoire** : les logs reçus mais pas encore collectés sont perdus si l'application s'arrête ; de même les
   logs pris sur la file quand l'enregistrement en base échoue en cours de collecte. FortiAnalyzer conserve ses logs.
 - **Syslog non authentifié, non chiffré** : n'importe quelle machine qui atteint le port peut envoyer de faux logs ;
-  d'où `SYSLOG_ALLOWED_SENDER_ADDRESSES` (l'adresse vue par le conteneur ; avec le NAT de Docker/WSL, vérifier dans
+  d'où `SYSLOG_ALLOWED_SENDER_ADDRESSES` (l'adresse vue par le conteneur ; avec le NAT de Docker/WSL ou de VirtualBox — en
+  général `10.0.2.2` pour une VM en NAT avec redirection de port —, vérifier dans
   `reception_syslog.adresse_emetteur` d'un log reçu) et le pare-feu. Syslog sur TLS non pris en charge.
 - **TCP sans retour à la ligne** (octet-counting pur) non pris en charge : les messages doivent finir par `\n`.
 - **Un seul processus** : `uvicorn --workers N` ouvrirait N fois le port (échec au 2e). Le `--reload` actuel n'a qu'un

@@ -4,6 +4,9 @@ Tout tourne dans **deux conteneurs Docker** : la base de données (PostgreSQL) e
 sert aussi l'interface). Sur ce poste, Docker fonctionne dans **WSL** : chaque commande `docker` est donc précédée
 de `wsl`.
 
+> **Sur une machine virtuelle Kali (VirtualBox)** : mêmes conteneurs, mais commandes sans `wsl` et quelques pièges
+> propres aux VM (dossier partagé, `.env` partagé, réseau). Voir [running_on_kali_virtualbox.md](./running_on_kali_virtualbox.md).
+
 Toutes les commandes se tapent dans **PowerShell**, depuis le dossier du projet :
 
 ```powershell

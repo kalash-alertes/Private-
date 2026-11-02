@@ -10,6 +10,10 @@ L'image Docker exécute le backend avec un utilisateur non-root ; `alembic.ini` 
 lecture afin que les migrations démarrent avant le serveur. Le service Compose ajoute aussi le GID
 `DOCKER_SHARED_GROUP_ID` (968 par défaut) aux groupes du backend pour lire les sources montées depuis un dossier
 partagé ; ce GID peut être remplacé dans l'environnement de Compose si l'hôte utilise un autre groupe.
+`APP_IS_IN_DEMO` est aussi déclaré dans `environment:` (`${APP_IS_IN_DEMO:-true}`) en plus de `env_file` : la variable
+du shell prime sur le `.env`, ce qui permet à une VM qui partage le dossier (et donc le `.env`) de l'hôte de forcer la
+démonstration (`APP_IS_IN_DEMO=true docker compose up -d`). Lancement sur VM Kali / VirtualBox :
+[running_on_kali_virtualbox.md](../overview/running_on_kali_virtualbox.md).
 
 ## Organisation du code
 
