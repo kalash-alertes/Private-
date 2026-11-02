@@ -19,6 +19,7 @@ from backend.core.pagination import MAXIMUM_PAGE_SIZE, PaginationParameters
 from backend.features.audit_journal import service as audit_journal_service
 from backend.features.audit_journal.schemas import AuditEventListFilters
 from backend.features.incidents import incident_playbook_progress
+from backend.features.incidents import incident_response_checklist
 from backend.features.incidents import service as incidents_service
 from backend.features.incidents.models import IncidentStatus
 from backend.features.incidents.schemas import (
@@ -28,6 +29,7 @@ from backend.features.incidents.schemas import (
     IncidentFalsePositiveQualificationRequest,
     IncidentPlaybookAssignmentRequest,
     IncidentPlaybookStepCompletionRequest,
+    IncidentResponseChecklistCompletionRequest,
     IncidentStatusChangeRequest,
     IncidentTitleChangeRequest,
 )
@@ -174,6 +176,32 @@ def change_step_completion_from_form(
     )
 
 
+@incident_detail_page_router.post("/incidents/{incident_id}/checklist/{checklist_item_id}")
+def change_response_checklist_completion_from_form(
+    request: Request,
+    incident_id: UUID,
+    checklist_item_id: UUID,
+    database_session: DatabaseSession,
+    terminee: Annotated[list[str], Form()],
+    terminee_par: Annotated[str, Form()] = "",
+):
+    return _run_incident_action(
+        request,
+        database_session,
+        incident_id,
+        lambda: incident_response_checklist.change_incident_response_checklist_completion(
+            database_session,
+            incident_id,
+            checklist_item_id,
+            IncidentResponseChecklistCompletionRequest(
+                terminee="oui" in terminee,
+                terminee_par=convert_blank_to_none(terminee_par),
+            ),
+        ),
+        success_notice_key="etape_mise_a_jour",
+    )
+
+
 def render_incident_detail_page(
     request: Request,
     database_session: Session,
@@ -197,12 +225,15 @@ def render_incident_detail_page(
                 database_session,
                 "incidents",
                 f"{incident.reference} · {incident.titre}",
-                "Suivez le playbook de l'incident, qualifiez-le et documentez son traitement.",
+                "Suivez le playbook et la checklist de réponse, puis documentez le traitement de l'incident.",
                 notice_key=notice_key,
                 error_message=error_message,
             ),
             "incident": incident,
             "incident_playbook": incident_playbook_progress.fetch_incident_playbook(database_session, incident_id),
+            "incident_response_checklist": incident_response_checklist.fetch_incident_response_checklist(
+                database_session, incident_id
+            ),
             "available_playbooks": playbooks_service.list_playbooks(
                 database_session, PlaybookListFilters(), PaginationParameters(limit=MAXIMUM_PAGE_SIZE)
             ).items,

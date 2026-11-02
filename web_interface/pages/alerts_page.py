@@ -17,12 +17,18 @@ from backend.features.dashboard import service as dashboard_service
 from backend.features.incidents import service as incidents_service
 from backend.features.source_logs import service as source_logs_service
 from backend.features.source_logs.schemas import SourceLogListFilters
+from web_interface.alert_charts_svg import AlertSeverityCounts, build_alert_chart_svgs
 from web_interface.application_layout import build_application_layout_context
 from web_interface.template_rendering import render_page
 
 alerts_page_router = APIRouter()
 
 ALERTS_PER_PAGE = 25
+ALERT_SEVERITY_GROUP_LEVELS = {
+    "critique": (CriticalityLevel.CRITICAL, CriticalityLevel.HIGH),
+    "moyenne": (CriticalityLevel.MEDIUM,),
+    "faible": (CriticalityLevel.LOW, CriticalityLevel.INFORMATION),
+}
 
 
 @alerts_page_router.get("/alertes", response_class=HTMLResponse)
@@ -38,9 +44,19 @@ def show_alerts_page(
         SourceLogListFilters(criticite_source=criticite),
         PaginationParameters(limit=ALERTS_PER_PAGE, offset=offset),
     )
-    critical_alert_count = source_logs_service.list_source_logs(
-        database_session, SourceLogListFilters(criticite_source=CriticalityLevel.CRITICAL), PaginationParameters(limit=1)
-    ).total
+    source_alert_counts = {
+        criticality: source_logs_service.list_source_logs(
+            database_session,
+            SourceLogListFilters(criticite_source=criticality),
+            PaginationParameters(limit=1),
+        ).total
+        for criticality in CriticalityLevel
+    }
+    severity_counts = AlertSeverityCounts(
+        critical=sum(source_alert_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["critique"]),
+        medium=sum(source_alert_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["moyenne"]),
+        low=sum(source_alert_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["faible"]),
+    )
     dashboard = dashboard_service.build_dashboard(database_session, activity_day_count=1)
     return render_page(
         request,
@@ -50,7 +66,7 @@ def show_alerts_page(
                 database_session,
                 "alertes",
                 "Alertes",
-                "Alertes critiques importées de FortiAnalyzer. Créez un incident pour celles qui méritent un traitement.",
+                "Visualisez les alertes par niveau de sévérité et créez un incident pour celles qui méritent un traitement.",
             ),
             "alerts_page": alerts_page,
             "incident_id_by_alert_id": incidents_service.fetch_incident_ids_by_log_ids(
@@ -58,9 +74,11 @@ def show_alerts_page(
             ),
             "selected_criticality": criticite,
             "filter_query": urlencode({"criticite": criticite.value} if criticite else {}),
+            "severity_counts": severity_counts,
+            "alert_charts": build_alert_chart_svgs(severity_counts),
             "alert_counts": {
                 "total": dashboard.nombre_alertes,
-                "critiques": critical_alert_count,
+                "critiques": severity_counts.critical,
                 "a_traiter": dashboard.nombre_alertes_a_traiter,
                 "traitees": dashboard.nombre_alertes - dashboard.nombre_alertes_a_traiter,
             },

@@ -4,6 +4,25 @@
   <span class="severity-pill severity-{{ criticality | criticality_css }}"><span class="severity-dot"></span>{{ criticality | criticality_label }}</span>
 {%- endmacro %}
 
+{% macro alert_severity_group_pill(criticality) -%}
+  {% if criticality.value in ("critique", "haute") %}
+    {% set group_label = "Critique" %}
+    {% set group_class = "critical" %}
+  {% elif criticality.value == "moyenne" %}
+    {% set group_label = "Moyenne" %}
+    {% set group_class = "medium" %}
+  {% else %}
+    {% set group_label = "Faible" %}
+    {% set group_class = "low" %}
+  {% endif %}
+  <span class="severity-pill severity-{{ group_class }}" aria-label="Niveau {{ group_label }}">
+    <span class="severity-dot"></span>{{ group_label }}
+  </span>
+  {% if criticality.value not in ("critique", "moyenne", "faible") %}
+    <small class="severity-source-level">Source : {{ criticality | criticality_label }}</small>
+  {% endif %}
+{%- endmacro %}
+
 {% macro incident_status_pill(status) -%}
   <span class="status-pill status-{{ status | incident_status_css }}"><span class="status-dot"></span>{{ status | incident_status_label }}</span>
 {%- endmacro %}

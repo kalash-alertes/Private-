@@ -6,14 +6,17 @@ Données synthétiques uniquement.
 
 from types import SimpleNamespace
 from uuid import uuid4
+import re
 
 import pytest
 
+from backend.core.criticality import CriticalityLevel
 from backend.core.pagination import PaginationParameters
 from backend.features.audit_journal import service as audit_journal_service
 from backend.features.audit_journal.schemas import AuditEventListFilters
 from backend.features.incidents import service as incidents_service
-from backend.features.incidents.schemas import IncidentListFilters
+from backend.features.incidents import incident_response_checklist
+from backend.features.incidents.schemas import IncidentCreationRequest, IncidentListFilters
 from backend.features.playbooks import service as playbooks_service
 from tests.synthetic_data import build_synthetic_playbook_request, store_synthetic_source_log
 
@@ -49,40 +52,97 @@ def test_every_page_renders_on_an_empty_database(web_client, page_url) -> None:
     assert "FAnalyzer IR" in response.text and "<svg" in response.text
 
 
+def test_dashboard_metric_cards_link_to_the_matching_pages(web_client) -> None:
+    response = web_client.get("/")
+
+    assert response.status_code == 200
+    assert 'href="/incidents?vue=en_cours" aria-label="Voir les incidents ouverts"' in response.text
+    assert 'href="/alertes" aria-label="Voir toutes les alertes"' in response.text
+    assert 'href="/incidents?vue=traites" aria-label="Voir les incidents traités"' in response.text
+    assert "Temps moyen de traitement" in response.text
+
+
+def test_incident_response_checklist_can_be_completed_and_reopened(web_client, database_session) -> None:
+    storage_result = store_synthetic_source_log(database_session, identifier_suffix="response-checklist")
+    incident = incidents_service.create_incident_from_source_log(
+        database_session, IncidentCreationRequest(log_id=storage_result.source_log_id)
+    )
+    checklist = incident_response_checklist.fetch_incident_response_checklist(database_session, incident.id)
+    end_test_session_transaction(database_session)
+
+    assert len(checklist) == 7
+    assert checklist[0].titre == "Documenter les faits"
+    assert checklist[0].description == "Machine, utilisateur, preuve (alerte, inventaire logiciel)."
+    incident_page_url = f"/incidents/{incident.id}"
+    page_response = web_client.get(incident_page_url)
+    assert page_response.status_code == 200
+    assert "Plan de réponse conseillé" in page_response.text
+    assert "Aide-mémoire générique" in page_response.text
+
+    completion_response = web_client.post(
+        f"{incident_page_url}/checklist/{checklist[0].id}",
+        data={"terminee": ["non", "oui"], "terminee_par": "analyste.synthetique"},
+    )
+    assert completion_response.status_code == 303
+    completed_page = web_client.get(incident_page_url).text
+    assert f'id="checklist-{checklist[0].id}" type="checkbox" name="terminee" value="oui" checked' in completed_page
+    assert "analyste.synthetique" in completed_page
+
+    reopening_response = web_client.post(
+        f"{incident_page_url}/checklist/{checklist[0].id}",
+        data={"terminee": ["non"]},
+    )
+    assert reopening_response.status_code == 303
+    reopened_page = web_client.get(incident_page_url).text
+    checkbox = re.search(rf'<input[^>]*id="checklist-{checklist[0].id}"[^>]*>', reopened_page)
+    assert checkbox is not None and "checked" not in checkbox.group()
+
+
 def test_settings_root_redirects_to_incident_response(web_client) -> None:
     response = web_client.get("/parametres")
     assert response.status_code == 303 and response.headers["location"] == "/parametres/reponse-incidents"
 
 
 def test_static_stylesheets_are_served(web_client) -> None:
-    response = web_client.get("/static/css/components.css")
-    assert response.status_code == 200 and "severity-pill" in response.text
+    component_stylesheet = web_client.get("/static/css/components.css")
+    light_theme = web_client.get("/static/css/pink_theme.css")
+    alert_charts = web_client.get("/static/css/alerts.css")
+    dashboard_styles = web_client.get("/static/css/dashboard.css")
+    incident_styles = web_client.get("/static/css/incidents.css")
+
+    assert component_stylesheet.status_code == 200 and "severity-pill" in component_stylesheet.text
+    assert light_theme.status_code == 200 and "body * { color: var(--text) !important; }" in light_theme.text
+    assert "--sidebar: #edf2eb" in web_client.get("/static/css/foundation.css").text
+    assert alert_charts.status_code == 200 and ".alert-donut-chart" in alert_charts.text
+    assert dashboard_styles.status_code == 200 and ".stat-card-link" in dashboard_styles.text
+    assert incident_styles.status_code == 200 and ".response-checklist-form" in incident_styles.text
 
 
-def test_dashboard_themes_are_scoped_to_the_dashboard(web_client) -> None:
+def test_alerts_page_shows_three_severity_groups_and_both_charts(web_client, database_session) -> None:
+    for index, criticality in enumerate(CriticalityLevel):
+        store_synthetic_source_log(database_session, identifier_suffix=f"severity-{index}", criticite_source=criticality)
+
+    end_test_session_transaction(database_session)
+    response = web_client.get("/alertes")
+
+    assert response.status_code == 200
+    assert 'class="alert-bar-chart"' in response.text
+    assert 'class="alert-donut-chart"' in response.text
+    assert "Répartition circulaire" in response.text
+    assert "Critique" in response.text and "Moyenne" in response.text and "Faible" in response.text
+    assert "Critiques et hautes" in response.text and "Faibles et informatives" in response.text
+    assert "Source : Haute" in response.text and "Source : Information" in response.text
+    assert "2</strong>" in response.text and "5</strong>" in response.text
+
+
+def test_dashboard_uses_global_theme_and_shows_alert_source(web_client) -> None:
+    """Le dashboard suit le thème sauge commun (plus de thème noir/blanc dédié) et garde l'indicateur de source."""
     dashboard = web_client.get("/").text
-    incidents_page = web_client.get("/incidents").text
 
-    assert 'data-dashboard-theme="dark"' in dashboard
-    assert 'data-theme-choice="light"' in dashboard and 'data-theme-choice="dark"' in dashboard
-    assert 'aria-label="Apparence du tableau de bord"' in dashboard
-    assert "dashboard_theme.js" in dashboard and "dashboard_theme.css" in dashboard
-    assert "data-dashboard-theme" not in incidents_page
-    assert "dashboard_theme.js" not in incidents_page and "dashboard_theme.css" not in incidents_page
-    assert "Aucun incident ouvert." in dashboard and 'href="/alertes"' in dashboard
-
-
-@pytest.mark.parametrize(
-    "asset_path, expected_content",
-    [
-        ("/static/css/dashboard_theme.css", '[data-dashboard-theme="light"]'),
-        ("/static/css/dashboard.css", ".stats-grid"),
-        ("/static/js/dashboard_theme.js", "soc-dashboard-theme"),
-    ],
-)
-def test_dashboard_theme_assets_are_served(web_client, asset_path, expected_content) -> None:
-    response = web_client.get(asset_path)
-    assert response.status_code == 200 and expected_content in response.text
+    assert "pink_theme.css" in dashboard and "dashboard.css" in dashboard
+    assert "dashboard_theme" not in dashboard and "data-dashboard-theme" not in dashboard
+    assert 'class="source-context alert-source-' in dashboard
+    assert web_client.get("/static/css/dashboard_theme.css").status_code == 404
 
 
 def test_dashboard_keeps_live_incident_data_and_links(web_client, database_session) -> None:

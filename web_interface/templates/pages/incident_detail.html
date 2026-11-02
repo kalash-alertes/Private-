@@ -25,6 +25,7 @@
   {% endif %}
 
   <div class="incident-detail-grid">
+    <div class="incident-main-column">
     {# ---- Colonne principale : le playbook de l'incident ---- #}
     <section class="panel playbook-progress-panel" aria-labelledby="playbook-title">
       {% set playbook = incident_playbook.playbook %}
@@ -78,6 +79,45 @@
         </div>
       {% endif %}
     </section>
+
+    <section class="panel response-checklist-panel" aria-labelledby="response-checklist-title">
+      <div class="panel-header">
+        <div>
+          <h2 id="response-checklist-title">Plan de réponse conseillé</h2>
+          <p>Checklist propre à cet incident · {{ incident_response_checklist | selectattr("terminee_le") | list | length }} élément(s) terminé(s) sur {{ incident_response_checklist | length }}</p>
+        </div>
+      </div>
+      <p class="response-checklist-notice">Aide-mémoire générique : adaptez ces étapes à la situation et aux procédures internes applicables.</p>
+      <ol class="response-checklist-list">
+        {% for checklist_item in incident_response_checklist %}
+          <li class="response-checklist-item{% if checklist_item.terminee_le %} is-completed{% endif %}">
+            {% if is_closed %}
+              <input id="checklist-{{ checklist_item.id }}" type="checkbox" {% if checklist_item.terminee_le %}checked{% endif %} disabled>
+              <div class="response-checklist-content">
+                <label for="checklist-{{ checklist_item.id }}"><strong>{{ checklist_item.titre }}</strong></label>
+                <p>{{ checklist_item.description }}</p>
+                {% if checklist_item.terminee_le %}<small>Terminée le {{ checklist_item.terminee_le | display_datetime }}{% if checklist_item.terminee_par %} par {{ checklist_item.terminee_par }}{% endif %}</small>{% endif %}
+              </div>
+            {% else %}
+              <form method="post" action="/incidents/{{ incident.id }}/checklist/{{ checklist_item.id }}" class="response-checklist-form">
+                <input type="hidden" name="terminee" value="non">
+                <input id="checklist-{{ checklist_item.id }}" type="checkbox" name="terminee" value="oui" {% if checklist_item.terminee_le %}checked{% endif %}>
+                <div class="response-checklist-content">
+                  <label for="checklist-{{ checklist_item.id }}"><strong>{{ checklist_item.titre }}</strong></label>
+                  <p>{{ checklist_item.description }}</p>
+                  {% if checklist_item.terminee_le %}<small>Terminée le {{ checklist_item.terminee_le | display_datetime }}{% if checklist_item.terminee_par %} par {{ checklist_item.terminee_par }}{% endif %}</small>{% endif %}
+                </div>
+                <div class="response-checklist-actions">
+                  <input type="text" name="terminee_par" maxlength="255" placeholder="Par (facultatif)" aria-label="Action réalisée par" class="compact-input">
+                  <button class="button button-secondary button-small" type="submit">Enregistrer</button>
+                </div>
+              </form>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+    </section>
+    </div>
 
     {# ---- Colonne latérale : informations et actions ---- #}
     <aside class="incident-side-column">

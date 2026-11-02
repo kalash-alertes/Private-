@@ -209,7 +209,13 @@ def test_migration_0003_fills_new_columns_of_existing_incidents(tmp_path, monkey
         rows = connection.exec_driver_sql(
             "SELECT numero_reference, titre, categorie, statut, traite_le FROM incidents ORDER BY numero_reference"
         ).all()
+        checklist_rows = connection.exec_driver_sql(
+            "SELECT incident_id, ordre, titre FROM incident_response_checklist ORDER BY incident_id, ordre"
+        ).all()
     engine.dispose()
     get_application_settings.cache_clear()
     assert [(row[0], row[1], row[2]) for row in rows] == [(1, "Alerte intrusion", "intrusion"), (2, "Alerte intrusion", "intrusion")]
     assert rows[0][4] is None and rows[1][4] is not None
+    assert len(checklist_rows) == 14
+    assert checklist_rows[0][1:] == (1, "Documenter les faits")
+    assert checklist_rows[6][1:] == (7, "Vérifier le retour à la normale")

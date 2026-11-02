@@ -1,6 +1,7 @@
 # Fonctionnalité `incidents` — cycle de vie d'un incident
 
-Code : `backend/features/incidents/`. Table : `incidents` (voir [database.md](./database.md)).
+Code : `backend/features/incidents/`. Tables : `incidents`, `etapes_realisees_incident` et
+`incident_response_checklist` (voir [database.md](./database.md)).
 
 ## Routes HTTP
 
@@ -32,6 +33,11 @@ nombre_etapes_realisees}` ou null). Détail = ligne + `criticite_source` + `aler
 Une route par action : chaque règle métier reste isolée et testable. Erreurs métier : `{"detail", "error_code"}`
 (`resource_not_found`, `resource_conflict`). Validation : 422 au format FastAPI. Champ inconnu dans un corps ⇒ 422.
 
+L'interface web propose également `POST /incidents/{id}/checklist/{item_id}` pour cocher ou décocher une tâche du
+plan d'aide-mémoire. Le formulaire transmet `terminee=oui|non` et, facultativement, `terminee_par`. L'action est
+vérifiée par le service `incident_response_checklist.py`, datée et auditée lorsqu'elle modifie effectivement l'état.
+Une tâche d'un autre incident est refusée ; un incident clôturé reste en lecture seule.
+
 ## Règles appliquées
 
 **Définitives (cadrage)**
@@ -61,6 +67,9 @@ Une route par action : chaque règle métier reste isolée et testable. Erreurs 
 - Date limite, délai dépassé et escalade : voir [incident_response_settings.md](./incident_response_settings.md).
 - Chaque changement effectif est tracé dans le journal d'audit ([audit_journal.md](./audit_journal.md)).
 - Cocher/décocher une étape met à jour `updated_at` de l'incident (colonne « Mis à jour »).
+- Chaque incident reçoit aussi sept tâches d'aide-mémoire génériques indépendantes du playbook. Leur progression est
+  conservée par incident, même si le playbook change ; la migration 0004 initialise également les incidents existants.
+  Ces suggestions ne remplacent pas les procédures internes et doivent être adaptées au contexte.
 
 **PROVISOIRES (décision attendue)**
 - Toutes les transitions de statut sont autorisées (aucun graphe défini dans le cadrage).

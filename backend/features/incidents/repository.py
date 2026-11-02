@@ -11,7 +11,7 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from backend.features.incidents.models import Incident, IncidentPlaybookStepCompletion
+from backend.features.incidents.models import Incident, IncidentPlaybookStepCompletion, IncidentResponseChecklistItem
 
 # Deux créations simultanées peuvent calculer le même numéro de référence : la contrainte UNIQUE en refuse une,
 # qui retente avec le numéro suivant. Au-delà de ce nombre d'essais, l'erreur est relancée (situation anormale).
@@ -153,6 +153,39 @@ def fetch_step_completions_for_incident(
             select(IncidentPlaybookStepCompletion).where(IncidentPlaybookStepCompletion.incident_id == incident_id)
         ).all()
     )
+
+
+def insert_response_checklist_items(
+    database_session: Session, checklist_items: list[IncidentResponseChecklistItem]
+) -> None:
+    """Add the initial response checklist items to the current incident transaction."""
+    database_session.add_all(checklist_items)
+
+
+def fetch_response_checklist_items_for_incident(
+    database_session: Session, incident_id: UUID
+) -> list[IncidentResponseChecklistItem]:
+    """Return one incident's response checklist in its stable display order."""
+    return list(
+        database_session.scalars(
+            select(IncidentResponseChecklistItem)
+            .where(IncidentResponseChecklistItem.incident_id == incident_id)
+            .order_by(IncidentResponseChecklistItem.ordre)
+        ).all()
+    )
+
+
+def fetch_response_checklist_item(
+    database_session: Session, incident_id: UUID, checklist_item_id: UUID, is_locked_for_update: bool = False
+) -> IncidentResponseChecklistItem | None:
+    """Return a checklist item belonging to the incident, optionally locked for update."""
+    query = select(IncidentResponseChecklistItem).where(
+        IncidentResponseChecklistItem.incident_id == incident_id,
+        IncidentResponseChecklistItem.id == checklist_item_id,
+    )
+    if is_locked_for_update:
+        query = query.with_for_update()
+    return database_session.scalars(query).one_or_none()
 
 
 def insert_step_completion_unless_exists(

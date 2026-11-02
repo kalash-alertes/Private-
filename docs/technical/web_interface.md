@@ -12,16 +12,17 @@ lucide extraites de son build (`icon_shapes.py`, généré), le graphique rechar
 Conséquences :
 - un seul service à déployer (le backend sert pages, CSS et API) ; pas de CORS pour l'interface ;
 - l'API JSON est déplacée sous **`/api`** (la racine est aux pages) ; elle reste utilisable par un autre client ;
-- les pages appellent directement les `service.py` publics des fonctionnalités (pas d'appel HTTP interne).
+- Les pages appellent directement les `service.py` publics des fonctionnalités (pas d'appel HTTP interne). Le thème
+global est sauge clair ; les graphiques de synthèse sont des SVG produits en Python, sans JavaScript.
 
 ## Routes des pages
 
 | Page | GET | POST (formulaires) |
 |---|---|---|
-| Tableau de bord | `/` | — |
+| Tableau de bord | `/` | — ; les cartes ouvrent Alertes, Incidents ouverts ou Incidents traités |
 | Incidents | `/incidents?vue=en_cours\|traites&recherche=&criticite=&statut=&offset=` | `/incidents` (création depuis une alerte) |
-| Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}` |
-| Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) |
+| Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}`, `/checklist/{item_id}` |
+| Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) ; indicateurs par sévérité, graphique en barres et diagramme circulaire |
 | Journaux | `/journaux?statut=&offset=` (historique des imports) | — |
 | Paramètres | `/parametres` → `/parametres/reponse-incidents` | `/parametres/reponse-incidents/delais/{criticite}`, `/parametres/reponse-incidents/escalade` |
 | Playbooks | `/parametres/playbooks`, `/nouveau`, `/{id}/modifier` | `/nouveau`, `/{id}/modifier`, `/{id}/supprimer` |
@@ -44,6 +45,12 @@ une ligne ouvre la fiche, dont le premier panneau est le **playbook** de l'incid
   serveur réaffiche le formulaire modifié sans enregistrer. Un bouton « Enregistrer » caché est placé en premier pour
   que la touche Entrée enregistre. Chaque étape garde son `id` caché (préserve son suivi dans les incidents).
 - **Lignes cliquables** : le lien du titre s'étend sur toute la ligne (`::after`).
+- **Cartes du tableau de bord** : incidents ouverts → `/incidents?vue=en_cours`, alertes à traiter → `/alertes`,
+  incidents traités et temps moyen → `/incidents?vue=traites`.
+- **Checklist de réponse** : chaque incident reçoit sept tâches suggérées, indépendantes du playbook et stockées dans
+  `incident_response_checklist`. Une case est enregistrée par formulaire POST ; les changements effectifs sont datés,
+  audités et bloqués après clôture. C'est un aide-mémoire générique, à adapter aux règles internes, et non une procédure
+  officielle.
 
 ## Erreurs
 
@@ -64,34 +71,29 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 - Dates stockées en UTC, affichées en `Europe/Paris` (`display_formatting.DISPLAY_TIMEZONE`, repli UTC si la base
   des fuseaux manque ; `tzdata` est dans `requirements.txt` pour l'image Docker).
 - Libellés : `haute` s'affiche « Haute » (la maquette disait « Élevée ») pour rester aligné sur la base.
+- Sur la page Alertes, les sévérités sont regroupées sans modifier leur valeur source : **Critique** inclut `critique`
+  et `haute`, **Moyenne** inclut `moyenne`, et **Faible** inclut `faible` et `information`. Les badges précisent le
+  niveau source lorsqu'il est regroupé. Le total des groupes est calculé à partir des comptes filtrés par niveau.
+- `alert_charts_svg.py` dessine le graphique en barres et l'anneau circulaire à partir de ces trois comptes. Les SVG
+  portent un nom accessible ; la légende HTML expose les comptes même sans interprétation visuelle du graphique.
+- `static/css/pink_theme.css`, chargée en dernier dans le layout commun, applique les surfaces sauge pâle et les
+  couleurs de texte à contraste élevé sur toutes les pages. Les indicateurs de criticité conservent leurs couleurs
+  sémantiques.
 
-### Dashboard noir / blanc
+### Dashboard
 
-La refonte est limitée à `/` : indicateurs plus lisibles, accès aux listes depuis les cartes, graphique conservé,
-répartition par sévérité et liste d'incidents réels. Aucun chiffre, tendance ou statut de connexion n'est inventé.
-Les trois modes de source (démo, écoute active, écoute inactive) et leurs avertissements sont conservés.
-
-- `templates/pages/dashboard.html` remplit les blocs `document_attributes` et `page_head_scripts` du layout commun.
-  Les autres pages ne chargent ni le script ni les couleurs de la refonte.
-- `static/css/dashboard_theme.css` définit les jetons noir/blanc et les adaptations du menu, de la barre supérieure
-  et des composants partagés **uniquement sur le dashboard**, avec `[data-dashboard-theme]`.
-- `static/css/dashboard.css` porte la composition responsive propre au dashboard : quatre cartes (deux sur petit
-  écran), graphique et sévérités en deux colonnes puis une, tableau dans un conteneur à défilement horizontal.
-- `static/js/dashboard_theme.js` est chargé dans le `<head>` avant le CSS pour appliquer la préférence avant
-  l'affichage. Il lit `localStorage["soc-dashboard-theme"]` (`light` ou `dark` uniquement), sinon le thème système.
-  Le choix s'effectue avec deux boutons natifs (`aria-pressed`), accessibles au clavier, et reste local au navigateur.
-  La couleur du navigateur (`theme-color`) suit le choix. Aucun cookie ni accès à la DB.
-- Stockage interdit : avertissement visible et diagnostic dans la console ; le choix reste utilisable sur la page,
-  mais n'est pas mémorisé. Sans JavaScript : thème noir, contrôles masqués, toutes les actions métier fonctionnent.
-
-Validation : `python -m pytest tests/web_interface tests/features/dashboard`. Les tests couvrent les ressources,
-le périmètre du thème, les liens et données réels, ainsi que les indicateurs de source. La mémorisation, les clics,
-le clavier et la mise en page mobile doivent aussi être vérifiés dans un navigateur.
-
-Vérification navigateur de cette refonte : thèmes noir/blanc à 320, 390, 768, 1024 et 1440 px sans débordement
-horizontal de la page ; tableau défilable sur mobile ; choix conservé après rechargement ; activation au clavier ;
-stockage local interdit avec avertissement visible ; script indisponible avec repli noir fonctionnel. La base de
-prévisualisation était isolée et synthétique, sans accès aux logs réels.
+- `templates/pages/dashboard.html` : quatre cartes `<a class="stat-card stat-card-link">` (lien vers
+  `/incidents?vue=en_cours`, `/alertes`, `/incidents?vue=traites`), graphique d'activité, répartition par sévérité,
+  liste des incidents ouverts. Aucun chiffre, tendance ou statut de connexion n'est inventé.
+- Le bandeau de contexte affiche `alert_source_indicator` (`.source-context.alert-source-<mode>`) : les trois modes
+  de source (démo, écoute active, écoute inactive) restent visibles sur le dashboard comme sur les autres pages.
+- `static/css/dashboard.css` porte la composition responsive ; les couleurs viennent de `pink_theme.css`
+  (thème global). L'ancien thème noir/blanc propre au dashboard (`dashboard_theme.css`/`.js`, blocs
+  `document_attributes` et `page_head_scripts` du layout) a été retiré lors de la fusion des branches
+  `analyzer_connected` et `feature/fortianalyzer-collector` : il entrait en conflit avec le thème global
+  (`pink_theme.css` force les couleurs avec `!important`).
+- `pink_theme.css` contient aussi les versions claires de l'indicateur de source (bandeau démo, badge du haut,
+  statut du menu), définies d'abord en sombre dans `application_shell.css`.
 
 ## Indicateur de source des alertes
 
@@ -110,6 +112,6 @@ autonome, ne l'affiche pas.
 
 ## Tests
 
-`tests/web_interface/test_web_pages.py` : chaque page s'affiche sur une base vide, parcours complets via les
-formulaires (création, actions, étapes, playbook, délais, escalade), erreurs HTML vs JSON, messages limités aux clés
-connues. Vérification visuelle dans un navigateur : non automatisée.
+`tests/web_interface/test_web_pages.py` : chaque page s'affiche sur une base vide, liens des cartes du tableau de bord,
+parcours complets via les formulaires (création, actions, étapes, checklist, playbook, délais, escalade), erreurs HTML
+vs JSON, messages limités aux clés connues. Vérification visuelle dans un navigateur : non automatisée.

@@ -35,6 +35,9 @@ services:
       APPLICATION_ENVIRONMENT: ${APPLICATION_ENVIRONMENT:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+    # Les dossiers montés depuis le dossier partagé sont accessibles via leur groupe hôte.
+    group_add:
+      - "${DOCKER_SHARED_GROUP_ID:-968}"
     depends_on:
       database:
         condition: service_healthy
