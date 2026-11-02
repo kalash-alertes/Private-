@@ -7,7 +7,7 @@ l'attribuer à quelqu'un, juger sa gravité, écarter les fausses alertes, docum
 
 ## Comment ça marche, en bref
 
-1. Un **collecteur** récupère régulièrement les alertes critiques de FortiAnalyzer, sans créer de doublons.
+1. Un **collecteur** récupère régulièrement les alertes de FortiAnalyzer (tous niveaux, classées par sévérité), sans créer de doublons.
 2. Les **logs** sont indexés dans OpenSearch (recherche rapide) ; les **informations de suivi** vont dans PostgreSQL.
 3. Les analystes travaillent dans **une seule application** qui combine les deux.
 

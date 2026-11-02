@@ -46,7 +46,7 @@ flowchart LR
 |---|---|---|
 | `APP_IS_IN_DEMO` | `true` | `true` : démonstration ; `false` : réception syslog |
 | `LOG_COLLECTION_INTERVAL_SECONDS` | `0` (`.env.example` : `30`) | Vidage de la file toutes les N s (0 = manuel) |
-| `LOG_COLLECTION_MINIMUM_CRITICALITY` | `haute` | Seuil d'enregistrement (validé au démarrage) |
+| `LOG_COLLECTION_MINIMUM_CRITICALITY` | `information` (= tous les logs, décision 2026-11-02 ; avant : `haute`) | Seuil d'enregistrement (validé au démarrage) |
 | `SYSLOG_LISTEN_ADDRESS` | `0.0.0.0` | Interface d'écoute |
 | `SYSLOG_LISTEN_PORT` | `5140` | Port (UDP et TCP) ; 514 demande des droits administrateur |
 | `SYSLOG_IS_UDP_ENABLED` / `SYSLOG_IS_TCP_ENABLED` | `true` / `true` | Protocoles écoutés (au moins un) |
@@ -116,6 +116,12 @@ tous lus et convertis, empreintes toutes distinctes ; sévérités : 1 178 faibl
    sinon `store_source_log_if_new` (commit par log ; doublon ⇒ « ignoré »).
 4. Fin : `reussie` (curseur = fin de période), `partielle` si des logs sont invalides (5 motifs au plus dans
    `erreur`), `echouee` si l'enregistrement échoue.
+
+Avec le seuil par défaut (`information`), `nb_logs_sous_le_seuil` vaut toujours 0 : chaque log valide est enregistré
+avec sa criticité source (correspondance dans `fortianalyzer_log_normalizer.py`), et la page Alertes le range ensuite
+dans sa case (`web_interface/pages/alerts_page.py`, `ALERT_SEVERITY_GROUP_LEVELS`). Tests :
+`test_by_default_every_fortianalyzer_severity_is_stored_with_its_criticality` (collecte) et
+`test_alerts_page_puts_every_source_level_in_its_severity_case` (interface).
 
 Compteurs de l'historique : `nb_logs_recus` = logs **retenus** (lus − sous le seuil), car `import_runs` exige pour une
 réussite `recus = inseres + ignores`. Le bilan (`LogCollectionResultRead`) détaille aussi `nb_logs_lus_sur_la_source`,

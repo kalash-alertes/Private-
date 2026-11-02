@@ -223,7 +223,7 @@ Ce schéma résume trois choix que tu retrouveras partout :
 | Dossier | Ce qu'il gère | Tables |
 |---|---|---|
 | `import_runs/` | L'historique des imports depuis FortiAnalyzer (réussi, échoué, combien). | `executions_import` |
-| `source_logs/` | Les **alertes** (logs critiques), enregistrées une seule fois. | `logs` |
+| `source_logs/` | Les **alertes** (logs de tous niveaux), enregistrées une seule fois. | `logs` |
 | `incidents/` | Le **cycle de vie d'un incident** (voir détail ci-dessous). | `incidents`, `etapes_realisees_incident` |
 | `playbooks/` | Les procédures : nom, source, étapes. | `playbooks`, `etapes_playbook` |
 | `incident_response_settings/` | Les **délais par sévérité** et l'escalade. | `delais_reponse_incidents` |
