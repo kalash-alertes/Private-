@@ -1,0 +1,142 @@
+{
+  "id": "ee6de4c8-2c39-4559-a266-de7463f30a0c",
+  "nom": "IRM-04 — Déni de Service Distribué (DDOS)",
+  "categorie": "anomaly",
+  "description": "Méthodologie de réponse à incident « Déni de Service Distribué (DDOS) » (IRM-04, version du 2025-10-27) : phases issues du NIST (préparation, identification, confinement, remédiation, récupération, capitalisation). À adapter au contexte de l'organisation avant usage.",
+  "source": "CERT aDvens, d'après les fiches IRM du CERT Société Générale — IRM-04 « Déni de Service Distribué (DDOS) », version du 2025-10-27. Fichier : https://github.com/cert-advens/IRM/blob/HEAD/FR/IRM-04-DDOS.pdf (original : https://github.com/certsocietegenerale/IRM). Licence Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Modifications : texte extrait du PDF et découpé par phase, mise en forme adaptée ; contenu non réécrit.",
+  "etapes": [
+    {
+      "id": "b1d50d04-cf36-46e5-b088-b2a1d5ce4a32",
+      "titre": "Préparation",
+      "description": [
+        "Objectif : Établir des contacts, définir des procédures, recueillir des informations et se familiariser avec les outils de détection d’intrusion pour gagner du temps lors d’une attaque.",
+        "1.1. Prise en charge du fournisseur d’accès Internet",
+        "• Contacter votre FAI pour comprendre les services d’atténuation DDoS qu’il propose (gratuits et payants) et la procédure à suivre,",
+        "• Si possible, souscrire à une connexion Internet redondante et à un service Anti-DDoS,",
+        "• Établir une liste des contacts avec votre FAI et les forces de l’ordre. S’assurer qu’il y a la possibilité d’utiliser un canal de communication tiers (ex. : téléphone),",
+        "• S’assurer que le FAI et le service d’atténuation DDoS disposent d’une assistance téléphonique 24h/24 et 7j/7.",
+        "1.2. Inventaire",
+        "• Créer une liste autorisée des adresses IP et des protocoles, si il y a une priorisation du trafic à réaliser lors d’une attaque,",
+        "• Documenter en détails l’infrastructure informatique, y compris les référents métiers, les adresses IP et les ID de réseau, les paramètres de routage (AS, etc.),",
+        "- Préparer une cartographie de la topologie de réseau et un inventaire des actifs.",
+        "1.3. Infrastructure de réseau",
+        "• Concevoir une bonne infrastructure réseau sans point de défaillance unique ni goulot d’étranglement,",
+        "• Déployer un pare-feu applicatif Web (WAF) pour se protéger contre les attaques DDoS au niveau de la couche application,",
+        "• Distribuer les serveurs DNS et autres services critiques (SMTP, etc.) via différents AS,",
+        "• Renforcer la configuration du réseau, du système d’exploitation et des composants d’application susceptibles d’être ciblés par les attaques DDoS,",
+        "• Connaître les performances de l’infrastructure actuelle afin d’identifier une attaque plus rapidement et avec plus de précision,",
+        "• Si le business dépend d’Internet, acheter des produits ou services spécialisés d’atténuation des attaques DDoS,",
+        "• Confirmer les paramètres DNS de durée de vie (TTL) pour les systèmes susceptibles d’être attaqués. Réduire les TTL, si nécessaire, pour faciliter la redirection DNS si les adresses IP d’origine sont attaquées. 600 est une bonne valeur TTL,",
+        "• En fonction de la criticité des services, mettre en place une sauvegarde activable en cas de problème.",
+        "1.4. Interlocuteurs internes",
+        "• Établir une liste des contacts pour les équipes IDS, pare-feu, systèmes et réseau,",
+        "• Collaborer avec les métiers pour comprendre les implications commerciales (par exemple, la perte d’argent) des scénarios d’attaque DDoS probables,",
+        "• Impliquer l’équipe de planification BCP/DR sur les incidents DDoS,"
+      ]
+    },
+    {
+      "id": "2caded65-8b42-403a-809d-83a4c940c228",
+      "titre": "Identification",
+      "description": [
+        "Objectif : Détecter l’incident, déterminer son ampleur et impliquer les acteurs appropriés.",
+        "2.1. Communication",
+        "• Préparer un modèle de communication interne et externe sur les incidents DDoS,",
+        "• Identifier le canal de communication en cas de DDoS,",
+        "• La phase de « préparation » doit être considérée comme l’élément le plus important d’une réponse réussie à un incident DDoS.",
+        "2.2. Analyser l’attaque",
+        "• Garder à l’esprit que l’attaque DDoS pourrait être un écran de fumée cachant une attaque plus sophistiquée et ciblée,",
+        "• Consulter l’analyse du service anti-DDoS et les rapports du centre de nettoyage :",
+        "- Comprendre le flux logique de l’attaque DDoS et identifier les composants de l’infrastructure affectés par celle-ci,",
+        "- Comprendre si le site était la cible de l’attaque ou une victime collatérale.",
+        "• Examiner les fichiers de charge et les journaux des serveurs, routeurs, pare-feu, applications et autres infrastructures concernées,",
+        "• Identifier les aspects du trafic DDoS qui le différencient du trafic légitime :",
+        "- Adresses IP sources, AS, etc,",
+        "- Ports de destination,",
+        "- URL,",
+        "- Indicateurs de protocoles.",
+        "Des outils d’analyse de réseau peuvent être utilisés pour examiner le trafic :",
+        "• Tcpdump, Tshark, Snort, Netflow, Ntop, MRTG, Cacti, Nagios.",
+        "Si possible, créer une signature NIDS pour se concentrer sur la différenciation entre le trafic légitime et le trafic malveillant, Impliquer les acteurs internes et externes",
+        "• Contacter les équipes internes pour savoir ce qu’ils voient de l’attaque,",
+        "• Contacter le FAI pour lui demander de l’aide. Être précis sur le contrôle du trafic souhaité :",
+        "- Blocs de réseau impliqués,",
+        "- Adresses IP sources,",
+        "- Protocoles.",
+        "• Informer les équipes exécutives et juridiques de l’entreprise, Vérifier les antécédents",
+        "• Découvrir si l’entreprise a reçu une demande d’extorsion de l’attaquant,",
+        "- Vérifier les e-mails dans la passerelle de messagerie de sécurité en fonction d’une liste de mots clés.",
+        "- Certains pirates envoient des demandes d’extorsion directement aux adresses e-mail figurant dans les enregistrements WHOIS du site Web ciblé.",
+        "• Rechercher des revendications de l’attaque sur les réseaux sociaux,",
+        "• Rechercher si quelqu’un aurait intérêt à menacer l’entreprise :",
+        "- Concurrents,",
+        "- Groupes à motivation idéologique (hacktivistes),",
+        "- Anciens employés."
+      ]
+    },
+    {
+      "id": "12f66147-4121-407b-8f0a-de389da484ac",
+      "titre": "Confinement",
+      "description": [
+        "Objectif : Atténuer les effets de l’attaque sur l’environnement ciblé.",
+        "• Si le goulot d’étranglement est une fonctionnalité particulière d’une application, désactiver temporairement cette fonctionnalité,",
+        "• Essayer de limiter ou de bloquer le trafic DDoS aussi près que possible du réseau \"cloud\" via un routeur, un pare-feu, un équilibreur de charge, un appareil spécialisé, etc.,",
+        "• Mettre fin aux connexions ou aux processus indésirables sur les serveurs et les routeurs, et régler leurs paramètres TCP/IP,",
+        "• Si possible, passer à d’autres sites ou réseaux utilisant DNS ou un autre mécanisme. Mettre en place un Blackhole DDoS ciblant les adresses IP d’origine,",
+        "• Mettre en place un canal de communication alternatif entre l’entreprise et ses clients,",
+        "• Si possible, acheminer le trafic via un service ou un produit de nettoyage du trafic via DNS ou des modifications de routage (par exemple : sinkhole),",
+        "• Configurer des filtres de sortie pour bloquer le trafic que les systèmes peuvent envoyer en réponse au trafic DDoS (par exemple : backsquatter), afin d’éviter d’ajouter des paquets inutiles au réseau,",
+        "• En cas de tentative d’extorsion, essayer de gagner du temps avec le fraudeur. Par exemple, expliquer avoir besoin de plus de temps pour obtenir l’approbation de la direction.",
+        "Si le goulot d’étranglement se situe du côté du FAI ou du service anti-DDoS, lui seul peut prendre des mesures efficaces.",
+        "Dans ce cas, travailler en étroite collaboration avec le FAI et/ou le fournisseur anti-DDoS et s’assurer de partager efficacement les informations."
+      ]
+    },
+    {
+      "id": "2ef57254-7113-435d-8b15-54d317e5e07f",
+      "titre": "Remédiation",
+      "description": [
+        "Objectif : Prendre des mesures pour arrêter l’attaque.",
+        "• Contacter le FAI et/ou le fournisseur anti-DDoS et s’assurer qu’ils appliquent les mesures correctives. Pour information, voici quelques-unes des mesures possibles :",
+        "- Filtrage (si possible au niveau Tier 1 ou 2),",
+        "- Nettoyage de trafic / Sinkhole / Clean-pipe,",
+        "- Équilibrage des IP publics / division / commutation,",
+        "- Routage sinkhole.",
+        "Les actions de correction technique peuvent principalement être appliquées par le FAI et/ou le fournisseur anti-DDoS.",
+        "Si l’attaque a eu un impact majeur, signaler l’incident à l’ANSSI et/ou le régulateur.",
+        "Si les attaquants ont été identifiés, envisager d’impliquer les forces de l’ordre.",
+        "Cela devrait être effectué par la direction et les équipes juridiques de l’entreprise."
+      ]
+    },
+    {
+      "id": "2ff133fb-e19a-4534-8e83-270c10ef1642",
+      "titre": "Récupération",
+      "description": [
+        "Objectif : Restaurer le fonctionnement normal du système.",
+        "Évaluer la fin de l’incident DDoS",
+        "• S’assurer que les services concernés sont à nouveau joignables,",
+        "• S’assurer que les performances de l’infrastructure sont de retour aux anciens niveaux.",
+        "Annuler les mesures d’atténuation",
+        "• Rebasculer le trafic vers votre réseau d’origine,",
+        "• Redémarrer les services arrêtés."
+      ]
+    },
+    {
+      "id": "31a45b87-5301-4ed2-8169-c093ab97b619",
+      "titre": "Capitalisation et apprentissage",
+      "description": [
+        "Objectif : Documenter les détails de l’incident, discuter des leçons apprises et améliorer les dispositifs et stratégies de défense.",
+        "Le rapport d’incident",
+        "Il doit être rédigé et mis à la disposition de toutes les parties prenantes de la cellule de gestion de crise.",
+        "Le retour d’expérience",
+        "Les thèmes du retour d’expérience doivent être décrits avec les éléments suivants :",
+        "• Cause initiale de l’infection,",
+        "• Actions et chronologies de chaque événement important,",
+        "• Ce qui s’est bien passé,",
+        "• Ce qui ne s’est pas bien passé,",
+        "• Coût de l’incident,",
+        "• Indicateurs de compromission.",
+        "La capitalisation",
+        "Des actions d’amélioration des processus de gestion des incidents doivent être définies pour capitaliser sur cette expérience."
+      ]
+    }
+  ]
+}

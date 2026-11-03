@@ -70,3 +70,8 @@ def fetch_playbooks_with_steps_by_ids(database_session: Session, playbook_ids: I
 def delete_playbook(database_session: Session, playbook: Playbook) -> None:
     database_session.delete(playbook)
     database_session.flush()
+
+
+def fetch_all_playbooks_with_steps(database_session: Session) -> list[Playbook]:
+    """Retourne tous les playbooks avec leurs étapes (synchronisation avec les fichiers)."""
+    return list(database_session.scalars(select(Playbook).options(selectinload(Playbook.etapes))).all())

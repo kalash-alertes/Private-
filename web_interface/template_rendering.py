@@ -30,6 +30,7 @@ page_templates.env.filters.update(
         "audit_event_type_label": display_formatting.format_audit_event_type_label,
         "audit_event_type_css": display_formatting.format_audit_event_type_css_suffix,
         "display_datetime": display_formatting.format_datetime_for_display,
+        "display_datetime_seconds": display_formatting.format_datetime_with_seconds_for_display,
         "duration": display_formatting.format_duration_in_minutes,
         "initials": display_formatting.build_person_initials,
         "number": display_formatting.format_number,

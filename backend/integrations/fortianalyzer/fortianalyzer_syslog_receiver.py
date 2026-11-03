@@ -13,17 +13,25 @@ Choix et limites :
   collecte fréquente (LOG_COLLECTION_INTERVAL_SECONDS).
 - Émetteurs filtrables (`allowed_sender_addresses`) : sans filtre, n'importe quelle machine du réseau peut envoyer
   de faux logs sur le port. Le syslog n'a ni authentification ni chiffrement.
+- Tampon de réception UDP agrandi (`UDP_RECEIVE_BUFFER_BYTES`) : FortiAnalyzer envoie par rafales ; avec le tampon
+  par défaut du noyau (~208 Kio), des datagrammes étaient perdus AVANT d'atteindre l'application (mesuré : ~1,3 %
+  de pertes). Ces pertes système sont lisibles dans /proc/net/snmp (`read_system_udp_receive_buffer_error_count`).
+- Les derniers messages reçus (lisibles ou non, AVANT tout filtre de sévérité) sont gardés dans une mémoire bornée
+  pour la page « Logs bruts » ; un compteur par niveau de sévérité source explique l'écart entre logs reçus et
+  logs enregistrés.
 """
 
 import logging
 import re
+import socket
 import socketserver
 import sys
 import threading
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 
 from pydantic import ValidationError
 
@@ -42,6 +50,13 @@ SYSLOG_MESSAGE_ENCODING = "utf-8"
 MAXIMUM_UDP_DATAGRAM_BYTES = 65_535
 # Préfixe de longueur de l'encadrement « octet-counting » (RFC 6587) : « 1234 <189>logver=... ».
 TCP_OCTET_COUNTING_PREFIX_REGEX = re.compile(r"^\d+ (?=<)")
+# Tampon demandé au noyau pour le port UDP. Linux le plafonne à net.core.rmem_max (4 Mio dans le conteneur actuel)
+# puis le double : ~8 Mio, soit plusieurs milliers de logs d'avance pendant une rafale.
+UDP_RECEIVE_BUFFER_BYTES = 4 * 1024 * 1024
+# Compteurs UDP du noyau (Linux). Dans un conteneur, ils ne concernent que le réseau du conteneur.
+LINUX_NETWORK_SNMP_STATISTICS_FILE = Path("/proc/net/snmp")
+# Libellé du compteur par niveau pour un message lisible sans champ `severity` ni `level`.
+MISSING_SEVERITY_LABEL = "(aucun)"
 
 
 @dataclass(frozen=True)
@@ -55,11 +70,13 @@ class SyslogReceptionParameters:
     # Vide = tous les émetteurs acceptés.
     allowed_sender_addresses: frozenset[str] = field(default_factory=frozenset)
     maximum_pending_logs: int = 100_000
+    # Derniers messages gardés pour l'affichage brut (0 = aucun).
+    recent_messages_kept_for_display: int = 2_000
 
 
 @dataclass(frozen=True)
 class SyslogReceptionStatistics:
-    """Compteurs depuis le démarrage de l'écoute (affichés dans la page Journaux)."""
+    """Compteurs depuis le démarrage de l'écoute (affichés dans les pages Journaux et Logs bruts)."""
 
     is_listening: bool
     pending_log_count: int
@@ -67,6 +84,45 @@ class SyslogReceptionStatistics:
     rejected_sender_message_count: int
     unreadable_message_count: int
     dropped_because_queue_full_count: int
+    # Messages lisibles par valeur brute du niveau (`severity`, sinon `level`), ex. {"notice": 120, "error": 3}.
+    accepted_message_count_by_severity_label: dict[str, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RecentlyReceivedSyslogMessage:
+    """Un message tel que reçu, gardé pour l'affichage brut. `parsed_log` vaut None si le message est illisible."""
+
+    sequence_number: int
+    received_at: datetime
+    sender_address: str
+    protocol: str
+    raw_text: str
+    parsed_log: RawFortiAnalyzerLog | None
+
+
+def read_severity_label(parsed_log: RawFortiAnalyzerLog) -> str:
+    """Valeur brute du niveau d'un log Fortinet : `severity` (logs d'attaque) prioritaire, sinon `level`."""
+    for severity_field in ("severity", "level"):
+        severity_value = str(parsed_log.get(severity_field) or "").strip().lower()
+        if severity_value:
+            return severity_value
+    return MISSING_SEVERITY_LABEL
+
+
+def read_system_udp_receive_buffer_error_count() -> int | None:
+    """Datagrammes UDP jetés par le noyau faute de place dans un tampon de réception (`RcvbufErrors`), tous ports
+    confondus, depuis le démarrage du réseau (du conteneur). None hors Linux ou si le fichier est illisible.
+
+    Ces pertes ont lieu AVANT l'application : aucun autre compteur ne peut les voir.
+    """
+    try:
+        snmp_lines = [
+            line.split() for line in LINUX_NETWORK_SNMP_STATISTICS_FILE.read_text().splitlines() if line.startswith("Udp:")
+        ]
+        header_line, value_line = snmp_lines[0], snmp_lines[1]
+        return int(value_line[header_line.index("RcvbufErrors")])
+    except (OSError, IndexError, ValueError):
+        return None
 
 
 class FortiAnalyzerSyslogReceiver:
@@ -88,6 +144,14 @@ class FortiAnalyzerSyslogReceiver:
         self._rejected_sender_message_count = 0
         self._unreadable_message_count = 0
         self._dropped_because_queue_full_count = 0
+        self._accepted_message_count_by_severity_label: Counter[str] = Counter()
+        self._recent_messages: deque[RecentlyReceivedSyslogMessage] = deque(
+            maxlen=max(reception_parameters.recent_messages_kept_for_display, 0)
+        )
+        self._last_sequence_number = 0
+        # Compteur système de pertes UDP au démarrage de l'écoute : il est cumulé depuis le démarrage du réseau du
+        # conteneur, seule la différence concerne la réception en cours.
+        self._udp_receive_buffer_errors_at_start: int | None = None
 
     @property
     def source_description(self) -> str:
@@ -117,6 +181,7 @@ class FortiAnalyzerSyslogReceiver:
                 f"Impossible d'écouter sur {server_address[0]}:{server_address[1]} "
                 f"({socket_error.strerror or type(socket_error).__name__}). Port déjà utilisé ou droits insuffisants ?"
             ) from socket_error
+        self._udp_receive_buffer_errors_at_start = read_system_udp_receive_buffer_error_count()
         for server in self._servers:
             threading.Thread(target=server.serve_forever, name=f"syslog-{type(server).__name__}", daemon=True).start()
         syslog_receiver_logger.info("Réception syslog active : %s.", self.source_description)
@@ -155,7 +220,21 @@ class FortiAnalyzerSyslogReceiver:
                 rejected_sender_message_count=self._rejected_sender_message_count,
                 unreadable_message_count=self._unreadable_message_count,
                 dropped_because_queue_full_count=self._dropped_because_queue_full_count,
+                accepted_message_count_by_severity_label=dict(self._accepted_message_count_by_severity_label),
             )
+
+    def count_udp_datagrams_lost_by_system_since_start(self) -> int | None:
+        """Datagrammes UDP jetés par le noyau (tampon plein) depuis le démarrage de l'écoute ; None si non mesurable."""
+        current_error_count = read_system_udp_receive_buffer_error_count()
+        if current_error_count is None or self._udp_receive_buffer_errors_at_start is None:
+            return None
+        return max(current_error_count - self._udp_receive_buffer_errors_at_start, 0)
+
+    def read_recent_messages(self, after_sequence_number: int = 0) -> list[RecentlyReceivedSyslogMessage]:
+        """Retourne les messages gardés pour l'affichage dont le numéro dépasse `after_sequence_number`, du plus
+        ancien au plus récent. Ne retire rien : la collecte n'est pas affectée."""
+        with self._state_lock:
+            return [message for message in self._recent_messages if message.sequence_number > after_sequence_number]
 
     def handle_received_text(self, received_text: str, sender_address: str, protocol: str) -> None:
         """Traite un message reçu : filtre de l'émetteur, validation, lecture, mise en file. Ne lève jamais.
@@ -169,18 +248,19 @@ class FortiAnalyzerSyslogReceiver:
             return
         if not received_text.strip():
             return
+        received_at = self._current_time()
         try:
             parsed_log = parse_fortianalyzer_syslog_message(
                 ReceivedSyslogMessage(
-                    text=received_text,
-                    sender_address=sender_address,
-                    protocol=protocol,
-                    received_at=self._current_time(),
+                    text=received_text, sender_address=sender_address, protocol=protocol, received_at=received_at
                 )
             )
         except ValidationError:
             parsed_log = None
         with self._state_lock:
+            self._remember_recent_message(received_text, sender_address, protocol, received_at, parsed_log)
+            if parsed_log is not None:
+                self._accepted_message_count_by_severity_label[read_severity_label(parsed_log)] += 1
             if parsed_log is None:
                 self._unreadable_message_count += 1
             elif len(self._pending_logs) >= self._reception_parameters.maximum_pending_logs:
@@ -194,6 +274,29 @@ class FortiAnalyzerSyslogReceiver:
             else:
                 self._pending_logs.append(parsed_log)
                 self._accepted_message_count += 1
+
+    def _remember_recent_message(
+        self,
+        received_text: str,
+        sender_address: str,
+        protocol: str,
+        received_at: datetime,
+        parsed_log: RawFortiAnalyzerLog | None,
+    ) -> None:
+        """À appeler sous `_state_lock`. Le texte est tronqué à la taille maximale admise d'un message."""
+        if self._recent_messages.maxlen == 0:
+            return
+        self._last_sequence_number += 1
+        self._recent_messages.append(
+            RecentlyReceivedSyslogMessage(
+                sequence_number=self._last_sequence_number,
+                received_at=received_at,
+                sender_address=sender_address,
+                protocol=protocol,
+                raw_text=received_text.strip()[:MAXIMUM_SYSLOG_MESSAGE_CHARACTERS],
+                parsed_log=parsed_log,
+            )
+        )
 
     def _enabled_protocols(self) -> list[str]:
         return [
@@ -236,6 +339,18 @@ class _SyslogUdpServer(socketserver.UDPServer):
     def __init__(self, server_address: tuple[str, int], syslog_receiver: FortiAnalyzerSyslogReceiver) -> None:
         self.syslog_receiver = syslog_receiver
         super().__init__(server_address, _SyslogUdpRequestHandler)
+
+    def server_bind(self) -> None:
+        # Agrandit le tampon AVANT l'ouverture du port (voir UDP_RECEIVE_BUFFER_BYTES). Un refus du système n'empêche
+        # pas l'écoute : le tampon par défaut reste utilisé, et c'est journalisé.
+        try:
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, UDP_RECEIVE_BUFFER_BYTES)
+        except OSError as buffer_error:
+            syslog_receiver_logger.warning("Tampon UDP non agrandi : %s", buffer_error)
+        super().server_bind()
+        syslog_receiver_logger.info(
+            "Tampon de réception UDP : %s octets.", self.socket.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
+        )
 
 
 class _SyslogTcpServer(socketserver.ThreadingTCPServer):

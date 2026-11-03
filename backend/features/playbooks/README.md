@@ -11,6 +11,11 @@ dans les incidents aussi). Supprimer un playbook le détache des incidents (`SET
 **Fonctions publiques** (utilisées par `incidents`) : `find_playbook_id_for_category`, `fetch_playbook_detail`,
 `fetch_playbook_details_by_ids`.
 
+**Stockage** : un fichier JSON lisible par playbook dans `db/playbooks/` (`playbook_files.py`, nom de fichier :
+`playbook_file_names.py`) ; la base en est l'index. Créer/modifier/supprimer écrit le fichier ET la base.
+`service.synchronize_playbooks_with_files` (démarrage, bouton « Synchroniser avec les fichiers »,
+`scripts/synchronize_playbook_files.py`) enregistre les fichiers ajoutés ou modifiés à la main.
+
 **Tester** : `python -m pytest tests/features/playbooks`.
 
 **Doc** : [docs/technical/playbooks.md](../../../docs/technical/playbooks.md). Suivre [AGENTS.md](../../../AGENTS.md).

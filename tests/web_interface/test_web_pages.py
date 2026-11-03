@@ -36,6 +36,8 @@ PAGE_URLS = [
     "/incidents?vue=traites",
     "/alertes",
     "/journaux",
+    "/logs-bruts",
+    "/logs-bruts?criticite=haute&enregistrement=ecartes&recherche=192.0.2",
     "/parametres/reponse-incidents",
     "/parametres/playbooks",
     "/parametres/playbooks/nouveau",
@@ -408,3 +410,52 @@ def test_real_mode_shows_the_reception_state_instead_of_the_demo_ribbon(
 
     assert f"alert-source-page-{expected_mode}" in page and expected_badge in page
     assert "MODE DÉMONSTRATION" not in page
+
+
+def test_raw_logs_page_shows_live_messages_and_their_fields(web_client, monkeypatch) -> None:
+    from backend.integrations.fortianalyzer import log_source_selection
+    from backend.integrations.fortianalyzer.fortianalyzer_syslog_receiver import (
+        FortiAnalyzerSyslogReceiver,
+        SyslogReceptionParameters,
+    )
+
+    monkeypatch.setenv("APP_IS_IN_DEMO", "false")
+    get_application_settings.cache_clear()
+    receiver = FortiAnalyzerSyslogReceiver(SyslogReceptionParameters())
+    receiver.handle_received_text(
+        '<187>devname="FGT-SYNTHETIQUE" subtype="vpn" level="error" logdesc="IPsec phase 1 error" msg="<b>x</b>"',
+        "192.0.2.104",
+        "UDP",
+    )
+    monkeypatch.setattr(log_source_selection, "_shared_syslog_receiver", receiver)
+
+    page = web_client.get("/logs-bruts").text
+    update = web_client.get("/logs-bruts/nouveaux?apres=0").text
+    nothing_new = web_client.get("/logs-bruts/nouveaux?apres=1").text
+
+    assert "IPsec phase 1 error" in page and "FGT-SYNTHETIQUE" in page and "enregistré" in page
+    assert "raw_syslog_feed.js" in page and 'data-last-number="1"' in page
+    # Le texte des logs est échappé : aucun HTML venant d'un log n'est interprété.
+    assert "<b>x</b>" not in page and "&lt;b&gt;x&lt;/b&gt;" in page
+    assert 'data-new-count="1"' in update and 'data-new-count="0"' in nothing_new
+
+
+
+def test_playbook_files_are_synchronized_from_the_playbooks_page(web_client) -> None:
+    import json
+
+    from backend.features.playbooks.playbook_files import get_playbook_files_directory
+
+    directory = get_playbook_files_directory()
+    (directory / "nouveau.json").write_text(
+        json.dumps({"nom": "Playbook fichier synthétique", "source": "Source synthétique",
+                    "etapes": [{"titre": "Étape A"}]}),
+        encoding="utf-8",
+    )
+    response = web_client.post("/parametres/playbooks/synchroniser")
+    assert response.status_code == 303 and "playbooks_synchronises" in response.headers["location"]
+    assert "Playbook fichier synthétique" in web_client.get(response.headers["location"]).text
+
+    (directory / "invalide.json").write_text('{"nom": "Sans source", "etapes": []}', encoding="utf-8")
+    refused = web_client.post("/parametres/playbooks/synchroniser")
+    assert refused.status_code == 422 and "invalide.json" in refused.text

@@ -1,0 +1,113 @@
+{
+  "id": "2b9e69bf-c05b-4091-a9d3-fb8a998187f4",
+  "nom": "IRM-06 — Défacement de site internet",
+  "categorie": "defacement",
+  "description": "Méthodologie de réponse à incident « Défacement de site internet » (IRM-06, version du 2025-10-27) : phases issues du NIST (préparation, identification, confinement, remédiation, récupération, capitalisation). À adapter au contexte de l'organisation avant usage.",
+  "source": "CERT aDvens, d'après les fiches IRM du CERT Société Générale — IRM-06 « Défacement de site internet », version du 2025-10-27. Fichier : https://github.com/cert-advens/IRM/blob/HEAD/FR/IRM-06-Defacement.pdf (original : https://github.com/certsocietegenerale/IRM). Licence Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Modifications : texte extrait du PDF et découpé par phase, mise en forme adaptée ; contenu non réécrit.",
+  "etapes": [
+    {
+      "id": "726614f4-7251-48c1-a5b9-1004e9551794",
+      "titre": "Préparation",
+      "description": [
+        "Objectif : Établir des contacts, définir des procédures, recueillir des informations et se familiariser avec les outils de détection d’intrusion pour gagner du temps lors d’une attaque.",
+        "• Avoir des schémas à jour décrivant les composants applicatifs liés au serveur web,",
+        "• S’assurer d’avoir une cartographie des réseaux à jour,",
+        "• Créer un site Web de pré-production prêt à l’emploi, sur lequel il est possible de publier du contenu,",
+        "- Définir une procédure pour rediriger chaque visiteur vers ce site de secours (une page de maintenance statique par exemple),",
+        "• Déploiement d’outils de surveillance et de prévention des intrusions (WAF, fail2ban, etc.) pour détecter et prévenir toute activité anormale ciblant les serveurs Web critiques,",
+        "• Exporter les journaux du serveur Web vers un serveur externe,",
+        "- S’assurer que les horloges sont synchronisées entre chaque serveur (même serveur NTP),",
+        "• Déploiement de règles de détection d’attaques et d’exploitation de vulnérabilités basées sur les journaux du serveur et les surveiller,",
+        "• Auditer les sites web avant la mise à jour et de manière régulière (mensuelle si possible),",
+        "• Référencer toutes les sources de contenus externes statiques ou dynamiques,",
+        "• Avoir à portée de main les contacts opérationnels de l’hébergeur,",
+        "• S’assurer que le fournisseur d’hébergement applique des politiques pour consigner tous les événements et vérifier la conformité contractuelle,",
+        "• Préparer des modèles de communication au cas où l’incident serait visible pour les utilisateurs."
+      ]
+    },
+    {
+      "id": "cc1143d7-2cdc-4f8b-9731-0290b3a7e5da",
+      "titre": "Identification",
+      "description": [
+        "Objectif : Détecter l’incident, déterminer son ampleur et impliquer les acteurs appropriés.",
+        "Les canaux de détection habituels",
+        "• Surveillance de page Web :",
+        "- Le contenu d’une page Web a été altéré. Le nouveau contenu est soit très discret (une injection « iframe » par exemple) soit explicite (« Vous avez été piraté par xxx »),",
+        "• Utilisateurs :",
+        "- Réception des appels d’utilisateurs ou des notifications d’employés concernant des problèmes qu’ils constatent lors de leur navigation sur le site,",
+        "• Contrôles de sécurité avec des outils tels que Google SafeBrowsing, Vérifier l’incident de dégradation et détectez son origine",
+        "• Vérifier les métadonnées des fichiers (plus particulièrement : vérifiez les dates de modification, les signatures de hachage),",
+        "• Vérifier les fournisseurs de contenu (mashup),",
+        "• Vérifier les liens présents dans le code source (src, meta, css, scripts …),",
+        "• Vérifier les journaux et les alertes générées par les règles de détection,",
+        "• Analyser les bases de données à la recherche de contenu malveillant.",
+        "Le code source de la page suspecte doit être analysé avec soin pour identifier et cerner le problème.",
+        "S’assurer que le problème provient d’un serveur Web appartenant à l’entreprise et non du contenu Web situé en dehors de l’infrastructure, comme les bannières publicitaires d’un tiers par exemple."
+      ]
+    },
+    {
+      "id": "32bb5bdd-6d7c-456a-bc74-99e4e72f9b8c",
+      "titre": "Confinement",
+      "description": [
+        "Objectif : Atténuer les effets de l’attaque sur l’environnement ciblé.",
+        "• Sauvegarder toutes les données stockées sur le serveur Web à des fins de collecte de preuve et d’investigation :",
+        "- La meilleure pratique, le cas échéant, consiste à créer une copie bit à bit complète du disque dur utilisé par le serveur Web,",
+        "- Cela peut notamment être utile pour récupérer du contenu supprimé.",
+        "• Contrôler l’architecture réseau. Vérifier que la vulnérabilité exploitée par l’attaquant ne se situe pas ailleurs,",
+        "- Vérifier le système sur lequel le serveur Web est exécuté,",
+        "- Vérifier les autres services en cours d’exécution sur cette machine,",
+        "- Vérifier les connexions entrantes et sortantes établies à partir du serveur, Si la source de l’attaque provient d’un autre système, faire une investigation sur la machine suspecte.",
+        "• Rechercher des preuves derrière chaque action réalisée par l’attaquant :",
+        "- Découvrir comment l’attaquant est entré dans le système en premier lieu et corrigez ce qui peut l’être :",
+        "• Une vulnérabilité d’un composant Web permettant un accès en écriture : corriger la vulnérabilité en appliquant les correctifs applicables,",
+        "• Les vulnérabilités des plugins CMS sont souvent exploitées par des attaquants et doivent être identifiées et corrigées,",
+        "• Au niveau d’un dossier public : le rendre privé,",
+        "• Faiblesse SQL permettant l’injection : corrigez le code,",
+        "• Fournisseur de contenu (mashup) : couper les flux impliqués,",
+        "• Une modification administrative par accès physique : modifier les droits d’accès.",
+        "Si nécessaire (problème complexe sur un serveur web important), déploiement d’un serveur web provisoirement à jour.",
+        "Le serveur doit proposer le même contenu que celui de la machine compromise ou au moins afficher un contenu légitime tel qu’une page de maintenance statique. Le mieux est d’afficher un contenu statique temporaire, ne contenant que du code HTML.",
+        "Cela empêche une autre infection au cas où l’attaquant serait toujours en mesure d’exploiter la même vulnérabilité."
+      ]
+    },
+    {
+      "id": "d7da881a-0c38-4a69-a7c8-3a19007a93ab",
+      "titre": "Remédiation",
+      "description": [
+        "Objectif : Prendre des mesures pour arrêter l’attaque.",
+        "• Supprimer tous les contenus modifiés et les remplacer par du contenu légitime, restauré à partir d’une sauvegarde antérieure,",
+        "• S’assurer que ce contenu est exempt de vulnérabilités ; patcher si nécessaire."
+      ]
+    },
+    {
+      "id": "f3a03a7c-4df0-49b7-97b5-61b32ca6db68",
+      "titre": "Récupération",
+      "description": [
+        "Objectif : Restaurer le fonctionnement normal du système.",
+        "• Modifier tous les mots de passe utilisateur. Si le serveur Web fournit une authentification utilisateur et qu’il y a des preuves ou des raisons de penser que les mots de passe peuvent avoir été compromis,",
+        "- Cela peut nécessiter une campagne de communication auprès des utilisateurs,",
+        "• Si un serveur de sauvegarde a été utilisé, restaurer les composants du serveur Web principal à l’état nominal,",
+        "• Surveiller de près les journaux et les alertes pour détecter de nouvelles attaques."
+      ]
+    },
+    {
+      "id": "f7848dfe-9e2e-4d40-9a67-1d1fd5a2a4a7",
+      "titre": "Capitalisation et apprentissage",
+      "description": [
+        "Objectif : Documenter les détails de l’incident, discuter des leçons apprises et améliorer les dispositifs et stratégies de défense.",
+        "Le rapport d’incident",
+        "Il doit être rédigé et mis à la disposition de toutes les parties prenantes de la cellule de gestion de crise.",
+        "Le retour d’expérience",
+        "Les thèmes du retour d’expérience doivent être décrits avec les éléments suivants :",
+        "• Cause initiale de l’infection,",
+        "• Actions et chronologies de chaque événement important,",
+        "• Ce qui s’est bien passé,",
+        "• Ce qui ne s’est pas bien passé,",
+        "• Coût de l’incident,",
+        "• Indicateurs de compromission.",
+        "La capitalisation",
+        "Des actions d’amélioration des processus de gestion des incidents doivent être définies pour capitaliser sur cette expérience."
+      ]
+    }
+  ]
+}

@@ -29,6 +29,10 @@ référence).
 - Dans la fiche d'un incident, l'analyste coche les étapes réalisées ; la liste des incidents montre l'avancement
   (« 2/4 »).
 - Modifier un playbook garde les cases déjà cochées pour les étapes conservées.
+- Chaque playbook est aussi un **fichier JSON lisible** dans `db/playbooks/` : l'interface l'écrit, et un fichier
+  modifié à la main est repris avec **Synchroniser avec les fichiers**. 13 procédures publiques et sourcées y sont
+  fournies (fiches IRM du CERT Société Générale / CERT aDvens, force brute d'après MITRE ATT&CK) : voir
+  [raw_logs_and_reference_playbooks.md](raw_logs_and_reference_playbooks.md).
 
 ## Journal d'audit
 

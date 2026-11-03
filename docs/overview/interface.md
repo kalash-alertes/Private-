@@ -19,6 +19,7 @@ OpenSearch Dashboards n'est nécessaire pour traiter les incidents.
 | **Fiche d'un incident** | Un clic sur un incident ouvre **son playbook** et une checklist de réponse de sept points, cochable et mémorisée pour cet incident. À côté : les informations, les actions (statut, sévérité, responsable, faux positif…) et l'historique. La checklist est un aide-mémoire à adapter aux procédures internes. |
 | **Alertes** | Un graphique en barres et un diagramme circulaire montrent les alertes critiques, moyennes et faibles. Par défaut, seuls les logs de dangerosité moyenne, haute et critique sont collectés : la case Faible indique alors « Non collectées ». La liste présente le niveau de chaque alerte ; un bouton crée l'incident correspondant. Les niveaux « haute » sont regroupés avec les critiques, et les niveaux « information » avec les faibles, sans changer leur niveau source. |
 | **Journaux** | L'historique des imports depuis FortiAnalyzer : réussis, échoués, combien d'alertes. |
+| **Logs bruts** | Tout ce que FortiAnalyzer envoie, en direct et avant le tri par dangerosité ; un clic déplie un log sur tous ses champs. Explique l'écart avec FortiAnalyzer ([détails](raw_logs_and_reference_playbooks.md)). |
 | **Paramètres** | Clients (prévu), **Réponse aux incidents** (délais, escalade, playbooks), Utilisateurs (prévu), **Journal d'audit**. |
 
 ## Le tableau de bord

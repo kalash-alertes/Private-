@@ -19,6 +19,7 @@ from backend.integrations.fortianalyzer.fortianalyzer_errors import (
 )
 from backend.integrations.fortianalyzer.fortianalyzer_syslog_receiver import (
     FortiAnalyzerSyslogReceiver,
+    RecentlyReceivedSyslogMessage,
     SyslogReceptionParameters,
     SyslogReceptionStatistics,
 )
@@ -52,6 +53,7 @@ def build_syslog_reception_parameters(settings: ApplicationSettings) -> SyslogRe
         is_tcp_enabled=settings.syslog_is_tcp_enabled,
         allowed_sender_addresses=frozenset(settings.syslog_allowed_sender_addresses_list),
         maximum_pending_logs=settings.syslog_maximum_pending_logs,
+        recent_messages_kept_for_display=settings.syslog_recent_messages_kept_for_display,
     )
 
 
@@ -94,6 +96,18 @@ def read_shared_syslog_reception_statistics() -> SyslogReceptionStatistics | Non
     """Compteurs de la réception partagée, ou None si elle n'a pas démarré."""
     syslog_receiver = _shared_syslog_receiver
     return syslog_receiver.read_reception_statistics() if syslog_receiver is not None else None
+
+
+def count_shared_udp_datagrams_lost_by_system() -> int | None:
+    """Datagrammes UDP jetés par le système depuis le démarrage de la réception partagée ; None si non mesurable."""
+    syslog_receiver = _shared_syslog_receiver
+    return syslog_receiver.count_udp_datagrams_lost_by_system_since_start() if syslog_receiver is not None else None
+
+
+def read_shared_recent_syslog_messages(after_sequence_number: int = 0) -> list[RecentlyReceivedSyslogMessage]:
+    """Derniers messages reçus par la réception partagée (plus ancien d'abord), ou liste vide si elle n'a pas démarré."""
+    syslog_receiver = _shared_syslog_receiver
+    return syslog_receiver.read_recent_messages(after_sequence_number) if syslog_receiver is not None else []
 
 
 def read_shared_syslog_receiver_startup_error() -> str | None:

@@ -133,6 +133,14 @@ def format_datetime_for_display(value: datetime | None) -> str:
     return aware_value.astimezone(DISPLAY_TIMEZONE).strftime("%d/%m/%Y %H:%M")
 
 
+def format_datetime_with_seconds_for_display(value: datetime | None) -> str:
+    """`29/10 14:05:32` dans le fuseau d'affichage (flux de logs : la seconde compte) ; « — » si absent."""
+    if value is None:
+        return "—"
+    aware_value = value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+    return aware_value.astimezone(DISPLAY_TIMEZONE).strftime("%d/%m %H:%M:%S")
+
+
 def format_duration_in_minutes(minutes: float | int | None) -> str:
     """`45 min`, `3 h 05`, `2 j 4 h` ; « — » si absent."""
     if minutes is None:

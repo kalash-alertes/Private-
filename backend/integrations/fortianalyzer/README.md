@@ -7,7 +7,7 @@ l'application écoute un port (UDP/TCP, 5140 par défaut) ; aucune API n'est int
 | Fichier | Rôle |
 |---|---|
 | `fortianalyzer_log_source.py` | Le contrat `FortiAnalyzerLogSource` (`take_new_logs`) ; nom du champ des métadonnées de réception |
-| `fortianalyzer_syslog_receiver.py` | La vraie source : écoute syslog UDP/TCP, filtre des émetteurs, file d'attente en mémoire |
+| `fortianalyzer_syslog_receiver.py` | La vraie source : écoute syslog UDP/TCP (tampon UDP agrandi), filtre des émetteurs, file d'attente en mémoire, mémoire des derniers messages pour la page Logs bruts, compteur par niveau, pertes UDP du système |
 | `fortianalyzer_syslog_message_parser.py` | Validation Pydantic d'un message reçu et lecture des champs Fortinet `clé=valeur` |
 | `demo_log_source.py` | Source de démonstration (logs inventés au format FortiAnalyzer) |
 | `log_source_selection.py` | Choix de la source selon `APP_IS_IN_DEMO` ; démarrage/arrêt du récepteur partagé ; réglages invalides |

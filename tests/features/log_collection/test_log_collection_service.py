@@ -226,3 +226,17 @@ def test_journals_page_shows_the_source_and_runs_a_collection(web_client) -> Non
     assert "Mode démonstration" in page and "Lancer une collecte maintenant" in page
     assert collection_response.status_code == 303
     assert "Réussie" in web_client.get("/journaux").text
+
+
+def test_raw_log_threshold_evaluation_uses_the_collection_rules() -> None:
+    settings = ApplicationSettings(log_collection_minimum_criticality="moyenne")
+
+    def evaluate(raw_log):
+        return log_collection_service.evaluate_raw_log_against_collection_threshold(raw_log, settings)
+
+    stored, discarded, invalid = evaluate({"level": "warning", "subtype": "vpn"}), evaluate({"level": "notice"}), evaluate({"level": "inventee"})
+
+    assert stored.is_stored_by_collection and stored.criticite_source == "moyenne" and stored.type == "vpn"
+    assert not discarded.is_stored_by_collection and discarded.invalid_reason is None
+    assert invalid.criticite_source is None and not invalid.is_stored_by_collection
+    assert "inventee" in invalid.invalid_reason

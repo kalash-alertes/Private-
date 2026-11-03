@@ -8,6 +8,7 @@
 **Fichiers**
 - `service.py` : une collecte complète (conversion, seuil de sévérité, enregistrement sans doublon, bilan) ;
   `start_log_reception` / `stop_log_reception` ; description de la configuration et de l'état de l'écoute
+  ; `evaluate_raw_log_against_collection_threshold` (devenir d'un log brut, utilisé par `raw_syslog_feed`)
 - `fortianalyzer_log_normalizer.py` : log FortiAnalyzer → log de l'application (sévérité, date, type, empreinte)
 - `collection_scheduler.py` : collecte automatique toutes les `LOG_COLLECTION_INTERVAL_SECONDS` secondes
 - `schemas.py` · `router.py` (`POST /api/collecte`, `GET /api/collecte/configuration`)

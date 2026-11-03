@@ -1,0 +1,7 @@
+{# Fragment lu par static/js/raw_syslog_feed.js : nouveaux messages, bilan à jour, numéro du dernier message. #}
+{% from "partials/raw_syslog_feed_entries.html" import raw_syslog_feed_entries %}
+{% from "partials/raw_syslog_feed_statistics.html" import raw_syslog_feed_statistics %}
+<div data-last-number="{{ feed.dernier_numero }}" data-new-count="{{ feed.messages | length }}">
+  <template data-role="entries">{{ raw_syslog_feed_entries(feed.messages) }}</template>
+  <template data-role="statistics">{{ raw_syslog_feed_statistics(feed.statistiques) }}</template>
+</div>

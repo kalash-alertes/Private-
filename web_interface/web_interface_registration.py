@@ -24,6 +24,7 @@ from web_interface.pages.incident_detail_page import incident_detail_page_router
 from web_interface.pages.incidents_page import incidents_page_router
 from web_interface.pages.journals_page import journals_page_router
 from web_interface.pages.playbooks_pages import playbooks_pages_router
+from web_interface.pages.raw_syslog_feed_page import raw_syslog_feed_page_router
 from web_interface.pages.settings_audit_journal_page import settings_audit_journal_page_router
 from web_interface.pages.settings_incident_response_page import settings_incident_response_page_router
 from web_interface.pages.settings_placeholder_pages import settings_placeholder_pages_router
@@ -37,6 +38,7 @@ PAGE_ROUTERS = [
     incident_detail_page_router,
     alerts_page_router,
     journals_page_router,
+    raw_syslog_feed_page_router,
     settings_incident_response_page_router,
     playbooks_pages_router,
     settings_audit_journal_page_router,

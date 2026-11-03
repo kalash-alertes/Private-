@@ -27,6 +27,8 @@ from backend.features.incidents.router import incidents_router
 from backend.features.log_collection import service as log_collection_service
 from backend.features.log_collection.collection_scheduler import run_log_collection_periodically
 from backend.features.log_collection.router import log_collection_router
+from backend.features.raw_syslog_feed.router import raw_syslog_feed_router
+from backend.features.playbooks import service as playbooks_service
 from backend.features.playbooks.router import playbooks_router
 from backend.features.source_logs.router import source_logs_router
 from web_interface.web_interface_registration import register_web_interface
@@ -39,6 +41,7 @@ async def run_background_tasks(_application: FastAPI) -> AsyncIterator[None]:
     """Démarre l'écoute syslog (mode réel) et les tâches périodiques activées (escalade, collecte des alertes) ;
     les arrête à l'extinction."""
     settings = get_application_settings()
+    _synchronize_playbook_files()
     log_collection_service.start_log_reception()
     background_tasks = []
     if settings.automatic_escalation_interval_seconds > 0:
@@ -61,6 +64,20 @@ async def run_background_tasks(_application: FastAPI) -> AsyncIterator[None]:
         with contextlib.suppress(asyncio.CancelledError):
             await background_task
     log_collection_service.stop_log_reception()
+
+
+def _synchronize_playbook_files() -> None:
+    """Enregistre en base les fichiers JSON de playbooks ajoutés ou modifiés hors de l'application. Ne bloque jamais
+    le démarrage : un échec (base indisponible...) est journalisé ; le bouton « Synchroniser » permet de relancer."""
+    try:
+        with get_database_session_factory()() as database_session:
+            report = playbooks_service.synchronize_playbooks_with_files(database_session)
+        logging.getLogger(__name__).info(
+            "Playbooks synchronisés avec leurs fichiers : %s créé(s), %s mis à jour, %s fichier(s) écrit(s), %s refusé(s).",
+            len(report.created), len(report.updated), len(report.files_written), len(report.errors),
+        )
+    except Exception:
+        logging.getLogger(__name__).exception("Synchronisation des fichiers de playbooks impossible au démarrage.")
 
 
 def create_application() -> FastAPI:
@@ -86,6 +103,7 @@ def create_application() -> FastAPI:
         audit_journal_router,
         dashboard_router,
         log_collection_router,
+        raw_syslog_feed_router,
     ]:
         application.include_router(feature_router, prefix=API_PATH_PREFIX)
 

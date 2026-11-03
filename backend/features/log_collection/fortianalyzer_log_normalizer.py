@@ -68,8 +68,8 @@ def normalize_fortianalyzer_log(raw_log: dict[str, Any], fortianalyzer_timezone:
     return NormalizedFortiAnalyzerLog(
         identifiant_source=compute_source_identifier(raw_log),
         date_evenement=_read_event_datetime(raw_log, fortianalyzer_timezone),
-        type=_read_event_type(raw_log),
-        criticite_source=_read_criticality(raw_log),
+        type=read_event_type(raw_log),
+        criticite_source=read_source_criticality(raw_log),
         donnees_brutes=raw_log,
     )
 
@@ -86,7 +86,9 @@ def compute_source_identifier(raw_log: dict[str, Any]) -> str:
     return SOURCE_IDENTIFIER_PREFIX + hashlib.sha256(canonical_log_text.encode("utf-8")).hexdigest()
 
 
-def _read_criticality(raw_log: dict[str, Any]) -> CriticalityLevel:
+def read_source_criticality(raw_log: dict[str, Any]) -> CriticalityLevel:
+    """Criticité source du log (`severity` prioritaire, sinon `level`). Lève InvalidFortiAnalyzerLogError si elle est
+    absente ou inconnue."""
     for severity_field in ("severity", "level"):
         severity_value = raw_log.get(severity_field)
         if severity_value is None or str(severity_value).strip() == "":
@@ -131,7 +133,8 @@ def _convert_epoch_to_datetime(epoch_value: float) -> datetime:
     return datetime.fromtimestamp(epoch_value, tz=UTC)
 
 
-def _read_event_type(raw_log: dict[str, Any]) -> str:
+def read_event_type(raw_log: dict[str, Any]) -> str:
+    """Type du log : `subtype`, sinon `type`, sinon « inconnu »."""
     for type_field in ("subtype", "type"):
         type_value = str(raw_log.get(type_field) or "").strip()
         if type_value:

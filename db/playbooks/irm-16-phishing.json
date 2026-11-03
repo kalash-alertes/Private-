@@ -1,0 +1,128 @@
+{
+  "id": "fd2f2a51-4c3f-46c7-bd8b-f9c22245c48b",
+  "nom": "IRM-16 — Phishing",
+  "categorie": "phishing",
+  "description": "Méthodologie de réponse à incident « Phishing » (IRM-16, version du 2025-10-27) : phases issues du NIST (préparation, identification, confinement, remédiation, récupération, capitalisation). À adapter au contexte de l'organisation avant usage.",
+  "source": "CERT aDvens, d'après les fiches IRM du CERT Société Générale — IRM-16 « Phishing », version du 2025-10-27. Fichier : https://github.com/cert-advens/IRM/blob/HEAD/FR/IRM-16-Phishing.pdf (original : https://github.com/certsocietegenerale/IRM). Licence Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Modifications : texte extrait du PDF et découpé par phase, mise en forme adaptée ; contenu non réécrit.",
+  "etapes": [
+    {
+      "id": "02e286fe-0291-4fa7-93bd-a04460b9f3ce",
+      "titre": "Préparation",
+      "description": [
+        "Objectif : Établir des contacts, définir des procédures, recueillir des informations et se familiariser avec les outils de détection d’intrusion pour gagner du temps lors d’une attaque.",
+        "• Préparer une communication, prête à être publiée à tout moment, pour avertir les collaborateurs d’une attaque de phishing en cours,",
+        "• Déployer DKIM, DMARC et SPF sur toute la chaîne de messagerie,",
+        "• Mettre en œuvre des mécanismes d’authentification multi-facteurs,",
+        "• Surveiller les domaines typo-squattés et le contenu qui y est publié. Rassembler les informations de contact et d’abus pour se préparer si besoin.",
+        "1.1. Interlocuteurs internes",
+        "• Maintenir une liste de toutes les personnes impliquées dans l’enregistrement des noms de domaine dans l’entreprise,",
+        "• Maintenir une liste de toutes les personnes accréditées pour prendre des décisions sur la cybercriminalité et les actions éventuelles concernant le phishing.",
+        "1.2. Interlocuteurs externes",
+        "• Avoir plusieurs moyens pour être joint en temps opportun (24/7 si possible) :",
+        "- Avoir une adresse e-mail facile à retenir pour tous (ex : sécurité@entreprise),",
+        "- Avoir un formulaire sur le site Web de l’entreprise (l’emplacement du formulaire est important, pas plus de 2 clics de la page principale),",
+        "- Avoir un compte Twitter visible.",
+        "• Établir et tenir à jour une liste de contacts de retrait dans :",
+        "- Sociétés d’hébergement,",
+        "- Sociétés d’enregistrement,",
+        "- Fournisseurs de messagerie.",
+        "• Établir et maintenir à jour une liste de contacts avec des CERTs à travers le monde, ils pourront en cas d’incident être en mesure d’apporter une aide.",
+        "1.3. Sensibiliser les clients",
+        "Ne pas attendre les incidents de phishing pour communiquer avec les clients.",
+        "• Sensibiliser à la fraude par phishing,",
+        "- Expliquer ce qu’est le phishing et s’assurer que les clients savent qu’aucune demande d’informations d’identification/bancaires par e-mail ou par téléphone ne leur sera demandée.",
+        "1.4. Sensibiliser les métiers",
+        "Les personnes des métiers doivent être conscientes des problèmes de phishing et considérer la sécurité comme une priorité.",
+        "Par conséquent, ils doivent appliquer de bonnes pratiques telles qu’éviter d’envoyer des liens (URL) aux clients et utiliser une signature indiquant que l’entreprise ne leur demandera jamais d’informations d’identification/bancaires en ligne.",
+        "• Lancer des campagnes périodiques de sensibilisation au phishing,",
+        "• Déployer une solution technique permettant aux collaborateurs de signaler facilement les courriels aux équipes de sécurité,",
+        "• Établir des procédures spécifiques pour l’analyse des pièces jointes et des URL."
+      ]
+    },
+    {
+      "id": "e957333d-b412-4dad-8b42-45fa5c68249c",
+      "titre": "Identification",
+      "description": [
+        "Objectif : Détecter l’incident, déterminer son ampleur et impliquer les acteurs appropriés.",
+        "2.1. Détection d’hameçonnage",
+        "• Surveiller de près tous les points de contact (e-mail, formulaires web, etc.),",
+        "• Déployer des pièges à spam et collecte des spams de partenaires/tiers,",
+        "• Déployer une surveillance active des référentiels de phishing, comme PhishTank et Google Safe Browsing par exemple,",
+        "• Surveiller de toutes les listes de diffusion spécialisée ou tous flux RSS/Twitter, qui pourraient signaler des cas de phishing,",
+        "• Utiliser des systèmes de surveillance automatisés sur toutes ces sources, afin que chaque détection déclenche une alarme pour une réaction instantanée,",
+        "• Surveiller les journaux Web. Vérifier qu’aucune redirection suspecte n’amène des personnes sur un site Web malveillant. Les utilisateurs sont souvent redirigés depuis le site malveillant vers le site légitime après la récupération des identifiants.",
+        "2.2. Étendue des attaques de phishing",
+        "• Déterminer le nombre d’utilisateurs ciblés,",
+        "• Rechercher les comptes compromis exploités et identifier les activités malveillantes associées.",
+        "2.3. Analyse du phishing",
+        "Ne pas oublier de suivre les procédures d’analyse établies.",
+        "• Déterminer",
+        "- S’il s’agit d’une campagne de collecte d’informations d’identification ou d’une campagne de propagation de logiciels malveillants,",
+        "- S’il s’agit d’une campagne ciblée ou non.",
+        "• Inspectez l’objet et le corps du message.",
+        "• Utiliser l’environnement sandbox pour analyser les pièces jointes malveillantes et extraire les IOC,",
+        "• Analyser les liens, les domaines et les noms d’hôte avec des services de renseignements sur les menaces,",
+        "• Vérifier le code source du site Web de phishing,",
+        "• Rechercher dans les en-têtes d’e-mails des artefacts intéressants : informations sur le serveur d’origine et l’expéditeur, par exemple.",
+        "2.4. Recueillir des preuves",
+        "• Faire une copie horodatée des pages Web de phishing,",
+        "• Utiliser un outil efficace pour le faire, comme HTTrack par exemple,",
+        "• Ne pas oublier de prendre toutes les pages du stratagème de phishing, pas seulement la première s’il y en a plusieurs. Si nécessaire, faire des captures d’écran des pages.",
+        "Pour plus de détails voir l’IRM-07, détection de malware sur Windows, si la campagne de phishing distribue des logiciels malveillants."
+      ]
+    },
+    {
+      "id": "fe30179e-c23b-4db0-b560-e0467dc9bcc2",
+      "titre": "Confinement",
+      "description": [
+        "Objectif : Atténuer les effets de l’attaque sur l’environnement ciblé.",
+        "• Bloquer les IOC réseau découverts via l’analyse des pièces jointes / URL sur DNS, pare-feu ou proxies,",
+        "• Bloquer la campagne de phishing en fonction des expéditeurs, des sujets ou d’autres artefacts de messagerie via la passerelle de messagerie,",
+        "• Essayer de supprimer les e-mails de phishing de la boîte de réception,",
+        "• Mettre en place du DNS Sinkhole sur l’URL suspecte (facultatif selon l’architecture DNS),",
+        "• Communiquer avec les collaborateurs,",
+        "• Déployer une page d’alerte/avertissement avec des informations sur l’attaque de phishing en cours."
+      ]
+    },
+    {
+      "id": "470d9fc9-3841-4537-85a4-e2d1d5650615",
+      "titre": "Remédiation",
+      "description": [
+        "Objectif : Prendre des mesures pour arrêter l’attaque.",
+        "• Modifier et/ou bloquer temporairement les identifiants de connexion des comptes compromis,",
+        "• Si la campagne d’hameçonnage était ciblée, porter plainte,",
+        "• Envisager de contacter un CERT."
+      ]
+    },
+    {
+      "id": "f04fef19-ccd8-4222-8fe7-da927a6e0634",
+      "titre": "Récupération",
+      "description": [
+        "Objectif : Restaurer le fonctionnement normal du système.",
+        "Évaluer la fin du phishing",
+        "• S’assurer que les pages et/ou l’adresse e-mail frauduleuses ne sont plus actives,",
+        "• Continuer à surveiller l’URL frauduleuse. Parfois, un site Web de phishing peut réapparaître quelques heures plus tard. Dans le cas où une redirection est utilisée et non supprimée, la surveiller de très près.",
+        "A la fin de la campagne de phishing, s’assurer que l’ensemble des éléments associés sont bien supprimés."
+      ]
+    },
+    {
+      "id": "10159ca1-2d60-4c19-b4d1-27a372cb7e75",
+      "titre": "Capitalisation et apprentissage",
+      "description": [
+        "Objectif : Documenter les détails de l’incident, discuter des leçons apprises et améliorer les dispositifs et stratégies de défense.",
+        "Le rapport d’incident",
+        "Il doit être rédigé et mis à la disposition de toutes les parties prenantes de la cellule de gestion de crise.",
+        "Le retour d’expérience",
+        "Les thèmes du retour d’expérience doivent être décrits avec les éléments suivants :",
+        "• Cause initiale de l’infection,",
+        "• Actions et chronologies de chaque événement important,",
+        "• Ce qui s’est bien passé,",
+        "• Ce qui ne s’est pas bien passé,",
+        "• Coût de l’incident,",
+        "• Indicateurs de compromission.",
+        "La capitalisation",
+        "Des actions d’amélioration des processus de gestion des incidents doivent être définies pour capitaliser sur cette expérience."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+/* Logs bruts : bilan reçus/enregistrés et flux dépliable (présentation inspirée du « Discover » de Wazuh). */
+
+.raw-feed-statistics-panel { margin-bottom: 16px; }
+.raw-feed-totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0 12px; }
+.raw-feed-totals > div { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; }
+.raw-feed-totals strong { font: 700 18px Manrope, sans-serif; }
+.raw-feed-totals span { font-size: 10px; color: var(--muted) !important; }
+.raw-feed-loss { background: #fbe9ee; border-color: #efc2cf !important; }
+.raw-feed-no-loss { background: #eef6ef; }
+.raw-feed-loss-detail { font-size: 10px; margin: 0 0 12px; color: var(--muted) !important; }
+.raw-feed-levels { min-width: 620px; }
+.raw-feed-levels code { font-size: 10px; }
+.raw-feed-bar { display: inline-block; width: 90px; height: 6px; border-radius: 3px; background: #e6ece4; vertical-align: middle; overflow: hidden; }
+.raw-feed-bar span { display: block; height: 100%; background: #6f9076; }
+
+.raw-feed-live-controls { display: flex; align-items: center; gap: 10px; }
+.raw-feed-live-state { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+.raw-feed-live-state span { width: 7px; height: 7px; border-radius: 50%; background: #3dc69d; animation: raw-feed-pulse 1.6s infinite; }
+.raw-feed-live-paused span { background: #c9a24f; animation: none; }
+.raw-feed-live-error span { background: #c63f68; animation: none; }
+@keyframes raw-feed-pulse { 50% { opacity: .35; } }
+.raw-feed-search { flex: 1; min-width: 160px; }
+.raw-feed-search input { width: 100%; border: 0; outline: 0; background: transparent; font-size: 10px; }
+
+/* Colonnes communes à l'en-tête et aux lignes résumées. */
+.raw-feed-list-header, .raw-log-entry > summary {
+  display: grid;
+  grid-template-columns: 16px 98px 86px 70px minmax(70px, 120px) minmax(50px, 82px) minmax(140px, 1fr) 72px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+}
+/* Même gouttière de barre de défilement que la liste : les colonnes restent alignées. */
+.raw-feed-list-header { overflow-y: hidden; scrollbar-gutter: stable; font-size: 9px; font-weight: 700; letter-spacing: .6px; color: var(--muted) !important; border-bottom: 1px solid var(--border); background: #eef3ed; }
+.raw-feed-entries { max-height: 70vh; overflow-y: auto; scrollbar-gutter: stable; }
+.raw-log-entry { border-bottom: 1px solid #e6ece4; }
+.raw-log-entry > summary { cursor: pointer; list-style: none; font-size: 10px; }
+.raw-log-entry > summary::-webkit-details-marker { display: none; }
+.raw-log-entry > summary:hover { background: #f2f6f0; }
+.raw-log-entry[open] > summary { background: #e9f0e8; }
+.raw-log-entry[open] .raw-log-chevron svg { transform: rotate(90deg); }
+.raw-log-chevron svg { transition: transform .15s; }
+.raw-log-discarded > summary { opacity: .72; }
+.raw-log-new > summary { background: #fff6d9; }
+.raw-log-time, .raw-log-level { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; white-space: nowrap; }
+.raw-log-device, .raw-log-type, .raw-log-summary { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.raw-log-unknown { background: #eceeea; }
+.raw-log-outcome { justify-self: start; border-radius: 10px; padding: 3px 7px; font-size: 9px; font-weight: 600; white-space: nowrap; }
+.raw-log-outcome-stored { background: #dff1e8; }
+.raw-log-outcome-discarded { background: #eceeea; }
+
+.raw-log-details { padding: 6px 14px 14px 40px; background: #f8faf7; }
+.raw-log-meta, .raw-log-raw-title { font-size: 10px; margin: 6px 0; color: var(--muted) !important; }
+.raw-log-fields { width: 100%; min-width: 0; border-collapse: collapse; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 10px; }
+.raw-log-fields th, .raw-log-fields td { padding: 3px 8px; border-bottom: 1px solid #e6ece4; text-align: left; vertical-align: top; }
+.raw-log-fields th { width: 180px; font-weight: 600; white-space: nowrap; }
+.raw-log-fields td { word-break: break-all; white-space: normal; }
+.raw-log-raw { margin: 0; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; font-size: 10px; white-space: pre-wrap; word-break: break-all; }
+.raw-feed-empty[hidden] { display: none; }
+
+@media (max-width: 1150px) {
+  .raw-feed-list-header, .raw-log-entry > summary { grid-template-columns: 16px 98px 86px minmax(60px, 110px) minmax(140px, 1fr) 72px; }
+  .raw-feed-list-header span:nth-child(4), .raw-log-level, .raw-feed-list-header span:nth-child(6), .raw-log-type { display: none; }
+}
+
+@media (max-width: 700px) {
+  .raw-feed-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .raw-feed-list-header { display: none; }
+  .raw-log-entry > summary { grid-template-columns: 16px 1fr auto; }
+  .raw-log-device, .raw-log-outcome { display: none; }
+  .raw-log-summary { grid-column: 2 / -1; }
+  .raw-log-details { padding-left: 14px; }
+}

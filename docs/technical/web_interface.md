@@ -23,9 +23,10 @@ global est sauge clair ; les graphiques de synthèse sont des SVG produits en Py
 | Incidents | `/incidents?vue=en_cours\|traites&recherche=&criticite=&statut=&offset=` | `/incidents` (création depuis une alerte) |
 | Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}`, `/checklist/{item_id}` |
 | Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) ; indicateurs par sévérité, graphique en barres et diagramme circulaire |
-| Journaux | `/journaux?statut=&offset=` (historique des imports) | — |
+| Journaux | `/journaux?statut=&offset=` (historique des imports, pertes système UDP) | — |
+| Logs bruts | `/logs-bruts?criticite=&enregistrement=&recherche=` ; fragment `/logs-bruts/nouveaux?apres=N` | — (voir [raw_syslog_feed.md](raw_syslog_feed.md)) |
 | Paramètres | `/parametres` → `/parametres/reponse-incidents` | `/parametres/reponse-incidents/delais/{criticite}`, `/parametres/reponse-incidents/escalade` |
-| Playbooks | `/parametres/playbooks`, `/nouveau`, `/{id}/modifier` | `/nouveau`, `/{id}/modifier`, `/{id}/supprimer` |
+| Playbooks | `/parametres/playbooks`, `/nouveau`, `/{id}/modifier` | `/nouveau`, `/{id}/modifier`, `/{id}/supprimer`, `/synchroniser` (relit les fichiers JSON) |
 | Journal d'audit | `/parametres/journal-audit?type_evenement=&offset=` | — |
 | Clients, Utilisateurs | `/parametres/clients`, `/parametres/utilisateurs` (sections prévues, non prioritaires) | — |
 
@@ -34,6 +35,9 @@ alertes, plan (étapes réalisées / total), délai (dépassé, respecté, date 
 une ligne ouvre la fiche, dont le premier panneau est le **playbook** de l'incident (étapes à cocher).
 
 ## Fonctionnement sans JavaScript
+
+Exception unique : `static/js/raw_syslog_feed.js` (page Logs bruts) ajoute les nouveaux logs toutes les 3 s à partir
+d'un fragment HTML rendu par Jinja2 ; sans lui, la page fonctionne avec un rechargement manuel.
 
 - **POST → redirection 303 → GET** : succès ⇒ redirection avec `?notice=<clé>` ; seules les clés de
   `page_notices.py` sont affichées (aucun texte de l'URL n'est recopié dans la page).

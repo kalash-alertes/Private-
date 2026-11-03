@@ -67,6 +67,17 @@ def show_playbooks_page(
     notice: str | None = None,
 ) -> HTMLResponse:
     """Bibliothèque des playbooks (cartes), avec recherche par nom, catégorie ou description."""
+    return _render_playbooks_page(request, database_session, recherche, notice_key=notice)
+
+
+def _render_playbooks_page(
+    request: Request,
+    database_session: Session,
+    recherche: str | None,
+    notice_key: str | None = None,
+    error_message: str | None = None,
+    status_code: int = 200,
+) -> HTMLResponse:
     all_playbooks = playbooks_service.fetch_playbook_details_by_ids(
         database_session,
         [
@@ -89,10 +100,11 @@ def show_playbooks_page(
         request,
         "playbooks.html",
         {
-            **_build_playbooks_layout_context(database_session, notice_key=notice),
+            **_build_playbooks_layout_context(database_session, notice_key=notice_key, error_message=error_message),
             "playbooks": visible_playbooks,
             "search_text": recherche or "",
         },
+        status_code=status_code,
     )
 
 
@@ -116,6 +128,19 @@ def show_edit_playbook_form(request: Request, playbook_id: UUID, database_sessio
 @playbooks_pages_router.post("/parametres/playbooks/{playbook_id}/modifier")
 async def submit_edit_playbook_form(request: Request, playbook_id: UUID, database_session: DatabaseSession):
     return await _handle_playbook_form_submission(request, database_session, playbook_id=playbook_id)
+
+
+@playbooks_pages_router.post("/parametres/playbooks/synchroniser")
+def synchronize_playbooks_from_page(request: Request, database_session: DatabaseSession):
+    """Relit les fichiers JSON des playbooks (ajoutés ou modifiés à la main) et met la base à jour."""
+    report = playbooks_service.synchronize_playbooks_with_files(database_session)
+    if report.errors:
+        # Les fichiers valides sont synchronisés ; les autres sont listés avec leur motif (nom de fichier + erreur).
+        return _render_playbooks_page(
+            request, database_session, None,
+            error_message="Fichier(s) refusé(s) : " + " ; ".join(report.errors), status_code=422,
+        )
+    return RedirectResponse("/parametres/playbooks?notice=playbooks_synchronises", status_code=303)
 
 
 @playbooks_pages_router.post("/parametres/playbooks/{playbook_id}/supprimer")

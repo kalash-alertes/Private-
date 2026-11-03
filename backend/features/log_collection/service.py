@@ -19,7 +19,8 @@ Déroulé de `collect_fortianalyzer_logs` :
 Aucune action n'est jamais envoyée à FortiAnalyzer : l'application ne fait qu'écouter.
 Fonctions publiques : `collect_fortianalyzer_logs_from_configured_source` (source choisie par le .env),
 `collect_fortianalyzer_logs` (source fournie, utilisée par les tests), `describe_collection_configuration`,
-`start_log_reception`, `stop_log_reception`.
+`start_log_reception`, `stop_log_reception`, `evaluate_raw_log_against_collection_threshold` (utilisée par
+`raw_syslog_feed` pour dire si un log brut sera enregistré).
 """
 
 import logging
@@ -37,6 +38,8 @@ from backend.features.import_runs.schemas import FinishedImportRunStatus, Import
 from backend.features.log_collection.fortianalyzer_log_normalizer import (
     InvalidFortiAnalyzerLogError,
     normalize_fortianalyzer_log,
+    read_event_type,
+    read_source_criticality,
 )
 from backend.features.log_collection.schemas import (
     LogCollectionConfigurationRead,
@@ -49,6 +52,7 @@ from backend.integrations.fortianalyzer.fortianalyzer_log_source import FortiAna
 from backend.integrations.fortianalyzer.demo_log_source import DEMO_SOURCE_DESCRIPTION
 from backend.integrations.fortianalyzer.fortianalyzer_errors import FortiAnalyzerError
 from backend.integrations.fortianalyzer.log_source_selection import (
+    count_shared_udp_datagrams_lost_by_system,
     build_fortianalyzer_log_source,
     build_syslog_reception_parameters,
     list_missing_syslog_settings,
@@ -190,6 +194,32 @@ def collect_fortianalyzer_logs(
     )
 
 
+@dataclass(frozen=True)
+class RawLogThresholdEvaluation:
+    """Ce que la collecte fera d'un log brut : sa criticité source (None si illisible) et s'il sera enregistré."""
+
+    criticite_source: CriticalityLevel | None
+    type: str
+    is_stored_by_collection: bool
+    invalid_reason: str | None
+
+
+def evaluate_raw_log_against_collection_threshold(
+    raw_log: RawFortiAnalyzerLog, settings: ApplicationSettings
+) -> RawLogThresholdEvaluation:
+    """Applique au log les MÊMES règles que la collecte (criticité, seuil `LOG_COLLECTION_MINIMUM_CRITICALITY`),
+    sans rien enregistrer. Ne lève pas : un log invalide est retourné avec son motif."""
+    event_type = read_event_type(raw_log)
+    try:
+        criticality = read_source_criticality(raw_log)
+    except InvalidFortiAnalyzerLogError as invalid_log_error:
+        return RawLogThresholdEvaluation(None, event_type, False, str(invalid_log_error))
+    minimum_criticality = CriticalityLevel(settings.log_collection_minimum_criticality)
+    return RawLogThresholdEvaluation(
+        criticality, event_type, is_at_least_as_severe(criticality, minimum_criticality), None
+    )
+
+
 def describe_collection_configuration(settings: ApplicationSettings) -> LogCollectionConfigurationRead:
     """Décrit la source, la configuration et l'état de la réception syslog (affichage dans l'interface)."""
     common_values = {
@@ -236,6 +266,7 @@ def describe_collection_configuration(settings: ApplicationSettings) -> LogColle
                 nb_messages_emetteur_refuse=reception_statistics.rejected_sender_message_count,
                 nb_messages_illisibles=reception_statistics.unreadable_message_count,
                 nb_messages_perdus_file_pleine=reception_statistics.dropped_because_queue_full_count,
+                nb_datagrammes_udp_perdus_par_le_systeme=count_shared_udp_datagrams_lost_by_system(),
             )
             if reception_statistics
             else None

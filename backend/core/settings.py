@@ -45,9 +45,18 @@ class ApplicationSettings(BaseSettings):
     syslog_is_tcp_enabled: bool = True
     # Adresses IP autorisées à envoyer des logs, séparées par des virgules (vide = toutes). Le syslog n'est pas
     # authentifié : renseigner l'adresse de FortiAnalyzer évite qu'une autre machine injecte de faux logs.
+    # PIÈGE Docker : derrière le port publié par Docker (WSL), l'émetteur vu par l'application est la passerelle du
+    # réseau Docker (ex. 172.20.0.1), pas FortiAnalyzer. Y mettre l'IP de FortiAnalyzer refuserait alors TOUT ; filtrer
+    # plutôt au pare-feu du poste (docs/overview/connecting_fortianalyzer.md).
     syslog_allowed_sender_addresses: str = ""
     # Nombre maximal de logs en attente de collecte (au-delà, les messages sont perdus et comptés).
     syslog_maximum_pending_logs: int = 100_000
+    # Derniers messages reçus gardés en mémoire pour la page « Logs bruts » (TOUS les messages, avant le filtre de
+    # sévérité). Les plus anciens sortent au fur et à mesure ; rien de cette mémoire n'est écrit en base.
+    syslog_recent_messages_kept_for_display: int = 2_000
+    # Dossier des fichiers JSON des playbooks (un fichier lisible par playbook ; la base en est l'index). Relatif à la
+    # racine du projet s'il n'est pas absolu. Voir backend/features/playbooks/playbook_files.py.
+    playbook_files_directory: str = "db/playbooks"
     # Fuseau des champs `date` + `time` d'un log, quand il n'a ni `eventtime`, ni `itime`, ni `tz`.
     fortianalyzer_timezone: str = "UTC"
 

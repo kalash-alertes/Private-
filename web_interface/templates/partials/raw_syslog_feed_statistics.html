@@ -1,0 +1,48 @@
+{#
+  Bilan depuis le démarrage de l'écoute : explique l'écart entre ce que FortiAnalyzer envoie et ce qui est en base
+  (filtre de sévérité), et signale toute perte (système, file pleine, émetteur refusé, illisible).
+#}
+{% from "partials/display_macros.html" import severity_pill %}
+{% macro raw_syslog_feed_statistics(statistics) -%}
+  <div class="raw-feed-totals">
+    <div><strong>{{ statistics.nb_messages_lisibles | number }}</strong><span>logs reçus depuis le démarrage</span></div>
+    <div><strong>{{ statistics.nb_messages_enregistrables | number }}</strong><span>enregistrés en base ({{ statistics.severite_minimale | criticality_label }} et plus)</span></div>
+    <div><strong>{{ statistics.nb_messages_ecartes_par_le_seuil | number }}</strong><span>écartés volontairement (sous le seuil)</span></div>
+    {% set system_losses = statistics.nb_datagrammes_udp_perdus_par_le_systeme %}
+    {% set application_losses = statistics.nb_messages_perdus_file_pleine + statistics.nb_messages_illisibles + statistics.nb_messages_emetteur_refuse %}
+    <div class="{{ 'raw-feed-loss' if (system_losses or application_losses) else 'raw-feed-no-loss' }}">
+      <strong>{{ ((system_losses or 0) + application_losses) | number }}</strong>
+      <span>
+        perdus ou refusés
+        {% if system_losses is none %}(pertes système non mesurables){% endif %}
+      </span>
+    </div>
+  </div>
+  {% if system_losses or application_losses %}
+    <p class="raw-feed-loss-detail">
+      Détail :
+      {{ (system_losses or 0) | number }} datagramme(s) UDP perdu(s) par le système (tampon plein, avant l'application) ·
+      {{ statistics.nb_messages_perdus_file_pleine | number }} perdu(s), file de collecte pleine ·
+      {{ statistics.nb_messages_illisibles | number }} illisible(s) ·
+      {{ statistics.nb_messages_emetteur_refuse | number }} refusé(s), émetteur non autorisé.
+    </p>
+  {% endif %}
+  {% if statistics.repartition_par_niveau %}
+    <div class="table-scroll">
+      <table class="raw-feed-levels">
+        <thead><tr><th>NIVEAU D'ORIGINE</th><th>CRITICITÉ DANS L'APPLICATION</th><th>LOGS REÇUS</th><th>PART</th><th>DEVENIR</th></tr></thead>
+        <tbody>
+          {% for level in statistics.repartition_par_niveau %}
+            <tr>
+              <td><code>{{ level.niveau_source }}</code></td>
+              <td>{% if level.criticite_source %}{{ severity_pill(level.criticite_source) }}{% else %}inconnue{% endif %}</td>
+              <td>{{ level.nombre | number }}</td>
+              <td><span class="raw-feed-bar"><span style="width: {{ level.pourcentage }}%"></span></span> {{ level.pourcentage }} %</td>
+              <td><span class="raw-log-outcome {{ 'raw-log-outcome-stored' if level.est_enregistre_par_la_collecte else 'raw-log-outcome-discarded' }}">{{ "enregistré" if level.est_enregistre_par_la_collecte else "écarté" }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{%- endmacro %}

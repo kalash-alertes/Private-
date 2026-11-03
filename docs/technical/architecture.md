@@ -53,6 +53,7 @@ tests/                       pytest : SQLite + vraies migrations ; tests/postgre
 | `audit_journal` | `GET /api/parametres/journal-audit` | [audit_journal.md](./audit_journal.md) | — |
 | `dashboard` | `GET /api/tableau-de-bord` | [dashboard.md](./dashboard.md) | `source_logs`, `incidents` |
 | `log_collection` | `POST /api/collecte`, `GET /api/collecte/configuration` | [log_collection.md](./log_collection.md) | `import_runs`, `source_logs`, `integrations/fortianalyzer` |
+| `raw_syslog_feed` | `GET /api/logs-bruts` | [raw_syslog_feed.md](./raw_syslog_feed.md) | `log_collection` (service public), `integrations/fortianalyzer` |
 
 Toutes les routes de l'API sont préfixées par `/api` (y compris `/api/health`). L'interface web (`web_interface/`)
 n'a pas de logique métier : elle appelle les mêmes services publics.

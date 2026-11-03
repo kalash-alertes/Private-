@@ -1,0 +1,76 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/raw_syslog_feed_entries.html" import raw_syslog_feed_entries %}
+{% from "partials/raw_syslog_feed_statistics.html" import raw_syslog_feed_statistics %}
+
+{% block page_stylesheets %}<link rel="stylesheet" href="/static/css/journals.css"><link rel="stylesheet" href="/static/css/raw_syslog_feed.css">{% endblock %}
+
+{% block page_body %}
+  {% set statistics = feed.statistiques %}
+  {% if statistics.est_en_mode_demo %}
+    <div class="alert-banner" role="status">
+      {{ icon("circle_help", 17) }}
+      <div><strong>Mode démonstration</strong><p>Aucune réception syslog en démonstration : les logs bruts n'apparaissent qu'avec APP_IS_IN_DEMO=false.</p></div>
+    </div>
+  {% elif not statistics.est_a_l_ecoute %}
+    <div class="alert-banner alert-banner-error" role="alert">
+      {{ icon("circle_alert", 17) }}
+      <div><strong>Réception syslog inactive</strong><p>Aucun log ne peut arriver : voir la page <a href="/journaux">Journaux</a>.</p></div>
+    </div>
+  {% endif %}
+
+  <section class="panel raw-feed-statistics-panel">
+    <div class="panel-header">
+      <div>
+        <h2>{{ icon("gauge", 15) }} Reçus contre enregistrés</h2>
+        <p>Depuis le démarrage de l'écoute. La base ne garde que les niveaux au-dessus du seuil (LOG_COLLECTION_MINIMUM_CRITICALITY) : c'est la principale différence avec la vue de FortiAnalyzer.</p>
+      </div>
+    </div>
+    <div id="raw-feed-statistics">{{ raw_syslog_feed_statistics(statistics) }}</div>
+  </section>
+
+  <section class="panel logs-list-panel">
+    <div class="panel-header logs-list-header">
+      <div>
+        <h2>Flux en direct</h2>
+        <p>Les {{ statistics.capacite_affichage | number }} derniers messages sont gardés en mémoire (rien de cette liste n'est écrit en base). Cliquer sur une ligne pour la déplier.</p>
+      </div>
+      <div class="raw-feed-live-controls">
+        <span class="raw-feed-live-state" id="raw-feed-live-state"><span></span>En direct</span>
+        <button class="button button-secondary button-small" type="button" id="raw-feed-pause-button">Pause</button>
+      </div>
+    </div>
+    <form class="logs-toolbar" method="get" action="/logs-bruts">
+      <label class="logs-filter">
+        {{ icon("filter", 14) }}
+        <select name="criticite" aria-label="Filtrer par criticité">
+          <option value="">Toutes les criticités</option>
+          {% for criticality in criticality_levels %}
+            <option value="{{ criticality.value }}" {% if filters.criticite == criticality %}selected{% endif %}>{{ criticality | criticality_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="logs-filter">
+        <select name="enregistrement" aria-label="Filtrer par devenir">
+          {% for outcome, outcome_label in collection_outcome_labels %}
+            <option value="{{ outcome.value }}" {% if filters.enregistrement == outcome %}selected{% endif %}>{{ outcome_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="logs-filter raw-feed-search">
+        {{ icon("search", 14) }}
+        <input type="search" name="recherche" value="{{ filters.recherche or '' }}" maxlength="200" placeholder="IP, équipement, logid, texte...">
+      </label>
+      <button class="button button-secondary button-small" type="submit">Filtrer</button>
+    </form>
+    <div class="raw-feed-list-header" aria-hidden="true">
+      <span></span><span>REÇU</span><span>CRITICITÉ</span><span>NIVEAU</span><span>ÉQUIPEMENT</span><span>TYPE</span><span>RÉSUMÉ</span><span>DEVENIR</span>
+    </div>
+    <div id="raw-feed-entries" class="raw-feed-entries"
+         data-last-number="{{ feed.dernier_numero }}"
+         data-update-url="/logs-bruts/nouveaux{% if filter_query %}?{{ filter_query }}{% endif %}">
+      {{ raw_syslog_feed_entries(feed.messages) }}
+    </div>
+    <p class="logs-empty raw-feed-empty" id="raw-feed-empty" {% if feed.messages %}hidden{% endif %}>Aucun log reçu pour ces filtres pour l'instant. Les nouveaux s'afficheront ici automatiquement.</p>
+  </section>
+  <script src="/static/js/raw_syslog_feed.js" defer></script>
+{% endblock %}

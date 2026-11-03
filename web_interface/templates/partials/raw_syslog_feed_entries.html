@@ -1,0 +1,39 @@
+{#
+  Un log brut = un <details> : la ligne résumée (heure, criticité, niveau d'origine, équipement, type, résumé) se
+  déplie sur tous les champs Fortinet et le texte reçu tel quel. Partagé par la page et par le fragment de
+  rafraîchissement, pour un rendu identique.
+#}
+{% from "partials/display_macros.html" import severity_pill %}
+{% macro raw_syslog_feed_entries(messages) -%}
+  {% for message in messages %}
+    <details class="raw-log-entry{% if not message.est_enregistre_par_la_collecte %} raw-log-discarded{% endif %}" data-number="{{ message.numero }}">
+      <summary>
+        <span class="raw-log-chevron">{{ icon("chevron_right", 14) }}</span>
+        <span class="raw-log-time">{{ message.recu_le | display_datetime_seconds }}</span>
+        <span class="raw-log-criticality">{% if message.criticite_source %}{{ severity_pill(message.criticite_source) }}{% else %}<span class="severity-pill raw-log-unknown">?</span>{% endif %}</span>
+        <span class="raw-log-level" title="Valeur d'origine du champ severity / level">{{ message.niveau_source or "—" }}</span>
+        <span class="raw-log-device">{{ message.equipement or message.adresse_emetteur }}</span>
+        <span class="raw-log-type">{{ message.type or "illisible" }}</span>
+        <span class="raw-log-summary">{{ message.resume or message.texte_brut[:160] }}</span>
+        <span class="raw-log-outcome {{ 'raw-log-outcome-stored' if message.est_enregistre_par_la_collecte else 'raw-log-outcome-discarded' }}">{{ "enregistré" if message.est_enregistre_par_la_collecte else "écarté" }}</span>
+      </summary>
+      <div class="raw-log-details">
+        <p class="raw-log-meta">
+          N° {{ message.numero }} · reçu en {{ message.protocole }} de {{ message.adresse_emetteur }} ·
+          {% if message.est_enregistre_par_la_collecte %}sera enregistré par la collecte{% else %}non enregistré : {{ message.motif_non_enregistrement }}{% endif %}
+        </p>
+        {% if message.champs %}
+          <table class="raw-log-fields">
+            <tbody>
+              {% for field_name, field_value in message.champs.items() %}
+                <tr><th scope="row">{{ field_name }}</th><td>{{ field_value }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+        <p class="raw-log-raw-title">Message reçu, tel quel</p>
+        <pre class="raw-log-raw">{{ message.texte_brut }}</pre>
+      </div>
+    </details>
+  {% endfor %}
+{%- endmacro %}

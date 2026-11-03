@@ -67,7 +67,16 @@ on peut les supprimer du `.env`.
 L'application tourne dans Docker, lui-même dans WSL. Les logs de FortiAnalyzer doivent traverser : **réseau → Windows →
 WSL → conteneur**.
 
-- **Pare-feu Windows** : autoriser l'entrée sur le port 5140 en UDP et TCP.
+- **Pare-feu Windows** : autoriser l'entrée sur le port 5140 en UDP et TCP. Avec WSL en mode « mirrored » et
+  `firewall=true`, il faut AUSSI une règle du pare-feu Hyper-V de WSL (qui bloque tout par défaut). Dans un
+  PowerShell **administrateur**, une ligne à la fois :
+  ```powershell
+  New-NetFirewallRule -DisplayName "SOC syslog 5140" -Direction Inbound -Protocol UDP -LocalPort 5140 -Action Allow
+  New-NetFirewallRule -DisplayName "SOC syslog 5140 TCP" -Direction Inbound -Protocol TCP -LocalPort 5140 -Action Allow
+  New-NetFirewallHyperVRule -Name "SOC-syslog-UDP" -DisplayName "SOC syslog UDP" -Direction Inbound -VMCreatorId '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -Protocol UDP -LocalPorts 5140 -Action Allow
+  New-NetFirewallHyperVRule -Name "SOC-syslog-TCP" -DisplayName "SOC syslog TCP" -Direction Inbound -VMCreatorId '{40E0AC32-46A5-438A-A0B2-2B479E8F2E90}' -Protocol TCP -LocalPorts 5140 -Action Allow
+  ```
+  Pour n'accepter que FortiAnalyzer : `Set-NetFirewallRule -DisplayName "SOC syslog 5140*" -RemoteAddress <IP du FortiAnalyzer>`.
 - **WSL** : par défaut, WSL ne reçoit pas le trafic qui vient d'autres machines. Le plus simple est le mode réseau
   « mirrored » : dans `C:\Users\<vous>\.wslconfig`, section `[wsl2]`, ajouter `networkingMode=mirrored`, puis
   `wsl --shutdown` et relancer. (Sans ce mode, `netsh interface portproxy` ne transfère que le TCP, pas l'UDP.)
@@ -106,7 +115,14 @@ Puis ouvrir **http://localhost:8000/journaux** :
   **Alertes** ;
 - **« Lancer une collecte maintenant »** force une collecte (inscrite même si rien n'est arrivé).
 
-Pour remplir `SYSLOG_ALLOWED_SENDER_ADDRESSES` : ouvrir une alerte reçue, regarder `reception_syslog` →
+Pour voir les logs arriver un par un (et vérifier qu'aucun n'est perdu) : page **Logs bruts**
+(http://localhost:8000/logs-bruts).
+
+**Attention, Docker sous WSL** : l'application voit tous les logs venir de la passerelle Docker (ex. `172.20.0.1`),
+pas de FortiAnalyzer. Mettre l'IP de FortiAnalyzer dans `SYSLOG_ALLOWED_SENDER_ADDRESSES` ferait refuser TOUS les
+logs : laisser vide et filtrer au pare-feu Windows (section 3).
+
+Pour remplir `SYSLOG_ALLOWED_SENDER_ADDRESSES` (hors Docker/WSL) : ouvrir une alerte reçue, regarder `reception_syslog` →
 `adresse_emetteur` dans les données brutes (avec Docker, ce peut être une adresse interne plutôt que celle de
 FortiAnalyzer).
 
@@ -122,6 +138,7 @@ Les messages de l'application : `wsl docker compose logs -f backend`.
 | Logs « refusé(s) (émetteur non autorisé) » | L'adresse vue par l'application n'est pas dans `SYSLOG_ALLOWED_SENDER_ADDRESSES` : la corriger ou vider la variable. |
 | Logs « illisible(s) » | Ce ne sont pas des logs Fortinet (`clé=valeur`) : vérifier le format choisi dans FortiAnalyzer. |
 | Logs « perdu(s), file pleine » | La collecte ne suit pas : réduire `LOG_COLLECTION_INTERVAL_SECONDS` ou filtrer davantage côté FortiAnalyzer. |
+| « perdus » non nul dans Logs bruts ou Journaux (datagrammes UDP perdus par le système) | Rafales trop fortes pour le tampon réseau : passer FortiAnalyzer en TCP, ou réduire le volume transféré (filtres du Log Forwarding). |
 | Beaucoup de logs reçus, aucune alerte | Normal pour les logs de trafic (« notice » = faible) : seuls les niveaux ≥ `LOG_COLLECTION_MINIMUM_CRITICALITY` (défaut `moyenne`) sont gardés. Mettre `faible` ou `information` pour en garder davantage. |
 
 ## 6. À savoir

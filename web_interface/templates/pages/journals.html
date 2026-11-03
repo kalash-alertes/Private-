@@ -23,7 +23,9 @@
             {{ configuration.reception.nb_logs_en_attente | number }} en attente de collecte
             {% if configuration.reception.nb_messages_emetteur_refuse %}· {{ configuration.reception.nb_messages_emetteur_refuse | number }} refusé(s) (émetteur non autorisé){% endif %}
             {% if configuration.reception.nb_messages_illisibles %}· {{ configuration.reception.nb_messages_illisibles | number }} illisible(s){% endif %}
-            {% if configuration.reception.nb_messages_perdus_file_pleine %}· <b>{{ configuration.reception.nb_messages_perdus_file_pleine | number }} perdu(s), file pleine</b>{% endif %}.
+            {% if configuration.reception.nb_messages_perdus_file_pleine %}· <b>{{ configuration.reception.nb_messages_perdus_file_pleine | number }} perdu(s), file pleine</b>{% endif %}
+            {% if configuration.reception.nb_datagrammes_udp_perdus_par_le_systeme %}· <b>{{ configuration.reception.nb_datagrammes_udp_perdus_par_le_systeme | number }} datagramme(s) UDP perdu(s) par le système</b> (tampon plein, avant l'application){% endif %}.
+            <a href="/logs-bruts">Voir les logs bruts et la répartition par niveau</a>.
           {% endif %}
         {% endif %}
         <br>{% if configuration.severite_minimale == "information" %}Tous les niveaux de sévérité sont enregistrés{% else %}Sévérité minimale enregistrée : {{ configuration.severite_minimale | criticality_label }} et plus (les niveaux inférieurs sont écartés){% endif %} ·

@@ -145,3 +145,66 @@ def test_port_already_in_use_raises_a_clear_error() -> None:
         with pytest.raises(SyslogReceptionError, match="Impossible d'écouter"):
             receiver.start()
     assert not receiver.is_listening
+
+
+def test_recent_messages_are_kept_for_display_without_affecting_the_collection_queue() -> None:
+    receiver = build_receiver(recent_messages_kept_for_display=2)
+    error_message = SYNTHETIC_SYSLOG_MESSAGE.replace('level="notice"', 'level="error"')
+
+    receiver.handle_received_text(SYNTHETIC_SYSLOG_MESSAGE, FORTIANALYZER_ADDRESS, "UDP")
+    receiver.handle_received_text("texte sans aucune paire", FORTIANALYZER_ADDRESS, "TCP")
+    receiver.handle_received_text(error_message, FORTIANALYZER_ADDRESS, "UDP")
+
+    recent_messages = receiver.read_recent_messages()
+    # Mémoire bornée à 2 : le plus ancien est sorti ; un message illisible est gardé (parsed_log = None).
+    assert [message.sequence_number for message in recent_messages] == [2, 3]
+    assert recent_messages[0].parsed_log is None and recent_messages[0].raw_text == "texte sans aucune paire"
+    assert recent_messages[1].parsed_log["level"] == "error" and recent_messages[1].received_at == RECEPTION_TIME
+    assert [message.sequence_number for message in receiver.read_recent_messages(after_sequence_number=2)] == [3]
+    # Lire la mémoire d'affichage ne vide pas la file de collecte.
+    assert len(receiver.take_new_logs(RECEPTION_TIME, RECEPTION_TIME)) == 2
+
+
+def test_readable_messages_are_counted_by_source_severity_label() -> None:
+    receiver = build_receiver()
+    for message in (
+        SYNTHETIC_SYSLOG_MESSAGE,
+        SYNTHETIC_SYSLOG_MESSAGE,
+        '<185>type="utm" subtype="ips" level="alert" severity="high"',
+        '<185>type="event" subtype="system"',
+    ):
+        receiver.handle_received_text(message, FORTIANALYZER_ADDRESS, "UDP")
+
+    assert receiver.read_reception_statistics().accepted_message_count_by_severity_label == {
+        "notice": 2,
+        "high": 1,  # `severity` (logs d'attaque) est prioritaire sur `level`
+        "(aucun)": 1,
+    }
+
+
+def test_system_udp_losses_are_read_from_proc_net_snmp_and_counted_since_start(tmp_path, monkeypatch) -> None:
+    from backend.integrations.fortianalyzer import fortianalyzer_syslog_receiver
+
+    snmp_file = tmp_path / "snmp"
+    monkeypatch.setattr(fortianalyzer_syslog_receiver, "LINUX_NETWORK_SNMP_STATISTICS_FILE", snmp_file)
+
+    def write_receive_buffer_errors(error_count: int) -> None:
+        snmp_file.write_text(
+            "Udp: InDatagrams NoPorts InErrors OutDatagrams RcvbufErrors SndbufErrors\n"
+            f"Udp: 1000 0 {error_count} 12 {error_count} 0\n"
+        )
+
+    write_receive_buffer_errors(1690)
+    assert fortianalyzer_syslog_receiver.read_system_udp_receive_buffer_error_count() == 1690
+
+    receiver = build_receiver(listen_address="127.0.0.1", listen_port=0, is_tcp_enabled=False)
+    receiver.start()
+    try:
+        write_receive_buffer_errors(1700)
+        # Seules les pertes postérieures au démarrage de l'écoute comptent.
+        assert receiver.count_udp_datagrams_lost_by_system_since_start() == 10
+    finally:
+        receiver.stop()
+
+    snmp_file.unlink()
+    assert fortianalyzer_syslog_receiver.read_system_udp_receive_buffer_error_count() is None

@@ -68,19 +68,24 @@ Format observé sur le FortiAnalyzer de l'équipe (pas d'en-tête RFC 3164/5424)
 
 | Étape | Règle |
 |---|---|
+| Tampon UDP | `SO_RCVBUF` demandé à 4 Mio (`UDP_RECEIVE_BUFFER_BYTES`), plafonné par `net.core.rmem_max` puis doublé par Linux : ~8 Mio. Avec le tampon par défaut (~208 Kio), ~1,3 % des datagrammes étaient jetés par le noyau pendant les rafales de FortiAnalyzer (mesure du 03/11/2026, `RcvbufErrors`) ; 0 depuis. |
+| Pertes système | `read_system_udp_receive_buffer_error_count` lit `RcvbufErrors` dans `/proc/net/snmp` (réseau du conteneur) ; `count_udp_datagrams_lost_by_system_since_start` en donne la hausse depuis le démarrage de l'écoute. Affiché dans Journaux et Logs bruts. |
 | Serveurs | `socketserver` (bibliothèque standard). UDP : un seul fil (traitement court). TCP : un fil par connexion, un message par ligne, lecture bornée à 65 535 caractères ; préfixe « octet-counting » RFC 6587 (`123 <189>…`) retiré. |
 | Émetteur | Si `SYSLOG_ALLOWED_SENDER_ADDRESSES` est rempli, tout autre émetteur est ignoré et compté (`rejected_sender_message_count`). |
 | Validation | `ReceivedSyslogMessage` (Pydantic) : texte ≤ 65 535 caractères, adresse IP valide, protocole `UDP`/`TCP`. Échec ⇒ « illisible ». |
 | Lecture | Priorité `<N>` retirée puis conservée ; paires `clé=valeur` lues avec `(\w+)=("([^"]*)"|\S+)` (valeurs entre guillemets entières). Aucune paire ⇒ « illisible ». |
 | Métadonnées | Le log reçoit un champ `reception_syslog` = `{adresse_emetteur, protocole, recu_le, priorite_syslog}` (`SYSLOG_RECEPTION_METADATA_FIELD`). |
 | File | `deque` protégée par un verrou. Pleine ⇒ message perdu et compté (`dropped_because_queue_full_count`), un avertissement par tranche de 1 000. |
+| Mémoire d'affichage | Les `SYSLOG_RECENT_MESSAGES_KEPT_FOR_DISPLAY` derniers messages (lisibles ou non) sont gardés à part, numérotés, pour la page Logs bruts ; plus un compteur par niveau brut (`accepted_message_count_by_severity_label`). Voir [raw_syslog_feed.md](raw_syslog_feed.md). |
 | Remise | `take_new_logs` vide la file. Écoute inactive **et** file vide ⇒ `SyslogReceptionError` (une panne ne doit pas passer pour une collecte réussie vide). |
 
 Limites assumées :
 - **File en mémoire** : les logs reçus mais pas encore collectés sont perdus si l'application s'arrête ; de même les
   logs pris sur la file quand l'enregistrement en base échoue en cours de collecte. FortiAnalyzer conserve ses logs.
 - **Syslog non authentifié, non chiffré** : n'importe quelle machine qui atteint le port peut envoyer de faux logs ;
-  d'où `SYSLOG_ALLOWED_SENDER_ADDRESSES` (l'adresse vue par le conteneur ; avec le NAT de Docker/WSL ou de VirtualBox — en
+  d'où `SYSLOG_ALLOWED_SENDER_ADDRESSES` (ATTENTION : derrière le port publié par Docker sous WSL, l'émetteur vu est la
+  passerelle du réseau Docker, ex. `172.20.0.1`, constaté le 03/11/2026 : y mettre l'IP de FortiAnalyzer refuserait
+  tout ; filtrer alors au pare-feu Windows avec `-RemoteAddress`) ; l'adresse vue par le conteneur ; avec le NAT de Docker/WSL ou de VirtualBox — en
   général `10.0.2.2` pour une VM en NAT avec redirection de port —, vérifier dans
   `reception_syslog.adresse_emetteur` d'un log reçu) et le pare-feu. Syslog sur TLS non pris en charge.
 - **TCP sans retour à la ligne** (octet-counting pur) non pris en charge : les messages doivent finir par `\n`.
@@ -91,6 +96,13 @@ Erreurs (`fortianalyzer_errors.py`) : `FortiAnalyzerConfigurationError` (réglag
 `SyslogReceptionError` (port non ouvert, écoute inactive), toutes deux filles de `FortiAnalyzerError`.
 
 ## Conversion (`fortianalyzer_log_normalizer.py`) — règles PROVISOIRES
+
+`read_source_criticality` et `read_event_type` sont publiques dans le module ; le service expose
+`evaluate_raw_log_against_collection_threshold(raw_log, settings)` (criticité, type, enregistré ou non, motif) pour
+que la page Logs bruts applique exactement les règles de la collecte.
+
+Vérifié sur les vrais logs le 03/11/2026 : `eventtime` (ns) et `date`+`time`+`tz="+0100"` donnent le même instant ;
+`level="error"` (IPsec phase 1 error) → haute ; `critical` (Routing information changed, Admin login failed) → critique.
 
 | Donnée | Règle |
 |---|---|

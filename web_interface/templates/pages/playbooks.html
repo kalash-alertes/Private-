@@ -6,6 +6,9 @@
 {% endblock %}
 
 {% block heading_actions %}
+  <form method="post" action="/parametres/playbooks/synchroniser" title="Relit les fichiers JSON du dossier db/playbooks (ajoutés ou modifiés à la main) et met la base à jour">
+    <button class="button button-secondary" type="submit">{{ icon("refresh_cw", 16) }} Synchroniser avec les fichiers</button>
+  </form>
   <a class="button button-primary" href="/parametres/playbooks/nouveau">{{ icon("plus", 17) }} Nouveau playbook</a>
 {% endblock %}
 

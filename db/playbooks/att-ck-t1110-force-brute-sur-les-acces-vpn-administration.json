@@ -1,0 +1,78 @@
+{
+  "id": "67911232-157c-4ef0-bf41-8152fdbfad10",
+  "nom": "ATT&CK T1110 — Force brute sur les accès (VPN, administration)",
+  "categorie": "vpn",
+  "description": "Réponse à une attaque par force brute (T1110) : devinette de mots de passe, pulvérisation (password spraying) ou bourrage d'identifiants (credential stuffing). Contenu traduit de MITRE ATT&CK (description, stratégies de détection, atténuations) et organisé selon le cycle de réponse de NIST SP 800-61 Rév. 2. Les passages marqués « Note de l'application » ne viennent pas de ces sources.",
+  "source": "MITRE ATT&CK®, technique T1110 « Brute Force » (version 2.8, modifiée le 12/05/2026) et sous-techniques T1110.001 « Password Guessing », T1110.003 « Password Spraying », T1110.004 « Credential Stuffing » : https://attack.mitre.org/techniques/T1110/ — atténuations M1036, M1032, M1027, M1018 ; stratégies de détection DET0463, DET0551, DET0487, DET0460. © 2026 The MITRE Corporation. This work is reproduced and distributed with the permission of The MITRE Corporation (licence : https://attack.mitre.org/resources/legal-and-branding/terms-of-use/). Traduction française et regroupement par phase faits pour l'application. Retour d'expérience : NIST SP 800-61 Rév. 2, « Computer Security Incident Handling Guide », section 3.4.1 « Lessons Learned » (domaine public) : https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r2.pdf",
+  "etapes": [
+    {
+      "id": "0c8a305f-46fc-444c-917e-8337b25450eb",
+      "titre": "Identification : reconnaître une attaque par force brute",
+      "description": [
+        "Source : ATT&CK T1110 et sous-techniques (traduction).",
+        "Les attaquants peuvent utiliser la force brute pour accéder à des comptes lorsque les mots de passe sont inconnus ou lorsque des empreintes de mots de passe ont été obtenues : ils devinent le mot de passe de façon systématique, par un mécanisme répétitif ou itératif, en interrogeant un service qui vérifie les identifiants ou hors ligne sur des données d'identification déjà volées.",
+        "Variantes :",
+        "• Devinette de mots de passe (T1110.001) : nombreux essais contre un même compte.",
+        "• Pulvérisation de mots de passe (T1110.003) : un seul mot de passe courant (ex. « Password01 ») ou une courte liste, essayé contre de nombreux comptes pour éviter les verrouillages. Services souvent visés : SSH (22/TCP), Telnet (23/TCP), FTP (21/TCP), SMB (139 et 445/TCP), LDAP (389/TCP), Kerberos (88/TCP), RDP (3389/TCP), services d'administration HTTP/HTTPS (80 et 443/TCP), bases de données, VNC (5900/TCP). Les attaquants peuvent ralentir volontairement leurs essais pour rester sous les seuils d'alerte.",
+        "• Bourrage d'identifiants (T1110.004) : couples identifiant/mot de passe issus de fuites d'autres services, exploitant la réutilisation des mots de passe.",
+        "Signes à rechercher (stratégies de détection ATT&CK) :",
+        "• Volume élevé d'échecs de connexion suivi d'un succès depuis un utilisateur, un hôte ou une plage horaire suspects (DET0463, AN1275).",
+        "• Échecs répétés sur un même compte ou des comptes proches, depuis une ou plusieurs adresses IP distantes (DET0551, AN1521).",
+        "• Échecs de connexion via SNMP, Telnet ou SSH, souvent visibles dans les journaux ou les événements syslog (DET0551, AN1525).",
+        "• Nombreux échecs sur des comptes différents avec un même mot de passe dans une fenêtre de temps courte (DET0487, AN1336).",
+        "• Nombreux échecs avec des couples identifiant/mot de passe distincts depuis une seule adresse IP ou session (DET0460, AN1262).",
+        "Note de l'application (non issue d'ATT&CK) : sur FortiGate, les échecs d'authentification apparaissent notamment dans les logs de type « system » (logdesc « Admin login failed ») et de sous-type « vpn ». La page Logs bruts permet de rechercher une adresse IP source (champs srcip, remip) pour mesurer le volume d'essais."
+      ]
+    },
+    {
+      "id": "d08e66ab-1136-43ac-9edb-50bb627261dd",
+      "titre": "Identification : vérifier si un accès a réussi",
+      "description": [
+        "Source : ATT&CK, stratégies de détection DET0463 et DET0551 (traduction).",
+        "• Rechercher plusieurs échecs d'authentification, pour des utilisateurs valides ou non, suivis d'un succès depuis la même adresse IP ou le même utilisateur (DET0463, AN1276).",
+        "• Rechercher des échecs de connexion SSH répétés suivis d'un possible succès depuis le même hôte distant (DET0551, AN1522).",
+        "• Rechercher de nombreux échecs depuis des sources externes sur de nombreux utilisateurs, suivis d'un succès depuis la même adresse IP (DET0551, AN1524).",
+        "• ATT&CK signale aussi qu'un attaquant ayant trouvé le bon mot de passe mais bloqué par une règle d'accès conditionnel basée sur la localisation peut changer d'infrastructure jusqu'à correspondre à la localisation de la victime : un succès depuis une nouvelle adresse « locale » peu après les échecs est donc suspect (T1110).",
+        "Note de l'application (non issue d'ATT&CK) : si un accès a réussi, traiter le compte comme compromis et poursuivre avec le playbook d'intrusion adapté (IRM-02 Windows, IRM-03 Linux, IRM-18 compromission large)."
+      ]
+    },
+    {
+      "id": "23532d5a-e6d0-4062-8355-57b151fd3327",
+      "titre": "Confinement : limiter les essais (M1036)",
+      "description": [
+        "Source : ATT&CK, atténuation M1036 « Account Use Policies » (traduction).",
+        "• Définir des politiques de verrouillage de compte après un certain nombre d'échecs de connexion, pour empêcher de deviner les mots de passe.",
+        "• Attention : une politique trop stricte peut créer un déni de service et rendre l'environnement inutilisable, tous les comptes visés par la force brute se retrouvant verrouillés.",
+        "• Utiliser des politiques d'accès conditionnel pour bloquer les connexions depuis des appareils non conformes ou depuis l'extérieur des plages d'adresses IP définies par l'organisation.",
+        "• Envisager de bloquer les demandes d'authentification à risque, par exemple celles qui proviennent de services ou de proxys d'anonymisation."
+      ]
+    },
+    {
+      "id": "c0ad5dfc-b631-4505-af3f-3f7cde0716e1",
+      "titre": "Remédiation : comptes, MFA et mots de passe (M1018, M1032, M1027)",
+      "description": [
+        "Source : ATT&CK, atténuations M1018, M1032 et M1027 (traduction).",
+        "• M1018 « User Account Management » : réinitialiser de façon proactive les comptes dont les identifiants sont connus pour avoir fuité, immédiatement ou après la détection de tentatives de force brute.",
+        "• M1032 « Multi-factor Authentication » : utiliser l'authentification multifacteur, et l'activer si possible aussi sur les services exposés à l'extérieur.",
+        "• M1027 « Password Policies » : s'appuyer sur les recommandations du NIST pour définir les politiques de mots de passe."
+      ]
+    },
+    {
+      "id": "2d70584d-4be8-440b-84e1-097090940dd5",
+      "titre": "Capitalisation : retour d'expérience",
+      "description": [
+        "Source : NIST SP 800-61 Rév. 2, section 3.4.1 « Lessons Learned » (traduction).",
+        "Tenir une réunion de retour d'expérience avec toutes les parties concernées, dans les jours qui suivent la fin de l'incident. Questions à traiter :",
+        "• Que s'est-il passé exactement, et à quels moments ?",
+        "• L'équipe et la direction ont-elles bien géré l'incident ? Les procédures documentées ont-elles été suivies ? Étaient-elles adaptées ?",
+        "• Quelles informations aurait-il fallu plus tôt ?",
+        "• Des actions ont-elles pu gêner la récupération ?",
+        "• Que ferait-on autrement lors d'un incident semblable ?",
+        "• Comment améliorer le partage d'informations avec d'autres organisations ?",
+        "• Quelles actions correctives peuvent éviter des incidents semblables ?",
+        "• Quels précurseurs ou indicateurs surveiller à l'avenir pour détecter des incidents semblables ?",
+        "• Quels outils ou moyens supplémentaires faut-il pour détecter, analyser et atténuer les prochains incidents ?"
+      ]
+    }
+  ]
+}

@@ -50,10 +50,12 @@ SETTINGS_FORCED_FOR_TESTS = {
 
 
 @pytest.fixture(autouse=True)
-def isolate_tests_from_local_env_file(monkeypatch) -> Iterator[None]:
-    """Neutralise le .env local pour les réglages qui changeraient le comportement des tests."""
+def isolate_tests_from_local_env_file(monkeypatch, tmp_path) -> Iterator[None]:
+    """Neutralise le .env local pour les réglages qui changeraient le comportement des tests. Les fichiers JSON des
+    playbooks sont écrits dans un dossier temporaire propre à chaque test, jamais dans db/playbooks du projet."""
     for setting_name, setting_value in SETTINGS_FORCED_FOR_TESTS.items():
         monkeypatch.setenv(setting_name, setting_value)
+    monkeypatch.setenv("PLAYBOOK_FILES_DIRECTORY", str(tmp_path / "playbooks"))
     get_application_settings.cache_clear()
     yield
     get_application_settings.cache_clear()

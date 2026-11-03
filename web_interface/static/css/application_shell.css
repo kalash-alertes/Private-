@@ -49,6 +49,7 @@
 .page-heading h1 { font: 700 27px Manrope, sans-serif; letter-spacing: -.8px; margin: 0 0 7px; color: #f1f5fc; overflow-wrap: anywhere; }
 .page-heading p { margin: 0; color: #8391a7; font-size: 11px; }
 .heading-actions { display: flex; gap: 9px; align-items: center; flex-shrink: 0; }
+.heading-actions form { margin: 0; display: flex; }
 
 .page-footer { display: flex; align-items: center; justify-content: space-between; color: #63738a; font-size: 9px; padding: 19px 2px 0; }
 .page-footer b { color: #3e4e64; padding: 0 4px; }

@@ -53,6 +53,7 @@ NAVIGATION_GROUPS = [
             NavigationItem("incidents", "Incidents", "shield_alert", "/incidents"),
             NavigationItem("alertes", "Alertes", "bell", "/alertes"),
             NavigationItem("journaux", "Journaux", "file_search", "/journaux"),
+            NavigationItem("logs_bruts", "Logs bruts", "activity", "/logs-bruts"),
         ],
     ),
     NavigationGroup("INVESTIGATION", [NavigationItem("playbooks", "Playbooks", "clipboard_list", "/parametres/playbooks")]),

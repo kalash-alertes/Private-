@@ -12,6 +12,7 @@ PAGE_NOTICE_MESSAGES_BY_KEY = {
     "playbook_cree": "Playbook créé.",
     "playbook_modifie": "Playbook enregistré.",
     "playbook_supprime": "Playbook supprimé.",
+    "playbooks_synchronises": "Playbooks synchronisés avec leurs fichiers JSON.",
     "delai_modifie": "Délai de réponse enregistré.",
     "escalade_executee": "Escalade automatique exécutée.",
     "collecte_executee": "Collecte terminée : voir son résultat en tête de l'historique.",

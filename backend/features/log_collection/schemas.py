@@ -38,6 +38,8 @@ class SyslogReceptionStatisticsRead(BaseModel):
     nb_messages_emetteur_refuse: int
     nb_messages_illisibles: int
     nb_messages_perdus_file_pleine: int
+    # Datagrammes UDP jetés par le système (tampon plein) AVANT d'atteindre l'application ; None si non mesurable.
+    nb_datagrammes_udp_perdus_par_le_systeme: int | None = None
 
 
 class LogCollectionConfigurationRead(BaseModel):
