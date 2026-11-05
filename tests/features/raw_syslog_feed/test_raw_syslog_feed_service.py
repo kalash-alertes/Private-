@@ -72,6 +72,18 @@ def test_feed_filters_and_returns_only_new_messages(monkeypatch) -> None:
     assert numbers(limite=1) == [3]
 
 
+def test_combined_filters_search_without_case_and_advance_past_nonmatching_messages(monkeypatch) -> None:
+    install_receiver_with_messages(monkeypatch, NOTICE_MESSAGE, ERROR_MESSAGE, NOTICE_MESSAGE, "illisible")
+
+    feed = read_feed(criticite=CriticalityLevel.HIGH, enregistrement=CollectionOutcomeFilter.STORED, recherche="  IPSEC  ")
+
+    assert [message.numero for message in feed.messages] == [2]
+    assert feed.dernier_numero == 4
+    assert read_feed(criticite=CriticalityLevel.HIGH, enregistrement=CollectionOutcomeFilter.DISCARDED).messages == []
+    assert read_feed(recherche="texte absent").dernier_numero == 4
+    assert read_feed(apres=feed.dernier_numero).messages == []
+
+
 def test_statistics_explain_received_versus_stored(monkeypatch) -> None:
     install_receiver_with_messages(
         monkeypatch, NOTICE_MESSAGE, NOTICE_MESSAGE, NOTICE_MESSAGE, ERROR_MESSAGE, "illisible"

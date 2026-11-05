@@ -10,6 +10,7 @@
   </div>
 
   <div class="topbar-actions">
+    {% include "partials/application_theme_toggle.html" %}
     <a class="alert-source-badge alert-source-{{ alert_source_indicator.mode }}" href="/journaux" title="{{ alert_source_indicator.description }}">
       <span class="alert-source-dot"></span>{{ alert_source_indicator.badge_label }}
     </a>

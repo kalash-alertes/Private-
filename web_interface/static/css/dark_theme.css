@@ -1,0 +1,107 @@
+/* Variante sombre du verre : mêmes éléments, photographie et couleurs de gravité. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #142019;
+  --panel: #182820;
+  --panel2: #1e3026;
+  --border: #ffffff36;
+  --text: #f1f6ee;
+  --muted: #d2dfcf;
+  --surface-raised: #263b2d;
+}
+html[data-theme="dark"] body {
+  background-image: linear-gradient(#14201966, #14201966), url("/static/images/application_background.jpg");
+}
+html[data-theme="dark"] .panel, html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .summary-card, html[data-theme="dark"] .playbook-card,
+html[data-theme="dark"] .playbooks-empty, html[data-theme="dark"] .playbook-form,
+html[data-theme="dark"] .settings-panel, html[data-theme="dark"] .incident-modal,
+html[data-theme="dark"] .error-card, html[data-theme="dark"] .logs-intro,
+html[data-theme="dark"] .toast, html[data-theme="dark"] .page-heading,
+html[data-theme="dark"] .page-footer, html[data-theme="dark"] .topbar {
+  background: #182820;
+  border-color: var(--border);
+  box-shadow: 0 8px 28px #00000030, inset 0 1px 0 #ffffff18;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="dark"] .panel, html[data-theme="dark"] .stat-card,
+  html[data-theme="dark"] .summary-card, html[data-theme="dark"] .playbook-card,
+  html[data-theme="dark"] .playbooks-empty, html[data-theme="dark"] .playbook-form,
+  html[data-theme="dark"] .settings-panel, html[data-theme="dark"] .incident-modal,
+  html[data-theme="dark"] .error-card, html[data-theme="dark"] .logs-intro,
+  html[data-theme="dark"] .toast, html[data-theme="dark"] .page-heading,
+  html[data-theme="dark"] .page-footer, html[data-theme="dark"] .topbar { background: #182820eb; }
+}
+html[data-theme="dark"] .breadcrumb strong, html[data-theme="dark"] .page-heading h1,
+html[data-theme="dark"] .incident-title, html[data-theme="dark"] .table-link,
+html[data-theme="dark"] .error-card p, html[data-theme="dark"] .fact-list dd,
+html[data-theme="dark"] .fact-list dt, html[data-theme="dark"] .history-list li,
+html[data-theme="dark"] .playbook-card-steps, html[data-theme="dark"] .playbook-step-content p,
+html[data-theme="dark"] .alert-reference strong, html[data-theme="dark"] .alert-reference small,
+html[data-theme="dark"] .response-checklist-content label,
+html[data-theme="dark"] .response-checklist-content p,
+html[data-theme="dark"] .response-checklist-content small,
+html[data-theme="dark"] .field-label, html[data-theme="dark"] .checkbox-label,
+html[data-theme="dark"] .playbook-form label, html[data-theme="dark"] td,
+html[data-theme="dark"] th, html[data-theme="dark"] .modal-heading p,
+html[data-theme="dark"] .incident-reference { color: var(--text) !important; }
+
+html[data-theme="dark"] .context-strip, html[data-theme="dark"] .table-toolbar,
+html[data-theme="dark"] .logs-toolbar, html[data-theme="dark"] thead,
+html[data-theme="dark"] .raw-feed-list-header, html[data-theme="dark"] .deadline-rule-row,
+html[data-theme="dark"] .playbook-step, html[data-theme="dark"] .playbook-step-item,
+html[data-theme="dark"] .alert-reference, html[data-theme="dark"] .response-checklist-item,
+html[data-theme="dark"] .raw-log-details, html[data-theme="dark"] .incident-reference {
+  background: #22362be6; border-color: var(--border);
+}
+html[data-theme="dark"] .global-search, html[data-theme="dark"] .table-search,
+html[data-theme="dark"] .filter-control, html[data-theme="dark"] .logs-filter,
+html[data-theme="dark"] .playbooks-search, html[data-theme="dark"] .raw-log-raw,
+html[data-theme="dark"] .field-label input, html[data-theme="dark"] .field-label select,
+html[data-theme="dark"] .field-label textarea, html[data-theme="dark"] .compact-input,
+html[data-theme="dark"] .playbook-form input, html[data-theme="dark"] .playbook-form select,
+html[data-theme="dark"] .playbook-form textarea, html[data-theme="dark"] .button-secondary,
+html[data-theme="dark"] .pagination a, html[data-theme="dark"] .pagination-disabled,
+html[data-theme="dark"] .view-tab, html[data-theme="dark"] .settings-tab {
+  background: #263b2d; border-color: #ffffff52; color: var(--text) !important;
+}
+html[data-theme="dark"] input::placeholder, html[data-theme="dark"] textarea::placeholder { color: var(--muted); }
+html[data-theme="dark"] select option { background: #263b2d; color: var(--text) !important; }
+html[data-theme="dark"] .text-button { color: #c2e3ac !important; }
+html[data-theme="dark"] .button-secondary:hover, html[data-theme="dark"] tbody tr:hover,
+html[data-theme="dark"] .raw-log-entry > summary:hover, html[data-theme="dark"] .icon-button:hover,
+html[data-theme="dark"] .view-tab.active, html[data-theme="dark"] .settings-tab.active,
+html[data-theme="dark"] .pagination .page-current { background: #35523e; color: var(--text) !important; }
+html[data-theme="dark"] .raw-log-entry[open] > summary { background: #35523e; }
+html[data-theme="dark"] .raw-log-new > summary { background: #4a4427; }
+html[data-theme="dark"] .playbook-step-item.is-completed,
+html[data-theme="dark"] .response-checklist-item.is-completed { background: #244738; }
+html[data-theme="dark"] .alert-chart-label, html[data-theme="dark"] .alert-chart-value,
+html[data-theme="dark"] .alert-donut-total, html[data-theme="dark"] .alert-donut-caption,
+html[data-theme="dark"] .chart-axis-label { fill: var(--text); }
+html[data-theme="dark"] .activity-chart > line, html[data-theme="dark"] .alert-chart-axis { stroke: #ffffff4d; }
+html[data-theme="dark"] .raw-log-entry, html[data-theme="dark"] td,
+html[data-theme="dark"] th, html[data-theme="dark"] .raw-log-fields td,
+html[data-theme="dark"] .raw-log-fields th { border-color: var(--border); }
+/* Les notices et badges restent clairs : leur texte doit rester foncé malgré le thème global. */
+html[data-theme="dark"] .alert-banner, html[data-theme="dark"] .info-callout,
+html[data-theme="dark"] .playbooks-notice, html[data-theme="dark"] .response-checklist-notice,
+html[data-theme="dark"] .raw-feed-totals > div, html[data-theme="dark"] .raw-log-outcome,
+html[data-theme="dark"] .playbook-tags span, html[data-theme="dark"] .raw-log-unknown {
+  color: #303b33 !important;
+}
+html[data-theme="dark"] .alert-banner *, html[data-theme="dark"] .info-callout *,
+html[data-theme="dark"] .playbooks-notice *, html[data-theme="dark"] .raw-feed-totals > div * {
+  color: #303b33 !important;
+}
+html[data-theme="dark"] .raw-feed-totals > div { background: #eef6ef; }
+html[data-theme="dark"] .raw-feed-totals > .raw-feed-loss { background: #fbe9ee; }
+html[data-theme="dark"] .stat-icon *, html[data-theme="dark"] .modal-icon *,
+html[data-theme="dark"] .severity-pill *, html[data-theme="dark"] .status-pill *,
+html[data-theme="dark"] .top-avatar *, html[data-theme="dark"] .playbook-step-number * {
+  color: inherit !important;
+}
+html[data-theme="dark"] .top-avatar { color: #48634e !important; }
+html[data-theme="dark"] .source-context.alert-source-live { color: #b3f1d8 !important; }
+html[data-theme="dark"] .source-context.alert-source-demo { color: #ffe1a1 !important; }
+html[data-theme="dark"] .source-context.alert-source-live-inactive { color: #ffccd7 !important; }

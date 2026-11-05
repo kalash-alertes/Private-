@@ -21,7 +21,18 @@ Menu **Espace de travail > Logs bruts**. Elle montre, en direct, tout ce que For
 - des filtres : par criticité, « enregistrés » ou « écartés », et une recherche (une adresse IP, un nom d'équipement…) ;
 - un bouton **Pause** pour figer le flux le temps de lire.
 
+Quand vous dépliez un log ou faites défiler la liste, les nouveaux messages ne déplacent plus la ligne que vous lisez.
+Pause fige aussi une actualisation déjà en cours ; Reprendre récupère les messages encore disponibles.
+Les filtres s'appliquent ensemble et restent actifs pendant les actualisations ; la recherche ignore les majuscules.
+
 La page garde les 2 000 derniers logs en mémoire (environ une minute de trafic) ; rien de cette page n'est écrit en base.
+
+## Retrouver le log d'une alerte
+
+Dans **Alertes**, cliquez sur **Voir le log original** : les champs conservés à la collecte s'affichent avec la
+criticité d'origine, les dates et un lien vers l'incident s'il existe. Cette copie reste disponible même si le log
+n'est plus dans le flux en mémoire. Le texte syslog exact n'est pas conservé en base ; aucune copie n'est inventée
+si les données originales sont absentes.
 
 ## Une perte corrigée
 

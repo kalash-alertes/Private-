@@ -46,8 +46,12 @@ texte brut. En démonstration : liste vide.
 - Direct : `static/js/raw_syslog_feed.js` appelle `/logs-bruts/nouveaux?apres=N&<filtres>` toutes les 3 s. Ce fragment
   (`partials/raw_syslog_feed_update.html`) contient deux `<template>` (nouvelles lignes, bilan) rendus par Jinja2 : le
   script ne fabrique aucun HTML à partir des logs (texte échappé côté serveur). Pause/Reprendre ; pas d'appel quand
-  l'onglet est caché. Si l'analyste a déplié une ligne ou fait défiler la liste, la position est conservée (hauteur
-  ajoutée compensée). Au plus 500 lignes dans la page ; les lignes dépliées ne sont jamais retirées.
+  l'onglet est caché. Si   l'analyste a déplié une ligne ou fait défiler la liste, le script conserve la position de la première ligne visible
+  après insertion **et retrait** des anciennes lignes. `overflow-anchor: none` désactive la compensation native du
+  navigateur pour éviter un double déplacement. Au plus 500 lignes dans la page, sauf si toutes les lignes restantes
+  sont protégées ; les lignes dépliées et toutes les lignes visibles ne sont jamais retirées (évite un recul forcé
+  du défilement lorsque la lecture atteint le bas de la liste). Une réponse arrivée après Pause
+  est ignorée sans avancer le curseur : Reprendre redemande les messages encore disponibles en mémoire.
 - Sans JavaScript : la page reste lisible, rechargement manuel.
 
 ## Cas limites
@@ -55,9 +59,15 @@ texte brut. En démonstration : liste vide.
 - Le backend redémarre (y compris `--reload` en développement) : mémoire et compteurs repartent de zéro.
 - Messages d'un émetteur refusé (`SYSLOG_ALLOWED_SENDER_ADDRESSES`) : comptés, non gardés pour l'affichage.
 - Le filtre `criticite` s'applique après la recherche texte ; un message illisible n'a pas de criticité.
+- Les trois filtres sont combinés (ET) et répétés dans l'URL du fragment ; la recherche ignore la casse et les espaces
+  extérieurs. Le curseur avance aussi sur les messages exclus des filtres, pour ne pas les relire indéfiniment.
 
 ## Tests
 
 `tests/features/raw_syslog_feed/`, `tests/integrations/fortianalyzer/test_fortianalyzer_syslog_receiver.py`
 (mémoire bornée, compteur par niveau, lecture de `/proc/net/snmp` sur un fichier de test),
-`tests/web_interface/test_web_pages.py` (page, fragment, échappement).
+`tests/web_interface/test_web_pages.py` (page, fragment, filtres combinés et conservés, échappement),
+`tests/web_interface/test_raw_syslog_feed_browser.py` (CSS/JS réels, HTTP simulé, ancrage à ≤ 1 pixel y compris
+au plafond de 500 lignes, lecture dépliée ou fermée, direct en tête et pause pendant une requête).
+Les tests navigateur nécessitent Playwright et Chromium ; un Chrome installé peut être utilisé avec
+`$env:PLAYWRIGHT_BROWSER_CHANNEL = "chrome"`. Sans moteur disponible, ces seuls tests sont ignorés.

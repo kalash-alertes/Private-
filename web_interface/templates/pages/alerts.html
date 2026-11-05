@@ -89,7 +89,10 @@
           {% for alert in alerts_page.items %}
             {% set incident_id = incident_id_by_alert_id.get(alert.id) %}
             <tr>
-              <td><div class="incident-title">{{ alert.type }}</div><div class="incident-id">{{ alert.identifiant_source }}</div></td>
+              <td>
+                <div class="incident-title">{{ alert.type }}</div><div class="incident-id">{{ alert.identifiant_source }}</div>
+                <a class="text-button" href="/alertes/{{ alert.id }}">Voir le log original {{ icon("chevron_right", 14) }}</a>
+              </td>
               <td class="alert-severity-cell">{{ alert_severity_group_pill(alert.criticite_source) }}</td>
               <td class="time-cell">{{ alert.date_evenement | display_datetime }}</td>
               <td class="time-cell">{{ alert.arrivee_db | display_datetime }}</td>

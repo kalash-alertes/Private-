@@ -45,24 +45,30 @@
         throw new Error("HTTP " + response.status);
       }
       const fragment = new DOMParser().parseFromString(await response.text(), "text/html");
+      if (isPaused || document.hidden) {
+        return;
+      }
       const updateRoot = fragment.querySelector("[data-last-number]");
       lastNumber = Number(updateRoot.dataset.lastNumber || lastNumber);
       const newEntries = Array.from(fragment.querySelector('template[data-role="entries"]').content.children);
-      // Si l'analyste lit (liste défilée ou ligne dépliée), les nouvelles lignes ne doivent pas déplacer ce qu'il lit :
-      // on compense la hauteur ajoutée en tête.
+      // Ancrer la ligne visible, pas la hauteur totale : le retrait d'anciennes lignes peut aussi la déplacer.
       const isReading = entriesContainer.scrollTop > 0 || entriesContainer.querySelector("details[open]") !== null;
-      const heightBeforeInsertion = entriesContainer.scrollHeight;
+      const containerBounds = entriesContainer.getBoundingClientRect();
+      const visibleEntries = new Set(isReading ? Array.from(entriesContainer.children).filter(entry => {
+        const bounds = entry.getBoundingClientRect();
+        return bounds.bottom > containerBounds.top && bounds.top < containerBounds.bottom;
+      }) : []);
+      const readingAnchor = visibleEntries.values().next().value;
+      const anchorTopBeforeInsertion = readingAnchor ? readingAnchor.getBoundingClientRect().top : 0;
       // Le serveur renvoie le plus récent d'abord : insérer dans l'ordre inverse garde ce tri en tête de liste.
       for (const newEntry of newEntries.reverse()) {
         newEntry.classList.add("raw-log-new");
         entriesContainer.prepend(newEntry);
         window.setTimeout(() => newEntry.classList.remove("raw-log-new"), NEW_ENTRY_HIGHLIGHT_MILLISECONDS);
       }
-      if (isReading) {
-        entriesContainer.scrollTop += entriesContainer.scrollHeight - heightBeforeInsertion;
-      }
-      // Retire les plus anciennes lignes, sauf celles que l'analyste a dépliées.
-      const closedEntries = Array.from(entriesContainer.querySelectorAll("details:not([open])"));
+      // Garder toute la zone lue : retirer son bas réduirait la hauteur et forcerait le navigateur à remonter.
+      const closedEntries = Array.from(entriesContainer.querySelectorAll("details:not([open])"))
+        .filter(entry => !visibleEntries.has(entry));
       let excessCount = entriesContainer.children.length - MAXIMUM_ENTRIES_DISPLAYED;
       while (excessCount > 0 && closedEntries.length > 0) {
         closedEntries.pop().remove();
@@ -72,6 +78,9 @@
       statisticsContainer.replaceChildren(
         ...fragment.querySelector('template[data-role="statistics"]').content.childNodes
       );
+      if (readingAnchor) {
+        entriesContainer.scrollTop += readingAnchor.getBoundingClientRect().top - anchorTopBeforeInsertion;
+      }
       showLiveState("En direct", "");
     } catch (fetchError) {
       showLiveState("Connexion perdue, nouvel essai...", "raw-feed-live-error");

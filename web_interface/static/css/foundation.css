@@ -2,8 +2,8 @@
   Fondations : couleurs (jetons), typographie, remise à zéro.
 */
 :root {
-  font-family: 'DM Sans', sans-serif;
-  color: #382833;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
+  color: #303b33;
   background: #f4f7f2;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -18,17 +18,21 @@
   --blue: #66836c;
   --teal: #43836d;
   --danger: #c94c68;
+  --accent: #46654f;
+  --surface-raised: #ffffff;
+  --shadow-panel: 0 2px 4px #243b2c04, 0 10px 28px #243b2c06;
+  --radius-panel: 14px;
   color-scheme: light;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: var(--bg); font-size: 13px; }
+body { margin: 0; min-width: 320px; background: var(--bg); font-size: 15px; line-height: 1.5; }
 a { color: inherit; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
-  outline: 2px solid #66836c;
-  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .muted-text { color: var(--muted); }
 
@@ -42,5 +46,5 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }

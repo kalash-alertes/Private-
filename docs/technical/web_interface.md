@@ -23,6 +23,7 @@ global est sauge clair ; les graphiques de synthèse sont des SVG produits en Py
 | Incidents | `/incidents?vue=en_cours\|traites&recherche=&criticite=&statut=&offset=` | `/incidents` (création depuis une alerte) |
 | Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}`, `/checklist/{item_id}` |
 | Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) ; indicateurs par sévérité, graphique en barres et diagramme circulaire |
+| Log original d'une alerte | `/alertes/{source_log_id}` | — ; copie des champs conservés et lien vers l'incident éventuel |
 | Journaux | `/journaux?statut=&offset=` (historique des imports, pertes système UDP) | — |
 | Logs bruts | `/logs-bruts?criticite=&enregistrement=&recherche=` ; fragment `/logs-bruts/nouveaux?apres=N` | — (voir [raw_syslog_feed.md](raw_syslog_feed.md)) |
 | Paramètres | `/parametres` → `/parametres/reponse-incidents` | `/parametres/reponse-incidents/delais/{criticite}`, `/parametres/reponse-incidents/escalade` |
@@ -36,8 +37,10 @@ une ligne ouvre la fiche, dont le premier panneau est le **playbook** de l'incid
 
 ## Fonctionnement sans JavaScript
 
-Exception unique : `static/js/raw_syslog_feed.js` (page Logs bruts) ajoute les nouveaux logs toutes les 3 s à partir
+`static/js/raw_syslog_feed.js` (page Logs bruts) ajoute les nouveaux logs toutes les 3 s à partir
 d'un fragment HTML rendu par Jinja2 ; sans lui, la page fonctionne avec un rechargement manuel.
+`static/js/application_theme.js` gère uniquement l'apparence clair/sombre ; sans lui, le thème clair reste utilisable
+et son bouton est masqué.
 
 - **POST → redirection 303 → GET** : succès ⇒ redirection avec `?notice=<clé>` ; seules les clés de
   `page_notices.py` sont affichées (aucun texte de l'URL n'est recopié dans la page).
@@ -65,7 +68,7 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 
 - Échappement HTML automatique de Jinja2 : titres, logs, descriptions sont toujours affichés comme du texte.
 - Pas de JavaScript métier ni de nouvelle dépendance externe ; Google Fonts reste utilisé comme dans la maquette.
-  Le seul script du dashboard gère son apparence locale, sans requête réseau ni écriture métier.
+  Le script du thème gère l'apparence locale, sans requête réseau ni écriture métier.
 - **Aucune authentification** pour l'instant (comme l'API) : ne pas exposer hors d'un poste de développement.
 - Pas de jeton anti-CSRF : sans authentification ni cookie de session, il n'y a pas de session à détourner. **À
   ajouter avec l'authentification** (sinon un site tiers pourrait déclencher des actions au nom d'un analyste connecté).
@@ -80,9 +83,74 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
   niveau source lorsqu'il est regroupé. Le total des groupes est calculé à partir des comptes filtrés par niveau.
 - `alert_charts_svg.py` dessine le graphique en barres et l'anneau circulaire à partir de ces trois comptes. Les SVG
   portent un nom accessible ; la légende HTML expose les comptes même sans interprétation visuelle du graphique.
+- Chaque alerte propose « Voir le log original ». `alerts_page.py` appelle le service public
+  `source_logs.fetch_source_log_detail` avec son UUID ; `alert_source_log.html` affiche ses métadonnées et
+  `donnees_brutes` en JSON indenté via `tojson` (caractères HTML échappés, structures imbriquées conservées).
+  Il s'agit des champs reçus et stockés, pas d'une reconstruction du texte syslog exact, qui n'est pas conservé en
+  base. `None` est signalé explicitement ; un dictionnaire vide reste affiché comme `{}`. Un UUID inconnu donne 404,
+  un UUID invalide 422, via les pages d'erreur existantes. Aucun changement de schéma ni écriture en base.
 - `static/css/pink_theme.css`, chargée en dernier dans le layout commun, applique les surfaces sauge pâle et les
   couleurs de texte à contraste élevé sur toutes les pages. Les indicateurs de criticité conservent leurs couleurs
   sémantiques.
+
+### Thème commun et lisibilité
+
+- `foundation.css` conserve DM Sans pour le texte, avec repli Segoe UI/sans-serif si la police distante est
+  indisponible ; Manrope reste la police des titres. Aucun nouveau téléchargement ni dépendance.
+- Les jetons communs `--accent`, `--surface-raised`, `--shadow-panel` et `--radius-panel` regroupent les accents
+  sauge, surfaces, ombres discrètes et angles de cartes. `pink_theme.css` garde son nom historique et sa place en
+  dernier : il harmonise les anciens styles de pages sans changer leur structure ou leurs règles métier.
+- Texte courant/descriptions : 15 px ; tableaux/champs : 14 px ; détails des logs : 13 px et police monospace ;
+  titres de panneaux : 16 px, titres de page : 26–34 px. Les badges restent compacts mais lisibles.
+- Boutons : hauteur minimale 40 px (36 px pour les petits). Leurs icônes héritent de leur couleur ; le bouton
+  primaire blanc sur sauge est vérifié à un contraste WCAG d'au moins 4,5:1. Les champs de recherche et de filtrage
+  ont un focus visible sur leur conteneur, même si l'ancien champ interne désactive son contour.
+- Le bandeau de surveillance reçoit une surface claire. Les alertes, erreurs et criticités conservent leurs
+  couleurs sémantiques. `prefers-reduced-motion` supprime également les animations de pulsation et d'apparition.
+- Mobile : barre supérieure sur deux lignes si nécessaire, recherche toujours disponible, contrôles et formulaires
+  repliables, tableaux larges défilant dans leur conteneur. Les colonnes des logs restent alignées entre en-tête et
+  lignes ; les champs longs se replient. `overflow-anchor: none` et l'algorithme de lecture stable restent inchangés.
+- `pages/error.html` charge également le thème, mais reste autonome et sans requête en base.
+
+### Photographie locale et effet verre
+
+- Fond unique : `web_interface/static/images/application_background.jpg`, vraie photographie JPEG (1920 × 1279,
+  environ 780 Kio), servie par la route statique existante. Source :
+  [Unsplash](https://images.unsplash.com/photo-1441974231531-c6227db76b6e), sous
+  [licence Unsplash](https://unsplash.com/license), autorisant usage et redistribution. Pas de SVG de fond,
+  génération à l'exécution ni requête vers un fournisseur d'images depuis le navigateur.
+- Remplacement : écraser ce fichier par une photo JPEG de même nom puis rechargement forcé ; si un autre format
+  ou nom est souhaité, adapter uniquement l'URL dans `pink_theme.css`. `cover`, centrage et attachement fixe
+  permettent le recadrage selon la fenêtre. Les caches navigateur nécessitent Ctrl+F5.
+- Un voile clair fixe couvre la photo, y compris très sombre. Les surfaces ont un fond à environ 85 % d'opacité
+  et `backdrop-filter: blur(18px)` (avec préfixe WebKit). Aucun changement des éléments HTML, des routes, des
+  formulaires, de l'ordre des panneaux, de la collecte ou de l'ancrage des logs.
+- Le bloc `@supports` applique la transparence uniquement quand le flou est disponible ; sinon les surfaces
+  restent opaques. Une photo absente conserve la couleur de fond sauge. En-tête et pied de page reçoivent eux aussi
+  une surface lisible. Les couleurs des criticités, états et boutons primaires sont conservées.
+- Tests : décodage effectif du JPEG local, dimensions, verre sur toutes les pages, contraste du texte ≥ 4,5:1
+  sur les surfaces principales même avec un arrière-plan noir, photo indisponible et repli sans filtre.
+- Sidebar : même JPEG local, voile vert sombre à 80 %, flou de 3 px (photo plus visible que sous les panneaux),
+  textes/icônes clairs, entrée active verte. Surcharges limitées à `.sidebar` pour préserver les autres pages.
+  Sans flou, fond sombre opaque. Tests de contraste sur fond noir **et blanc**, et sur l'entrée active ; liens,
+  compteurs et états de réception inchangés.
+
+### Contour de sidebar et bouton clair/sombre
+
+- Sidebar : contour blanc translucide de 4 px et léger reflet intérieur, sans modifier sa largeur extérieure ni les liens.
+- `partials/application_theme_toggle.html` est inclus dans la barre supérieure et la page d'erreur. Bouton natif,
+  utilisable au clavier, `aria-pressed` indique le mode sombre ; son libellé annonce le mode à activer.
+- `application_theme.js` est chargé dans le `<head>` avant les styles : il lit `fAnalyzerInterfaceTheme` dans
+  `localStorage` et applique `html[data-theme="light|dark"]` avant le rendu pour éviter un éclair clair sur un choix
+  sombre. Par défaut : clair ; seules les valeurs `dark`/`light` sont reconnues. Le choix suit la navigation,
+  le rechargement et les autres onglets de la même origine (`storage`).
+- `dark_theme.css`, chargé après `pink_theme.css`, ajuste les surfaces, champs, textes et axes de graphiques.
+  Photo, dimensions, défilement des logs et criticités sont conservés ; notices et badges gardent leurs couleurs.
+  Les surfaces sombres restent opaques si le flou est indisponible.
+- Stockage indisponible : avertissement explicite en console ; le bouton fonctionne dans la page courante et son
+  titre signale si le choix n'a pas pu être mémorisé. Aucun accès aux données métier ni nouvelle dépendance.
+- Tests : toutes les pages en clair **et sombre** à 320/390/1440 px, contrastes, clavier, navigation/rechargement,
+  page d'erreur, stockage bloqué et bouton absent visuellement sans JavaScript.
 
 ### Dashboard
 
@@ -118,4 +186,11 @@ autonome, ne l'affiche pas.
 
 `tests/web_interface/test_web_pages.py` : chaque page s'affiche sur une base vide, liens des cartes du tableau de bord,
 parcours complets via les formulaires (création, actions, étapes, checklist, playbook, délais, escalade), erreurs HTML
-vs JSON, messages limités aux clés connues. Vérification visuelle dans un navigateur : non automatisée.
+vs JSON, messages limités aux clés connues.
+`test_application_theme_browser.py` charge les réponses du client de test dans Chromium, sans réseau réel
+(polices distantes bloquées, repli typographique testé). Il couvre les pages peuplées, formulaires et erreurs à
+320/390/1440 px : débordement global ≤ 1 px, texte courant ≥ 15 px, boutons ≥ 36 px et ≥ 13 px,
+contraste primaire ≥ 4,5:1, recherche et navigation mobiles conservées.
+`test_raw_syslog_feed_browser.py` vérifie l'ancrage et la pause avec les feuilles de style réellement chargées.
+Exécution : `$env:PLAYWRIGHT_BROWSER_CHANNEL = "chrome"; python -m pytest tests/web_interface` si Chrome est installé,
+sinon Chromium Playwright. Sans Playwright ou moteur disponible, seuls les tests navigateur sont ignorés.

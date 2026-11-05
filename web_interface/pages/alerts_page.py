@@ -8,6 +8,7 @@ Une alerte sans incident est « à traiter » : un bouton crée l'incident (form
 
 from typing import Annotated
 from urllib.parse import urlencode
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
@@ -91,5 +92,31 @@ def show_alerts_page(
                 "a_traiter": dashboard.nombre_alertes_a_traiter,
                 "traitees": dashboard.nombre_alertes - dashboard.nombre_alertes_a_traiter,
             },
+        },
+    )
+
+
+@alerts_page_router.get("/alertes/{source_log_id}", response_class=HTMLResponse)
+def show_alert_source_log_page(
+    request: Request,
+    source_log_id: UUID,
+    database_session: Annotated[Session, Depends(get_database_session)],
+) -> HTMLResponse:
+    """Affiche les données originales conservées du log d'une alerte ; lève ResourceNotFoundError si absent."""
+    source_log = source_logs_service.fetch_source_log_detail(database_session, source_log_id)
+    return render_page(
+        request,
+        "alert_source_log.html",
+        {
+            **build_application_layout_context(
+                database_session,
+                "alertes",
+                "Log original de l'alerte",
+                "Les champs d'origine conservés lors de la collecte, sans modification de la criticité source.",
+            ),
+            "source_log": source_log,
+            "incident_id": incidents_service.fetch_incident_ids_by_log_ids(
+                database_session, [source_log_id]
+            ).get(source_log_id),
         },
     )

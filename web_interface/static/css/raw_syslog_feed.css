@@ -32,7 +32,8 @@
 }
 /* Même gouttière de barre de défilement que la liste : les colonnes restent alignées. */
 .raw-feed-list-header { overflow-y: hidden; scrollbar-gutter: stable; font-size: 9px; font-weight: 700; letter-spacing: .6px; color: var(--muted) !important; border-bottom: 1px solid var(--border); background: #eef3ed; }
-.raw-feed-entries { max-height: 70vh; overflow-y: auto; scrollbar-gutter: stable; }
+/* Le script conserve la ligne lue ; l'ancrage natif ferait une seconde compensation. */
+.raw-feed-entries { max-height: 70vh; overflow-y: auto; scrollbar-gutter: stable; overflow-anchor: none; }
 .raw-log-entry { border-bottom: 1px solid #e6ece4; }
 .raw-log-entry > summary { cursor: pointer; list-style: none; font-size: 10px; }
 .raw-log-entry > summary::-webkit-details-marker { display: none; }

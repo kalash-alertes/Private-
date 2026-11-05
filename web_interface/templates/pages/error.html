@@ -8,8 +8,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ error_title }} | FAnalyzer IR</title>
+  <meta name="theme-color" content="#f4f7f2">
+  <script src="/static/js/application_theme.js"></script>
   <link rel="stylesheet" href="/static/css/foundation.css">
   <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="stylesheet" href="/static/css/pink_theme.css">
+  <link rel="stylesheet" href="/static/css/dark_theme.css">
 </head>
 <body>
   <main class="error-page">
@@ -17,6 +21,7 @@
       <span class="modal-icon">{{ icon("circle_alert", 20) }}</span>
       <h1>{{ error_title }}</h1>
       <p>{{ error_message }}</p>
+      {% include "partials/application_theme_toggle.html" %}
       <a class="button button-primary" href="/">{{ icon("layout_dashboard", 16) }} Retour au tableau de bord</a>
     </section>
   </main>

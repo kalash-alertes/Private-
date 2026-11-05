@@ -19,6 +19,9 @@ from backend.features.incidents import service as incidents_service
 from backend.features.incidents import incident_response_checklist
 from backend.features.incidents.schemas import IncidentCreationRequest, IncidentListFilters
 from backend.features.playbooks import service as playbooks_service
+from backend.features.source_logs import service as source_logs_service
+from backend.features.import_runs import service as import_runs_service
+from tests.synthetic_data import build_synthetic_new_source_log
 from tests.synthetic_data import build_synthetic_playbook_request, store_synthetic_source_log
 
 def end_test_session_transaction(database_session) -> None:
@@ -140,6 +143,59 @@ def test_alerts_page_shows_three_severity_groups_and_both_charts(web_client, dat
     assert "2</strong>" in response.text and "5</strong>" in response.text
 
 
+@pytest.mark.parametrize("raw_fields", [
+    {"msg": "<script>alert('test')</script>", "nested": {"srcip": "192.0.2.11"}, "ports": [80, 443]},
+    {},
+    None,
+])
+def test_alert_links_to_its_own_original_fields(web_client, database_session, raw_fields) -> None:
+    import json
+    import html
+
+    import_run = import_runs_service.start_import_run(database_session)
+    source_log = build_synthetic_new_source_log(import_run.id, identifier_suffix="original-fields").model_copy(
+        update={"donnees_brutes": raw_fields}
+    )
+    storage = source_logs_service.store_source_log_if_new(database_session, source_log)
+    store_synthetic_source_log(database_session, identifier_suffix="other-alert")
+    end_test_session_transaction(database_session)
+    detail_url = f"/alertes/{storage.source_log_id}"
+
+    assert f'href="{detail_url}"' in web_client.get("/alertes").text
+    response = web_client.get(detail_url)
+
+    assert response.status_code == 200
+    assert source_log.identifiant_source in response.text and "SYNTHETIQUE-other-alert" not in response.text
+    assert "<script>alert(" not in response.text
+    if raw_fields is None:
+        assert "Aucune donnée brute n'a été conservée" in response.text
+    else:
+        raw_json = re.search(r'<pre class="raw-log-raw">(.*?)</pre>', response.text, re.S)
+        assert raw_json is not None
+        assert json.loads(html.unescape(raw_json.group(1))) == raw_fields
+    assert "Le texte syslog exact n'est pas conservé en base" in response.text
+
+
+def test_original_log_links_to_the_matching_incident(web_client, database_session) -> None:
+    storage = store_synthetic_source_log(database_session, identifier_suffix="original-with-incident")
+    incident = incidents_service.create_incident_from_source_log(
+        database_session, IncidentCreationRequest(log_id=storage.source_log_id)
+    )
+    end_test_session_transaction(database_session)
+
+    response = web_client.get(f"/alertes/{storage.source_log_id}")
+
+    assert response.status_code == 200
+    assert f'href="/incidents/{incident.id}"' in response.text
+
+
+@pytest.mark.parametrize("log_id, status_code", [(str(uuid4()), 404), ("invalid-uuid", 422)])
+def test_original_log_reports_missing_or_invalid_identifier(web_client, log_id, status_code) -> None:
+    response = web_client.get(f"/alertes/{log_id}")
+
+    assert response.status_code == status_code and "text/html" in response.headers["content-type"]
+
+
 def read_alert_summary_card_count(page_html: str, card_class: str) -> int:
     card_match = re.search(rf'<article class="summary-card {card_class}">.*?<strong>([\d\s ]+)</strong>', page_html, re.S)
     assert card_match, card_class
@@ -170,7 +226,7 @@ def test_alerts_page_puts_every_source_level_in_its_severity_case(web_client, da
     assert read_alert_summary_card_count(page, "alert-summary-low") == 7
     assert read_alert_summary_card_count(page, "alert-summary-total") == 16
     # Chaque ligne : pastille de la case, et rappel du niveau source quand il est regroupé.
-    rows = re.findall(r"<tr>\s*<td><div class=\"incident-title\">.*?</tr>", page, re.S)
+    rows = re.findall(r"<tr>\s*<td>\s*<div class=\"incident-title\">.*?</tr>", page, re.S)
     assert len(rows) == 16
     pills = [re.search(r'aria-label="Niveau (\w+)"', row).group(1) for row in rows]
     assert (pills.count("Critique"), pills.count("Moyenne"), pills.count("Faible")) == (5, 4, 7)
@@ -438,6 +494,25 @@ def test_raw_logs_page_shows_live_messages_and_their_fields(web_client, monkeypa
     # Le texte des logs est échappé : aucun HTML venant d'un log n'est interprété.
     assert "<b>x</b>" not in page and "&lt;b&gt;x&lt;/b&gt;" in page
     assert 'data-new-count="1"' in update and 'data-new-count="0"' in nothing_new
+
+
+def test_raw_logs_filters_are_combined_and_preserved_in_live_updates(web_client, monkeypatch) -> None:
+    from tests.features.raw_syslog_feed.test_raw_syslog_feed_service import (
+        ERROR_MESSAGE, NOTICE_MESSAGE, install_receiver_with_messages,
+    )
+
+    install_receiver_with_messages(monkeypatch, NOTICE_MESSAGE, ERROR_MESSAGE, "illisible")
+    query = "criticite=haute&enregistrement=enregistres&recherche=IPSEC"
+    page = web_client.get(f"/logs-bruts?{query}").text
+    update = web_client.get(f"/logs-bruts/nouveaux?apres=0&{query}").text
+
+    assert 'data-number="2"' in page and 'data-number="1"' not in page and 'data-number="3"' not in page
+    assert 'value="haute" selected' in page and 'value="enregistres" selected' in page
+    assert 'data-update-url="/logs-bruts/nouveaux?criticite=haute&amp;enregistrement=enregistres&amp;recherche=IPSEC"' in page
+    assert 'data-number="2"' in update and 'data-new-count="1"' in update
+    assert 'data-new-count="0"' in web_client.get(f"/logs-bruts/nouveaux?apres=2&{query}").text
+    reset_page = web_client.get("/logs-bruts?criticite=&enregistrement=tous&recherche=").text
+    assert all(f'data-number="{number}"' in reset_page for number in (1, 2, 3))
 
 
 

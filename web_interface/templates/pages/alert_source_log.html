@@ -1,0 +1,43 @@
+{% extends "layouts/application_layout.html" %}
+{% from "partials/display_macros.html" import severity_pill %}
+
+{% block page_stylesheets %}
+  <link rel="stylesheet" href="/static/css/incidents.css">
+  <link rel="stylesheet" href="/static/css/raw_syslog_feed.css">
+{% endblock %}
+
+{% block heading_actions %}
+  <a class="button button-secondary" href="/alertes">{{ icon("arrow_left", 16) }} Retour aux alertes</a>
+{% endblock %}
+
+{% block page_body %}
+  <div class="incident-main-column">
+    <section class="panel">
+      <div class="panel-header">
+        <div><h2>{{ source_log.type }}</h2><p>{{ source_log.identifiant_source }}</p></div>
+        {% if incident_id %}<a class="text-button" href="/incidents/{{ incident_id }}">Voir l'incident {{ icon("chevron_right", 14) }}</a>{% endif %}
+      </div>
+      <dl class="fact-list">
+        <div><dt>Identifiant du log</dt><dd>{{ source_log.id }}</dd></div>
+        <div><dt>Criticité source</dt><dd>{{ severity_pill(source_log.criticite_source) }}</dd></div>
+        <div><dt>Date de l'événement</dt><dd>{{ source_log.date_evenement | display_datetime_seconds }}</dd></div>
+        <div><dt>Enregistré en base le</dt><dd>{{ source_log.arrivee_db | display_datetime_seconds }}</dd></div>
+        <div><dt>Exécution d'import</dt><dd>{{ source_log.execution_import_id }}</dd></div>
+        {% if source_log.reference_opensearch %}<div><dt>Référence OpenSearch</dt><dd>{{ source_log.reference_opensearch }}</dd></div>{% endif %}
+      </dl>
+    </section>
+    <section class="panel" aria-labelledby="source-log-data-title">
+      <div class="panel-header">
+        <div>
+          <h2 id="source-log-data-title">Données originales conservées</h2>
+          <p>Copie des champs reçus lors de la collecte. Le texte syslog exact n'est pas conservé en base ; il est consultable temporairement dans Logs bruts.</p>
+        </div>
+      </div>
+      {% if source_log.donnees_brutes is not none %}
+        <pre class="raw-log-raw">{{ source_log.donnees_brutes | tojson(indent=2) }}</pre>
+      {% else %}
+        <p class="empty-state">Aucune donnée brute n'a été conservée pour cette alerte.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}
