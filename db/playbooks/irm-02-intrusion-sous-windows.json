@@ -6,7 +6,7 @@
   "source": "CERT aDvens, d'après les fiches IRM du CERT Société Générale — IRM-02 « Intrusion sous Windows », version du 2025-10-27. Fichier : https://github.com/cert-advens/IRM/blob/HEAD/FR/IRM-02-Intrusion_sur_Windows.pdf (original : https://github.com/certsocietegenerale/IRM). Licence Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Modifications : texte extrait du PDF et découpé par phase, mise en forme adaptée ; contenu non réécrit.",
   "etapes": [
     {
-      "id": "4a9b6fa2-4112-4ee3-bfd2-e0551ab7fd99",
+      "id": "5e733f08-f86b-4362-9417-d6977134a8c1",
       "titre": "Préparation",
       "description": [
         "Objectif : Établir la liste de contact des personnes concernées et impliquées dans la résolution de l’incident, définir les procédures, recueillir les informations pertinentes pour ne pas perdre de temps durant la réponse à incident.",
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "id": "e05955ff-fe07-4452-859b-a86688666ecd",
+      "id": "10f73568-fc16-426b-86e8-700b8418cb16",
       "titre": "Identification",
       "description": [
         "Objectif : Détecter l’incident, déterminer son ampleur et impliquer les acteurs appropriés.",
@@ -93,7 +93,7 @@
       ]
     },
     {
-      "id": "3e0b96d1-0db6-4caa-a29d-a2ea2ab218a1",
+      "id": "9a46cdbd-b9b1-42b5-83e0-3f4ad32136a1",
       "titre": "Confinement",
       "description": [
         "Objectif : Atténuer les effets de l’attaque sur l’environnement ciblé.",
@@ -110,7 +110,7 @@
       ]
     },
     {
-      "id": "64d2e5e2-a002-4ed6-b2cb-0fad206e304e",
+      "id": "c03ad312-05e5-4f5a-9bc6-65631ce3e2d3",
       "titre": "Remédiation",
       "description": [
         "Objectif : Prendre des mesures pour arrêter l’attaque et éviter d’être de nouveau attaqué.",
@@ -123,7 +123,7 @@
       ]
     },
     {
-      "id": "6dc8fc33-6df0-4159-95e2-c6588e9c768e",
+      "id": "b9b32831-a3d9-4ad2-b2d8-facb79f26703",
       "titre": "Récupération",
       "description": [
         "Objectif : Restaurer le fonctionnement normal du système.",
@@ -134,7 +134,7 @@
       ]
     },
     {
-      "id": "0d4e5e77-5194-4b45-b22b-519f24bcfa25",
+      "id": "a9f5a6ed-11ab-48a9-b98f-850f5db8791c",
       "titre": "Capitalisation et apprentissage",
       "description": [
         "Objectif : Documenter les détails de l’incident, discuter des leçons apprises et améliorer les dispositifs et stratégies de défense.",

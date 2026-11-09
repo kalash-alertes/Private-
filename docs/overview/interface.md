@@ -61,7 +61,8 @@ viennent les alertes (démonstration, FortiAnalyzer en direct, ou réception ina
 ## Dérouler les alertes par type
 
 Dans **Alertes**, chaque type apparaît une seule fois, avec son nombre d'alertes : par exemple **vpn** ou
-**forward**. Cliquez sur la rubrique pour afficher ses alertes, puis cliquez à nouveau pour la replier.
+**forward**. Les rubriques avec le plus d'alertes sont en premier ; le classement s'adapte au filtre de sévérité.
+Cliquez sur la rubrique pour afficher ses alertes, puis cliquez à nouveau pour la replier.
 Au clavier, sélectionnez la rubrique avec Tab et ouvrez-la avec Entrée ou Espace.
 
 Chaque rubrique affiche 25 alertes à la fois, les plus récentes en premier ; les flèches donnent accès aux autres.
@@ -95,3 +96,11 @@ Un liseré de la même couleur borde le haut de la fenêtre, et le bas du menu r
 - Les sections Paramètres > Clients et Utilisateurs (jugées non prioritaires).
 - Les vraies alertes : elles arriveront quand le collecteur FortiAnalyzer sera branché. En attendant, des données de
   démonstration (inventées) peuvent être chargées pour voir les écrans remplis.
+Les rubriques se distinguent par un bandeau coloré, un titre plus grand et une flèche encadrée.
+Les logs sont plus sobres et légèrement en retrait ; un espace sépare chaque groupe du suivant.
+Ces repères restent visibles en mode clair comme en mode sombre.
+En mode réel, les graphiques et les trois compteurs de sévérité incluent aussi les messages faibles reçus,
+uniquement pour information. Ils couvrent la période depuis le démarrage de l'écoute et repartent à zéro
+au redémarrage. Les faibles ne sont pas ajoutés aux alertes à traiter et le seuil d'enregistrement reste inchangé.
+Le total en base et les rubriques portent toujours sur les alertes enregistrées. Un lien ouvre les logs faibles
+dans Logs bruts. En mode démonstration, les graphiques restent basés sur les données conservées.

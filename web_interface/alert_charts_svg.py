@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 ALERT_SEVERITY_GROUPS = (
     ("Critique", "critical", "#c63f68"),
@@ -39,15 +39,15 @@ class AlertChartSvgs:
     donut: Markup
 
 
-def build_alert_chart_svgs(alert_counts: AlertSeverityCounts) -> AlertChartSvgs:
+def build_alert_chart_svgs(alert_counts: AlertSeverityCounts, item_label: str = "alertes") -> AlertChartSvgs:
     """Construit les graphiques en barres et circulaire de la page Alertes."""
     return AlertChartSvgs(
-        bars=_build_alert_bar_chart_svg(alert_counts),
-        donut=_build_alert_donut_chart_svg(alert_counts),
+        bars=_build_alert_bar_chart_svg(alert_counts, item_label),
+        donut=_build_alert_donut_chart_svg(alert_counts, item_label),
     )
 
 
-def _build_alert_bar_chart_svg(alert_counts: AlertSeverityCounts) -> Markup:
+def _build_alert_bar_chart_svg(alert_counts: AlertSeverityCounts, item_label: str) -> Markup:
     values = (alert_counts.critical, alert_counts.medium, alert_counts.low)
     maximum_value = max(max(values), 1)
     baseline = 139
@@ -56,7 +56,7 @@ def _build_alert_bar_chart_svg(alert_counts: AlertSeverityCounts) -> Markup:
     bar_positions = (56, 179, 302)
     svg_parts = [
         f'<svg class="alert-bar-chart" viewBox="0 0 {CHART_WIDTH} {BAR_CHART_HEIGHT}" role="img" '
-        'aria-label="Nombre d’alertes par niveau de sévérité">',
+        f'aria-label="Nombre de {escape(item_label)} par niveau de sévérité">',
         f'<line x1="30" x2="390" y1="{baseline}" y2="{baseline}" class="alert-chart-axis" />',
     ]
 
@@ -66,7 +66,7 @@ def _build_alert_bar_chart_svg(alert_counts: AlertSeverityCounts) -> Markup:
         svg_parts.extend(
             [
                 f'<rect x="{x_position}" y="{y_position:.1f}" width="{bar_width}" height="{bar_height:.1f}" '
-                f'rx="8" fill="{color}"><title>{label} : {value} alerte(s)</title></rect>',
+                f'rx="8" fill="{color}"><title>{label} : {value} {escape(item_label)}</title></rect>',
                 f'<text x="{x_position + bar_width / 2}" y="{baseline + 22}" text-anchor="middle" '
                 f'class="alert-chart-label">{label}</text>',
                 f'<text x="{x_position + bar_width / 2}" y="{max(y_position - 8, 14):.1f}" text-anchor="middle" '
@@ -78,10 +78,10 @@ def _build_alert_bar_chart_svg(alert_counts: AlertSeverityCounts) -> Markup:
     return Markup("".join(svg_parts))
 
 
-def _build_alert_donut_chart_svg(alert_counts: AlertSeverityCounts) -> Markup:
+def _build_alert_donut_chart_svg(alert_counts: AlertSeverityCounts, item_label: str) -> Markup:
     svg_parts = [
         f'<svg class="alert-donut-chart" viewBox="0 0 {DONUT_CHART_SIZE} {DONUT_CHART_SIZE}" role="img" '
-        'aria-label="Diagramme circulaire des alertes par niveau de sévérité">',
+        f'aria-label="Diagramme circulaire des {escape(item_label)} par niveau de sévérité">',
         f'<circle cx="{DONUT_CENTER}" cy="{DONUT_CENTER}" r="{DONUT_RADIUS}" fill="none" '
         'stroke="#f1e4e9" stroke-width="24" />',
     ]
@@ -108,7 +108,7 @@ def _build_alert_donut_chart_svg(alert_counts: AlertSeverityCounts) -> Markup:
             'class="alert-donut-total">',
             f"{alert_counts.total}</text>",
             f'<text x="{DONUT_CENTER}" y="{DONUT_CENTER + 17}" text-anchor="middle" '
-            'class="alert-donut-caption">alertes</text>',
+            f'class="alert-donut-caption">{escape(item_label)}</text>',
             "</svg>",
         ]
     )

@@ -6,7 +6,7 @@
   "source": "CERT aDvens, d'après les fiches IRM du CERT Société Générale — IRM-06 « Défacement de site internet », version du 2025-10-27. Fichier : https://github.com/cert-advens/IRM/blob/HEAD/FR/IRM-06-Defacement.pdf (original : https://github.com/certsocietegenerale/IRM). Licence Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Modifications : texte extrait du PDF et découpé par phase, mise en forme adaptée ; contenu non réécrit.",
   "etapes": [
     {
-      "id": "726614f4-7251-48c1-a5b9-1004e9551794",
+      "id": "556e395b-e503-4ca6-a1b5-06c41767bc79",
       "titre": "Préparation",
       "description": [
         "Objectif : Établir des contacts, définir des procédures, recueillir des informations et se familiariser avec les outils de détection d’intrusion pour gagner du temps lors d’une attaque.",
@@ -26,7 +26,7 @@
       ]
     },
     {
-      "id": "cc1143d7-2cdc-4f8b-9731-0290b3a7e5da",
+      "id": "a7884503-c1dc-46b7-8463-15a40b40939a",
       "titre": "Identification",
       "description": [
         "Objectif : Détecter l’incident, déterminer son ampleur et impliquer les acteurs appropriés.",
@@ -46,7 +46,7 @@
       ]
     },
     {
-      "id": "32bb5bdd-6d7c-456a-bc74-99e4e72f9b8c",
+      "id": "b44499b4-e024-43d8-86fa-7e65279994f8",
       "titre": "Confinement",
       "description": [
         "Objectif : Atténuer les effets de l’attaque sur l’environnement ciblé.",
@@ -71,7 +71,7 @@
       ]
     },
     {
-      "id": "d7da881a-0c38-4a69-a7c8-3a19007a93ab",
+      "id": "5f5eda09-00f8-4e0e-8da4-4a006e676e0d",
       "titre": "Remédiation",
       "description": [
         "Objectif : Prendre des mesures pour arrêter l’attaque.",
@@ -80,7 +80,7 @@
       ]
     },
     {
-      "id": "f3a03a7c-4df0-49b7-97b5-61b32ca6db68",
+      "id": "f8fb22bc-5a1a-435f-8dd7-4f8eedcccd6b",
       "titre": "Récupération",
       "description": [
         "Objectif : Restaurer le fonctionnement normal du système.",
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "id": "f7848dfe-9e2e-4d40-9a67-1d1fd5a2a4a7",
+      "id": "cb14b1db-e2dc-443c-aa0d-2a85fe6b487d",
       "titre": "Capitalisation et apprentissage",
       "description": [
         "Objectif : Documenter les détails de l’incident, discuter des leçons apprises et améliorer les dispositifs et stratégies de défense.",

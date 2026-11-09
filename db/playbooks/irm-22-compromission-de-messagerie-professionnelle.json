@@ -6,7 +6,7 @@
   "source": "CERT aDvens, d'après les fiches IRM du CERT Société Générale — IRM-22 « Compromission de messagerie professionnelle », version du 2025-10-31. Fichier : https://github.com/cert-advens/IRM/blob/HEAD/FR/IRM-22-Compromission_de_messagerie_professionnelle.pdf (original : https://github.com/certsocietegenerale/IRM). Licence Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/). Modifications : texte extrait du PDF et découpé par phase, mise en forme adaptée ; contenu non réécrit.",
   "etapes": [
     {
-      "id": "ffa297a1-073a-4efa-b960-e979ed577f06",
+      "id": "2af8f24e-b491-4159-aea3-98c799086294",
       "titre": "Préparation",
       "description": [
         "Objectifs : Établir des contacts, définir des procédures et recueillir des informations dans le but de gagner du temps lors d’un incident.",
@@ -29,7 +29,7 @@
       ]
     },
     {
-      "id": "d63d44f2-6107-4b19-a2b6-a767b43fca3f",
+      "id": "21005681-7d24-4d83-9ca4-77b7064eef9e",
       "titre": "Identification",
       "description": [
         "Objectifs : Détecter l’incident, déterminer son ampleur et impliquer les parties concernées.",
@@ -60,7 +60,7 @@
       ]
     },
     {
-      "id": "65a66b51-31fd-4294-abf5-c4d4e9b2479c",
+      "id": "a8ec4942-fb11-4b14-8b50-f19df7eabbba",
       "titre": "Confinement",
       "description": [
         "Objectifs : Atténuer les impacts de l’incident, empêcher d’autres activités non autorisées et sécuriser les comptes et systèmes compromis pour stopper la progression de l’attaquant.",
@@ -106,7 +106,7 @@
       ]
     },
     {
-      "id": "b63bd2d6-29db-4c81-9399-625ccc31540c",
+      "id": "f868af9b-fec0-4a60-ab25-9144d88751e5",
       "titre": "Remédiation (externe)",
       "description": [
         "Objectif : Prendre des mesures pour éliminer la menace et éviter de nouveaux incidents.",
@@ -126,7 +126,7 @@
       ]
     },
     {
-      "id": "74b5b765-a8f2-4b8d-90e1-2065ac66b325",
+      "id": "d7c0f8d4-ce09-4d73-afac-e6d485d5b2e1",
       "titre": "Remédiation (interne)",
       "description": [
         "Objectif : Prendre des mesures afin d’éliminer la menace et d’éviter de nouveaux incidents.",
@@ -163,7 +163,7 @@
       ]
     },
     {
-      "id": "1536db8b-06be-4c51-b15b-d6fd3e2c1ba5",
+      "id": "e1824049-2784-4bbd-9074-ebab82ab20d5",
       "titre": "Récupération",
       "description": [
         "Objectif : Rétablir le fonctionnement normal des services et systèmes concernés, éliminer les causes de l’incident, renforcer les mesures de sécurité pour prévenir toute récurrence et assurer le rétablissement complet de l’organisation après la compromission.",
@@ -214,7 +214,7 @@
       ]
     },
     {
-      "id": "ebee2888-5a88-4b02-8519-06302f6126fd",
+      "id": "a2257fa3-2b12-4097-87bb-5dde5ad66598",
       "titre": "Capitalisation et apprentissage",
       "description": [
         "Objectifs : Documenter les détails de l’incident, tirer les leçons et ajuster les mesures de défense.",

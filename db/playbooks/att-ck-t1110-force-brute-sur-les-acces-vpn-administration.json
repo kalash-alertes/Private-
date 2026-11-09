@@ -6,7 +6,7 @@
   "source": "MITRE ATT&CK®, technique T1110 « Brute Force » (version 2.8, modifiée le 12/05/2026) et sous-techniques T1110.001 « Password Guessing », T1110.003 « Password Spraying », T1110.004 « Credential Stuffing » : https://attack.mitre.org/techniques/T1110/ — atténuations M1036, M1032, M1027, M1018 ; stratégies de détection DET0463, DET0551, DET0487, DET0460. © 2026 The MITRE Corporation. This work is reproduced and distributed with the permission of The MITRE Corporation (licence : https://attack.mitre.org/resources/legal-and-branding/terms-of-use/). Traduction française et regroupement par phase faits pour l'application. Retour d'expérience : NIST SP 800-61 Rév. 2, « Computer Security Incident Handling Guide », section 3.4.1 « Lessons Learned » (domaine public) : https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-61r2.pdf",
   "etapes": [
     {
-      "id": "0c8a305f-46fc-444c-917e-8337b25450eb",
+      "id": "07fdfb3f-2a7c-467d-980f-0c817313f5fc",
       "titre": "Identification : reconnaître une attaque par force brute",
       "description": [
         "Source : ATT&CK T1110 et sous-techniques (traduction).",
@@ -25,7 +25,7 @@
       ]
     },
     {
-      "id": "d08e66ab-1136-43ac-9edb-50bb627261dd",
+      "id": "a25a0ad2-fd81-4cd2-b810-ca0fdd023e99",
       "titre": "Identification : vérifier si un accès a réussi",
       "description": [
         "Source : ATT&CK, stratégies de détection DET0463 et DET0551 (traduction).",
@@ -37,7 +37,7 @@
       ]
     },
     {
-      "id": "23532d5a-e6d0-4062-8355-57b151fd3327",
+      "id": "f4c8d27a-bc2f-413d-9e3d-a1236bd6e898",
       "titre": "Confinement : limiter les essais (M1036)",
       "description": [
         "Source : ATT&CK, atténuation M1036 « Account Use Policies » (traduction).",
@@ -48,7 +48,7 @@
       ]
     },
     {
-      "id": "c0ad5dfc-b631-4505-af3f-3f7cde0716e1",
+      "id": "6494fc90-dec6-41da-9791-f22ed4294f8a",
       "titre": "Remédiation : comptes, MFA et mots de passe (M1018, M1032, M1027)",
       "description": [
         "Source : ATT&CK, atténuations M1018, M1032 et M1027 (traduction).",
@@ -58,7 +58,7 @@
       ]
     },
     {
-      "id": "2d70584d-4be8-440b-84e1-097090940dd5",
+      "id": "57c899ef-4ce4-4765-82b5-e83b8fbd8483",
       "titre": "Capitalisation : retour d'expérience",
       "description": [
         "Source : NIST SP 800-61 Rév. 2, section 3.4.1 « Lessons Learned » (traduction).",

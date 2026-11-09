@@ -135,6 +135,22 @@ def test_alert_type_dropdowns_work_without_javascript(theme_browser, web_client,
         assert vpn_group.locator("tbody tr").count() == 2
         assert vpn_group.locator('a[href^="/alertes/"]').count() == 2
         assert vpn_group.locator('form[action="/incidents"]').count() == 2
+        hierarchy = vpn_group.evaluate("""group => {
+          const header = getComputedStyle(group.querySelector('summary'));
+          const title = getComputedStyle(group.querySelector('.alert-type-name'));
+          const log = getComputedStyle(group.querySelector('.incident-title'));
+          return {
+            titleFont: parseFloat(title.fontSize), logFont: parseFloat(log.fontSize),
+            titleWeight: Number(title.fontWeight), logWeight: Number(log.fontWeight),
+            headerBackground: header.backgroundColor, contentBackground: getComputedStyle(group).backgroundColor,
+            separation: parseFloat(getComputedStyle(group).marginBottom),
+            indentation: parseFloat(getComputedStyle(group.querySelector('.table-scroll')).marginLeft)
+          };
+        }""")
+        assert hierarchy["titleFont"] >= hierarchy["logFont"] + 4
+        assert hierarchy["titleWeight"] > hierarchy["logWeight"]
+        assert hierarchy["headerBackground"] != hierarchy["contentBackground"]
+        assert hierarchy["separation"] >= 12 and hierarchy["indentation"] >= 12
         forward_group = page.locator(".alert-type-group").filter(
             has=page.locator(".alert-type-name", has_text="forward"),
         )

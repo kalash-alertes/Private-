@@ -202,6 +202,60 @@ def read_alert_summary_card_count(page_html: str, card_class: str) -> int:
     return int(re.sub(r"\D", "", card_match.group(1)))
 
 
+def test_live_alert_charts_count_low_logs_without_storing_or_processing_them(
+    web_client, database_session, monkeypatch,
+) -> None:
+    from backend.features.raw_syslog_feed import service as raw_feed_service
+    from backend.features.raw_syslog_feed.schemas import RawSyslogFeedStatisticsRead
+
+    store_synthetic_source_log(database_session, identifier_suffix="stored-only")
+    end_test_session_transaction(database_session)
+    monkeypatch.setenv("APP_IS_IN_DEMO", "false")
+    get_application_settings.cache_clear()
+    statistics = RawSyslogFeedStatisticsRead(
+        est_en_mode_demo=False, est_a_l_ecoute=True, severite_minimale=CriticalityLevel.MEDIUM,
+        nb_messages_lisibles=1530, nb_messages_enregistrables=15,
+        nb_messages_ecartes_par_le_seuil=1515, nb_messages_illisibles=0,
+        nb_messages_emetteur_refuse=0, nb_messages_perdus_file_pleine=0,
+        nb_datagrammes_udp_perdus_par_le_systeme=0,
+        nb_messages_gardes_pour_affichage=2, capacite_affichage=2,
+        repartition_par_niveau=[
+            dict(niveau_source=label, nombre=count, pourcentage=0, criticite_source=criticality,
+                 est_enregistre_par_la_collecte=stored)
+            for label, count, criticality, stored in [
+                ("error", 10, CriticalityLevel.HIGH, True),
+                ("warning", 5, CriticalityLevel.MEDIUM, True),
+                ("notice", 1500, CriticalityLevel.LOW, False),
+                ("information", 12, CriticalityLevel.INFORMATION, False),
+                ("unknown", 3, None, False),
+            ]
+        ],
+    )
+    monkeypatch.setattr(raw_feed_service, "read_raw_syslog_statistics", lambda settings: statistics)
+    try:
+        page = web_client.get("/alertes").text
+        assert read_alert_summary_card_count(page, "alert-summary-critical") == 10
+        assert read_alert_summary_card_count(page, "alert-summary-medium") == 5
+        assert read_alert_summary_card_count(page, "alert-summary-low") == 1512
+        assert read_alert_summary_card_count(page, "alert-summary-total") == 1
+        assert "1527</text>" in page and "logs reçus</text>" in page
+        assert "3 message(s) de niveau inconnu" in page
+        assert "non enregistrées" in page and "remis à zéro au redémarrage" in page
+        assert page.count('class="incident-title"') == 1
+        assert source_logs_service.count_all_source_logs(database_session) == 1
+        assert incidents_service.list_incidents(
+            database_session, IncidentListFilters(), PaginationParameters(limit=1),
+        ).total == 0
+        statistics.repartition_par_niveau = []
+        statistics.nb_messages_lisibles = 0
+        statistics.est_a_l_ecoute = False
+        inactive = web_client.get("/alertes").text
+        assert read_alert_summary_card_count(inactive, "alert-summary-low") == 0
+        assert "Réception syslog inactive" in inactive
+    finally:
+        get_application_settings.cache_clear()
+
+
 def test_alerts_page_puts_every_source_level_in_its_severity_case(web_client, database_session) -> None:
     # Effectifs distincts par niveau pour vérifier chaque somme : Critique = critique + haute (3 + 2),
     # Moyenne = moyenne (4), Faible = faible + information (1 + 6).
@@ -267,7 +321,7 @@ def test_alert_type_groups_include_all_types_and_paginate_within_the_selected_ty
     page = web_client.get("/alertes").text
     groups = re.findall(r'<details class="alert-type-group".*?</details>', page, re.S)
     assert len(groups) == 2
-    forward_group, vpn_group = groups
+    vpn_group, forward_group = groups
     assert '<span class="alert-type-name">forward</span>' in forward_group
     assert '<span class="table-count">1</span>' in forward_group
     assert f'href="/incidents/{incident.id}"' in forward_group
@@ -280,18 +334,40 @@ def test_alert_type_groups_include_all_types_and_paginate_within_the_selected_ty
 
     next_page = web_client.get("/alertes?groupe=vpn&offset=25").text
     next_groups = re.findall(r'<details class="alert-type-group".*?</details>', next_page, re.S)
-    assert next_groups[1].startswith('<details class="alert-type-group" open>')
-    assert next_groups[1].count('class="incident-title"') == 2
+    assert next_groups[0].startswith('<details class="alert-type-group" open>')
+    assert next_groups[0].count('class="incident-title"') == 2
     first_ids = set(re.findall(r'SYNTHETIQUE-vpn-\d+', vpn_group))
-    last_ids = set(re.findall(r'SYNTHETIQUE-vpn-\d+', next_groups[1]))
+    last_ids = set(re.findall(r'SYNTHETIQUE-vpn-\d+', next_groups[0]))
     assert len(first_ids | last_ids) == 27 and not first_ids & last_ids
-    assert "SYNTHETIQUE-forward" in next_groups[0]
-    assert 'href="/alertes?groupe=vpn&offset=0"' in next_groups[1]
+    assert "SYNTHETIQUE-forward" in next_groups[1]
+    assert 'href="/alertes?groupe=vpn&offset=0"' in next_groups[0]
 
     filtered = web_client.get("/alertes?criticite=critique").text
     assert '<span class="alert-type-name">forward</span>' not in filtered
     assert '<span class="table-count">27</span>' in filtered
     assert 'groupe=vpn&amp;criticite=critique&offset=25' in filtered
+
+
+def test_alert_type_groups_sort_by_filtered_counts_then_type(web_client, database_session) -> None:
+    for index, (event_type, criticality) in enumerate([
+        ("vpn", CriticalityLevel.CRITICAL),
+        ("vpn", CriticalityLevel.MEDIUM),
+        ("vpn", CriticalityLevel.MEDIUM),
+        ("forward", CriticalityLevel.CRITICAL),
+        ("forward", CriticalityLevel.CRITICAL),
+        ("ips", CriticalityLevel.CRITICAL),
+    ]):
+        store_synthetic_source_log(
+            database_session, identifier_suffix=f"sorted-{index}", event_type=event_type,
+            criticite_source=criticality,
+        )
+    end_test_session_transaction(database_session)
+    assert re.findall(
+        r'<span class="alert-type-name">(.*?)</span>', web_client.get("/alertes").text,
+    ) == ["vpn", "forward", "ips"]
+    assert re.findall(
+        r'<span class="alert-type-name">(.*?)</span>', web_client.get("/alertes?criticite=critique").text,
+    ) == ["forward", "ips", "vpn"]
 
 
 def test_alert_type_groups_escape_names_and_keep_exact_types_separate(web_client, database_session) -> None:

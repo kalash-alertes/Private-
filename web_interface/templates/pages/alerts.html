@@ -11,33 +11,44 @@
     <article class="summary-card alert-summary-critical">
       <span>Critique {{ icon("circle_alert", 18) }}</span>
       <strong>{{ severity_counts.critical | number }}</strong>
-      <small>Critiques et hautes</small>
+      <small>Critiques et hautes{% if charts_show_received_logs %} · reçues depuis le démarrage{% endif %}</small>
     </article>
     <article class="summary-card alert-summary-medium">
       <span>Moyenne {{ icon("clock3", 18) }}</span>
       <strong>{{ severity_counts.medium | number }}</strong>
-      <small>Alertes de niveau moyen</small>
+      <small>{% if charts_show_received_logs %}Reçues depuis le démarrage{% else %}Alertes de niveau moyen{% endif %}</small>
     </article>
     <article class="summary-card alert-summary-low">
       <span>Faible {{ icon("circle_check", 18) }}</span>
       <strong>{{ severity_counts.low | number }}</strong>
-      {% if is_low_case_collected %}
+      {% if charts_show_received_logs %}
+        <small>Faibles et informatives reçues · compteur informatif{% if not is_low_case_collected %} · non enregistrées{% endif %}</small>
+      {% elif is_low_case_collected %}
         <small>Faibles et informatives</small>
       {% else %}
         <small>Non collectées (seuil : {{ minimum_collected_criticality | criticality_label }} et plus)</small>
       {% endif %}
     </article>
     <article class="summary-card alert-summary-total">
-      <span>Total des alertes {{ icon("bell", 18) }}</span>
+      <span>Total des alertes{% if charts_show_received_logs %} en base{% endif %} {{ icon("bell", 18) }}</span>
       <strong>{{ alert_counts.total | number }}</strong>
       <small>{{ alert_counts.a_traiter | number }} à traiter</small>
     </article>
   </section>
 
+  {% if charts_show_received_logs %}
+    <p class="muted-text">Compteurs et graphiques : messages reçus de niveau reconnu depuis le démarrage de l'écoute,
+      avant filtrage, remis à zéro au redémarrage. Les faibles sont comptés à titre informatif ; le seuil de stockage
+      et les actions de traitement ne changent pas. La liste et le total en base restent limités aux alertes enregistrées.
+      {% if not reception_is_listening %}Réception syslog inactive : les compteurs ne progressent pas.{% endif %}
+      {% if unclassified_received_count %}{{ unclassified_received_count | number }} message(s) de niveau inconnu non représenté(s).{% endif %}
+      <a class="text-button" href="/logs-bruts?criticite=faible">Consulter les logs faibles</a>
+    </p>
+  {% endif %}
   <section class="alert-charts-grid" aria-label="Graphiques des alertes">
     <article class="panel alert-chart-panel">
       <div class="panel-header">
-        <div><h2>Alertes par niveau</h2><p>Nombre d'alertes classées par sévérité.</p></div>
+        <div><h2>{% if charts_show_received_logs %}Logs reçus par niveau{% else %}Alertes par niveau{% endif %}</h2><p>{% if charts_show_received_logs %}Depuis le démarrage de l'écoute, avant filtrage.{% else %}Nombre d'alertes classées par sévérité.{% endif %}</p></div>
       </div>
       <div class="alert-chart-content">
         {{ alert_charts.bars }}
@@ -50,12 +61,12 @@
     </article>
     <article class="panel alert-chart-panel alert-pie-panel">
       <div class="panel-header">
-        <div><h2>Répartition circulaire</h2><p>Part de chaque niveau parmi toutes les alertes.</p></div>
+        <div><h2>Répartition circulaire</h2><p>{% if charts_show_received_logs %}Part de chaque niveau parmi les messages reçus de niveau reconnu.{% else %}Part de chaque niveau parmi toutes les alertes.{% endif %}</p></div>
       </div>
       <div class="alert-donut-content">
         {{ alert_charts.donut }}
         {% if not severity_counts.total %}
-          <p class="alert-chart-empty">Aucune alerte à répartir.</p>
+          <p class="alert-chart-empty">{% if charts_show_received_logs %}Aucun message reçu de niveau reconnu.{% else %}Aucune alerte à répartir.{% endif %}</p>
         {% endif %}
       </div>
     </article>
@@ -65,7 +76,7 @@
     <div class="panel-header incidents-header">
       <div>
         <div class="title-with-count"><h2>Liste des alertes</h2><span class="table-count">{{ filtered_alert_total }}</span></div>
-        <p>Déroulez un type pour voir ses alertes, les plus récentes d'abord. Chaque rubrique a sa propre pagination.</p>
+        <p>Rubriques classées par nombre d'alertes décroissant. Déroulez un type pour voir ses alertes, les plus récentes d'abord.</p>
       </div>
     </div>
     <form class="table-toolbar" method="get" action="/alertes">

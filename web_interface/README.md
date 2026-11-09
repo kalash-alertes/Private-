@@ -43,11 +43,17 @@ adaptés au clavier et au mobile. Servie à la racine du backend
 - La page Alertes regroupe les niveaux en trois catégories d'affichage : « critique » rassemble critique et haute,
   « moyenne » conserve le niveau moyen, et « faible » rassemble faible et information. Les niveaux source restent
   inchangés et sont indiqués lorsqu'ils sont regroupés.
+- En réel, les graphiques et compteurs de sévérité comptent les messages reçus depuis le démarrage de l'écoute,
+  y compris les faibles et information avant filtrage. Compteurs volatils, sans écriture ni traitement supplémentaire.
+  Le total en base et les rubriques restent historiques ; en démo les graphiques restent fondés sur la base.
 - Chaque alerte ouvre sa copie originale conservée via `pages/alerts_page.py` et `templates/pages/alert_source_log.html`.
   Les données manquantes sont signalées, et le texte syslog exact n'est pas reconstruit.
 - La liste Alertes utilise des rubriques HTML dépliables par type exact (`vpn`, `forward`...), accessibles sans
   JavaScript. Les effectifs portent sur tous les logs filtrés ; chaque rubrique a une pagination de 25 alertes.
   `groupe` et `offset` conservent ouverte la rubrique paginée. Aucun regroupement métier d'incidents.
+  Les rubriques sont triées par effectif filtré décroissant, puis par type exact en cas d'égalité.
+- `static/css/alerts.css` distingue les en-têtes (bandeau, accent latéral, titre 18 px / 800)
+  des logs (14 px / 500, tableau en retrait), avec espacement entre groupes en clair/sombre.
 - Logs bruts : `static/js/raw_syslog_feed.js` conserve la ligne visible après insertion et retrait des messages ;
   `static/css/raw_syslog_feed.css` désactive l'ancrage natif pour éviter une double compensation. Les filtres restent
   actifs en direct et Pause ignore les réponses encore en cours.

@@ -61,7 +61,7 @@ def read_raw_syslog_feed(settings: ApplicationSettings, filters: RawSyslogFeedFi
     return RawSyslogFeedRead(
         messages=matching_messages,
         dernier_numero=recent_messages[-1].sequence_number if recent_messages else filters.apres,
-        statistiques=_build_feed_statistics(settings),
+        statistiques=read_raw_syslog_statistics(settings),
     )
 
 
@@ -122,7 +122,8 @@ def _matches_filters(message_read: RawSyslogMessageRead, filters: RawSyslogFeedF
     return True
 
 
-def _build_feed_statistics(settings: ApplicationSettings) -> RawSyslogFeedStatisticsRead:
+def read_raw_syslog_statistics(settings: ApplicationSettings) -> RawSyslogFeedStatisticsRead:
+    """Retourne les compteurs depuis le démarrage de l'écoute, sans charger de messages ni écrire en base."""
     reception_statistics = None if settings.app_is_in_demo else read_shared_syslog_reception_statistics()
     counts_by_severity_label = reception_statistics.accepted_message_count_by_severity_label if reception_statistics else {}
     readable_message_count = sum(counts_by_severity_label.values())

@@ -20,3 +20,8 @@ Les tests navigateur utilisent du HTTP simulé et Playwright ; si Chrome est dé
 `$env:PLAYWRIGHT_BROWSER_CHANNEL = "chrome"` permet de l'utiliser.
 
 **Doc** : [docs/technical/raw_syslog_feed.md](../../../docs/technical/raw_syslog_feed.md).
+# Compteurs informatifs
+
+`service.read_raw_syslog_statistics(settings)` expose les compteurs depuis le démarrage de l'écoute sans charger
+les messages. La page Alertes l'utilise pour compter aussi les faibles avant filtrage, sans stockage supplémentaire.
+Les compteurs sont remis à zéro au redémarrage et ne sont pas limités par la capacité de la mémoire d'affichage.

@@ -76,7 +76,9 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 ## Affichage
 
 - La liste Alertes présente une rubrique native HTML `details` / `summary` par valeur exacte de `logs.type`
-  (par exemple `vpn`, `forward`), triée alphabétiquement et repliée initialement. Elle fonctionne au clavier et sans
+  (par exemple `vpn`, `forward`), triée par effectif décroissant et repliée initialement. À effectifs égaux, le type
+  exact départage alphabétiquement les rubriques. Le tri utilise tous les logs correspondant au filtre courant,
+  pas seulement les 25 lignes affichées. Elle fonctionne au clavier et sans
   JavaScript. Ce regroupement est visuel : aucune création, fusion ou modification d'incident.
 - `source_logs.count_source_logs_by_type` calcule les effectifs en SQL sur tous les logs conservés, après filtre
   de criticité. Les types ne sont pas déduits d'une seule page de 25 logs : même un type ancien reste accessible.
@@ -208,3 +210,15 @@ contraste primaire ≥ 4,5:1, recherche et navigation mobiles conservées.
 `test_raw_syslog_feed_browser.py` vérifie l'ancrage et la pause avec les feuilles de style réellement chargées.
 Exécution : `$env:PLAYWRIGHT_BROWSER_CHANNEL = "chrome"; python -m pytest tests/web_interface` si Chrome est installé,
 sinon Chromium Playwright. Sans Playwright ou moteur disponible, seuls les tests navigateur sont ignorés.
+- Les rubriques Alertes ont un en-tête contrasté clair/sombre, un titre Manrope 18 px / 800, un accent latéral
+  et une flèche encadrée. Les logs restent à 14 px / 500 et le tableau est en retrait de 18 px.
+  Une marge de 14 px et un contour arrondi séparent les rubriques ; ces repères ne dépendent pas du texte.
+  Les tests navigateur vérifient l'écart typographique, le fond distinct, le retrait et la séparation en clair/sombre.
+- En mode réel, les trois compteurs de sévérité et les deux graphiques Alertes utilisent
+  `raw_syslog_feed.read_raw_syslog_statistics`, avant filtrage, sur une période commune depuis le démarrage
+  du récepteur. Ils ne dépendent pas des 2 000 messages conservés pour affichage. Faible inclut faible et information ;
+  les niveaux inconnus sont signalés hors graphique. Les compteurs sont volatils et repartent à zéro au redémarrage,
+  y compris lors du rechargement du backend. Une écoute inactive est explicitement signalée.
+  Le total en base, les rubriques et les actions restent fondés sur les logs stockés. En mode démo,
+  les graphiques gardent leurs comptes historiques en base. Aucun abaissement du seuil, aucune nouvelle écriture,
+  aucune création automatique d'incident. Les faibles ne deviennent pas des alertes à traiter.

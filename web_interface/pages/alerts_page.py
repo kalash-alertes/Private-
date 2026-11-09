@@ -22,6 +22,7 @@ from backend.core.settings import get_application_settings
 from backend.features.dashboard import service as dashboard_service
 from backend.features.incidents import service as incidents_service
 from backend.features.source_logs import service as source_logs_service
+from backend.features.raw_syslog_feed import service as raw_syslog_feed_service
 from backend.features.source_logs.schemas import SourceLogListFilters, SourceLogMetadataRead
 from web_interface.alert_charts_svg import AlertSeverityCounts, build_alert_chart_svgs
 from web_interface.application_layout import build_application_layout_context
@@ -55,7 +56,10 @@ def show_alerts_page(
     groupe: Annotated[str | None, Query(min_length=1, max_length=255)] = None,
 ) -> HTMLResponse:
     """Liste des types dépliables, avec pagination indépendante des alertes de chaque type."""
-    type_counts = source_logs_service.count_source_logs_by_type(database_session, criticite)
+    type_counts = sorted(
+        source_logs_service.count_source_logs_by_type(database_session, criticite),
+        key=lambda type_count: (-type_count.total, type_count.type),
+    )
     alert_groups = [
         AlertTypeGroup(
             type=type_count.type,
@@ -83,6 +87,20 @@ def show_alerts_page(
         medium=sum(source_alert_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["moyenne"]),
         low=sum(source_alert_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["faible"]),
     )
+    settings = get_application_settings()
+    reception_statistics = raw_syslog_feed_service.read_raw_syslog_statistics(settings)
+    charts_show_received_logs = not settings.app_is_in_demo
+    chart_counts = severity_counts
+    if charts_show_received_logs:
+        received_counts = {level: 0 for level in CriticalityLevel}
+        for distribution in reception_statistics.repartition_par_niveau:
+            if distribution.criticite_source is not None:
+                received_counts[distribution.criticite_source] += distribution.nombre
+        chart_counts = AlertSeverityCounts(
+            critical=sum(received_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["critique"]),
+            medium=sum(received_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["moyenne"]),
+            low=sum(received_counts[level] for level in ALERT_SEVERITY_GROUP_LEVELS["faible"]),
+        )
     dashboard = dashboard_service.build_dashboard(database_session, activity_day_count=1)
     # Seuil de collecte : la case Faible indique « non collectées » quand faible et information sont écartés
     # (défaut `moyenne`), pour qu'un 0 ne soit pas pris pour une panne.
@@ -104,10 +122,16 @@ def show_alerts_page(
                 database_session, [alert.id for group in alert_groups for alert in group.page.items]
             ),
             "selected_criticality": criticite,
-            "severity_counts": severity_counts,
+            "severity_counts": chart_counts,
+            "charts_show_received_logs": charts_show_received_logs,
+            "reception_is_listening": reception_statistics.est_a_l_ecoute,
+            "unclassified_received_count": (
+                reception_statistics.nb_messages_lisibles - chart_counts.total
+                if charts_show_received_logs else 0
+            ),
             "minimum_collected_criticality": minimum_collected_criticality,
             "is_low_case_collected": is_at_least_as_severe(CriticalityLevel.LOW, minimum_collected_criticality),
-            "alert_charts": build_alert_chart_svgs(severity_counts),
+            "alert_charts": build_alert_chart_svgs(chart_counts, "logs reçus" if charts_show_received_logs else "alertes"),
             "alert_counts": {
                 "total": dashboard.nombre_alertes,
                 "critiques": severity_counts.critical,
