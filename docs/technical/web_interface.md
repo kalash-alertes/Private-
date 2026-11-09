@@ -22,7 +22,7 @@ global est sauge clair ; les graphiques de synthèse sont des SVG produits en Py
 | Tableau de bord | `/` | — ; les cartes ouvrent Alertes, Incidents ouverts ou Incidents traités |
 | Incidents | `/incidents?vue=en_cours\|traites&recherche=&criticite=&statut=&offset=` | `/incidents` (création depuis une alerte) |
 | Fiche incident | `/incidents/{id}` | `/incidents/{id}/statut`, `/criticite`, `/assignation`, `/titre-categorie`, `/faux-positif`, `/playbook`, `/playbook/etapes/{etape_id}`, `/checklist/{item_id}` |
-| Alertes | `/alertes?criticite=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) ; indicateurs par sévérité, graphique en barres et diagramme circulaire |
+| Alertes | `/alertes?criticite=&groupe=&offset=` | — (bouton « Créer l'incident » → `POST /incidents`) ; rubriques dépliables par type, indicateurs par sévérité et graphiques |
 | Log original d'une alerte | `/alertes/{source_log_id}` | — ; copie des champs conservés et lien vers l'incident éventuel |
 | Journaux | `/journaux?statut=&offset=` (historique des imports, pertes système UDP) | — |
 | Logs bruts | `/logs-bruts?criticite=&enregistrement=&recherche=` ; fragment `/logs-bruts/nouveaux?apres=N` | — (voir [raw_syslog_feed.md](raw_syslog_feed.md)) |
@@ -75,6 +75,18 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 
 ## Affichage
 
+- La liste Alertes présente une rubrique native HTML `details` / `summary` par valeur exacte de `logs.type`
+  (par exemple `vpn`, `forward`), triée alphabétiquement et repliée initialement. Elle fonctionne au clavier et sans
+  JavaScript. Ce regroupement est visuel : aucune création, fusion ou modification d'incident.
+- `source_logs.count_source_logs_by_type` calcule les effectifs en SQL sur tous les logs conservés, après filtre
+  de criticité. Les types ne sont pas déduits d'une seule page de 25 logs : même un type ancien reste accessible.
+  Chaque rubrique charge au plus 25 métadonnées, triées par date d'événement puis UUID décroissants, avec les mêmes
+  liens vers le log original et les incidents qu'avant. Les données brutes ne sont pas chargées dans la liste.
+- `groupe` désigne le type exact (1 à 255 caractères) auquel appliquer `offset` ; les autres rubriques restent
+  sur leur première page. Les liens conservent le type et la criticité, et la rubrique paginée est automatiquement
+  ouverte après navigation. Un filtre soumis remet les pages à zéro. Les caractères des types sont échappés dans
+  le HTML et encodés dans les URL. Un offset sans groupe ne déplace aucune rubrique.
+  Les compteurs et graphiques globaux, la collecte et son seuil restent inchangés ; aucune migration nécessaire.
 - Dates stockées en UTC, affichées en `Europe/Paris` (`display_formatting.DISPLAY_TIMEZONE`, repli UTC si la base
   des fuseaux manque ; `tzdata` est dans `requirements.txt` pour l'image Docker).
 - Libellés : `haute` s'affiche « Haute » (la maquette disait « Élevée ») pour rester aligné sur la base.
@@ -137,7 +149,9 @@ habituel ; pages ⇒ `templates/pages/error.html` (404, 409, 422). La page d'err
 
 ### Contour de sidebar et bouton clair/sombre
 
-- Sidebar : contour blanc translucide de 4 px et léger reflet intérieur, sans modifier sa largeur extérieure ni les liens.
+- Sidebar : contour blanc translucide de 2 px et léger reflet intérieur, sans modifier sa largeur extérieure ni les liens.
+  Elle suit le choix du thème : voile sauge clair et textes foncés en clair, voile sombre et textes blancs en sombre.
+  La photographie, l'entrée active verte et les indicateurs sont conservés dans les deux modes.
 - `partials/application_theme_toggle.html` est inclus dans la barre supérieure et la page d'erreur. Bouton natif,
   utilisable au clavier, `aria-pressed` indique le mode sombre ; son libellé annonce le mode à activer.
 - `application_theme.js` est chargé dans le `<head>` avant les styles : il lit `fAnalyzerInterfaceTheme` dans

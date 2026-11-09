@@ -90,6 +90,16 @@ def count_all_source_logs(database_session: Session) -> int:
     return database_session.scalar(select(func.count()).select_from(SourceLog)) or 0
 
 
+def fetch_source_log_counts_by_type(
+    database_session: Session, source_criticality: str | None
+) -> list[tuple[str, int]]:
+    """Compte les logs par type exact, avec filtre facultatif et tri alphabétique déterministe."""
+    statement = select(SourceLog.type, func.count()).group_by(SourceLog.type).order_by(SourceLog.type)
+    if source_criticality is not None:
+        statement = statement.where(SourceLog.criticite_source == source_criticality)
+    return [(log_type, total) for log_type, total in database_session.execute(statement)]
+
+
 def fetch_event_dates_between(database_session: Session, start: datetime, end: datetime) -> list[datetime]:
     """Retourne les dates d'événement des logs dans [start, end[ (agrégées ensuite par le service)."""
     return list(

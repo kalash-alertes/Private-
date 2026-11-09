@@ -104,6 +104,50 @@ def test_common_theme_keeps_pages_readable_and_controls_accessible(
         page.close()
 
 
+@pytest.mark.parametrize("width", [320, 1440])
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_alert_type_dropdowns_work_without_javascript(theme_browser, web_client, database_session, width, theme) -> None:
+    for index, event_type in enumerate(["vpn", "vpn", "forward"]):
+        store_synthetic_source_log(
+            database_session, identifier_suffix=f"group-{index}", event_type=event_type,
+        )
+    database_session.rollback()
+    page = theme_browser.new_page(viewport={"width": width, "height": 900}, java_script_enabled=False)
+
+    def serve_group_page(route):
+        address = urlsplit(route.request.url)
+        if address.netloc != "groups.test":
+            route.abort()
+            return
+        response = web_client.get(address.path)
+        route.fulfill(status=response.status_code, content_type=response.headers["content-type"], body=response.content)
+
+    page.route("**/*", serve_group_page)
+    try:
+        page.goto("http://groups.test/alertes")
+        page.locator("html").evaluate("(element, theme) => element.dataset.theme = theme", theme)
+        vpn_group = page.locator(".alert-type-group").filter(has=page.locator(".alert-type-name", has_text="vpn"))
+        assert page.locator(".alert-type-group").count() == 2
+        assert not vpn_group.locator("table").is_visible()
+        vpn_group.locator("summary").focus()
+        page.keyboard.press("Enter")
+        assert vpn_group.locator("table").is_visible()
+        assert vpn_group.locator("tbody tr").count() == 2
+        assert vpn_group.locator('a[href^="/alertes/"]').count() == 2
+        assert vpn_group.locator('form[action="/incidents"]').count() == 2
+        forward_group = page.locator(".alert-type-group").filter(
+            has=page.locator(".alert-type-name", has_text="forward"),
+        )
+        assert not forward_group.locator("table").is_visible()
+        assert page.evaluate(
+            "document.documentElement.scrollWidth - document.documentElement.clientWidth"
+        ) <= 1
+        vpn_group.locator("summary").click()
+        assert not vpn_group.locator("table").is_visible()
+    finally:
+        page.close()
+
+
 @pytest.mark.parametrize("theme", ["light", "dark"])
 def test_background_is_a_real_local_jpeg_and_glass_text_has_contrast(theme_browser, web_client, theme) -> None:
     response = web_client.get("/static/images/application_background.jpg")
@@ -159,7 +203,9 @@ def test_background_is_a_real_local_jpeg_and_glass_text_has_contrast(theme_brows
           const style = getComputedStyle(element);
           return [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
         }""")
-        assert widths == ["4px"] * 4
+        assert widths == ["2px"] * 4
+        background = page.locator(".sidebar").evaluate("(element) => getComputedStyle(element).backgroundColor")
+        assert background == ("rgba(20, 32, 25, 0.8)" if theme == "dark" else "rgba(237, 242, 235, 0.85)")
     finally:
         page.close()
 
@@ -193,6 +239,7 @@ def test_opaque_fallback_remains_readable_without_photo_or_blur_support(theme_br
           return {background: style.backgroundColor, color: style.color};
         }""")
         assert contrast_ratio(sidebar["color"], sidebar["background"]) >= 4.5
+        assert sidebar["background"] == ("rgb(20, 32, 25)" if theme == "dark" else "rgb(237, 242, 235)")
         assert page.locator('a[href="/alertes"]').count() > 0
         assert page.locator(".heading-actions").is_visible()
     finally:
@@ -224,10 +271,12 @@ def test_theme_toggle_persists_across_pages_and_works_without_storage(theme_brow
     page.route("**/*", serve_theme_page)
     try:
         page.goto("http://theme.test/")
+        light_sidebar = page.locator(".sidebar").evaluate("(element) => getComputedStyle(element).backgroundColor")
         toggle = page.get_by_role("button", name="Activer le mode sombre")
         toggle.focus()
         page.keyboard.press("Enter")
         assert page.locator("html").get_attribute("data-theme") == "dark"
+        assert page.locator(".sidebar").evaluate("(element) => getComputedStyle(element).backgroundColor") != light_sidebar
         assert page.get_by_role("button", name="Activer le mode clair").get_attribute("aria-pressed") == "true"
         page.goto("http://theme.test/alertes")
         assert page.locator("html").get_attribute("data-theme") == "dark"

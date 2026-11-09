@@ -25,6 +25,29 @@ def count_stored_source_logs(database_session) -> int:
     return database_session.scalar(select(func.count()).select_from(SourceLog))
 
 
+def test_counts_by_type_cover_all_logs_and_respect_source_criticality(database_session) -> None:
+    assert source_logs_service.count_source_logs_by_type(database_session) == []
+    for index, (event_type, criticality) in enumerate([
+        ("vpn", CriticalityLevel.CRITICAL),
+        ("vpn", CriticalityLevel.MEDIUM),
+        ("forward", CriticalityLevel.CRITICAL),
+        ("VPN", CriticalityLevel.HIGH),
+    ]):
+        store_synthetic_source_log(
+            database_session, identifier_suffix=f"type-count-{index}",
+            event_type=event_type, criticite_source=criticality,
+        )
+    assert [
+        (group.type, group.total) for group in source_logs_service.count_source_logs_by_type(database_session)
+    ] == [("VPN", 1), ("forward", 1), ("vpn", 2)]
+    assert [
+        (group.type, group.total)
+        for group in source_logs_service.count_source_logs_by_type(database_session, CriticalityLevel.CRITICAL)
+    ] == [("forward", 1), ("vpn", 1)]
+    assert source_logs_service.count_source_logs_by_type(database_session, CriticalityLevel.LOW) == []
+    assert count_stored_source_logs(database_session) == 4
+
+
 def test_new_source_log_is_inserted_with_its_source_criticality(database_session) -> None:
     storage_result = store_synthetic_source_log(database_session, criticite_source=CriticalityLevel.HIGH)
 

@@ -2,6 +2,8 @@
 
 **Rôle** : logs connus de l'application (niveaux au-dessus du seuil de collecte) (table `logs`), déduplication via `identifiant_source`.
 Aucune route d'ingestion : l'enregistrement passe par `service.store_source_log_if_new` (collecteur).
+`service.count_source_logs_by_type` fournit les effectifs par type exact, filtrables par criticité,
+pour les rubriques dépliables de la page Alertes ; aucun changement des logs ni des incidents.
 
 **Fichiers** : `models.py` · `schemas.py` (`NewSourceLogData`, `SourceLogMetadataRead`, `SourceLogDetailRead`, filtres) ·
 `repository.py` (`INSERT ... ON CONFLICT DO NOTHING`) · `service.py` · `router.py` (`GET /logs[/{id}]`).

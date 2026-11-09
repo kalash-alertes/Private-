@@ -340,7 +340,7 @@ body {
 
 .sidebar {
   color: #f7faf5 !important;
-  border: 4px solid #ffffff66;
+  border: 2px solid #ffffff66;
   box-shadow: inset 0 0 0 1px #ffffff26, 8px 0 24px #1420191a;
 }
 .sidebar * { color: inherit !important; }
@@ -358,6 +358,32 @@ body {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .sidebar { background: #142019; }
 }
+
+html:not([data-theme="dark"]) .sidebar { background: #edf2eb; color: #303b33 !important; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html:not([data-theme="dark"]) .sidebar {
+    background-color: #edf2ebd9;
+    background-image: linear-gradient(#edf2ebd9, #edf2ebd9), url("/static/images/application_background.jpg");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+}
+html:not([data-theme="dark"]) .sidebar .brand-copy strong,
+html:not([data-theme="dark"]) .sidebar .brand-copy strong span,
+html:not([data-theme="dark"]) .sidebar .nav-item { color: #303b33 !important; }
+html:not([data-theme="dark"]) .sidebar .brand-copy small,
+html:not([data-theme="dark"]) .sidebar .nav-label { color: #46574b !important; }
+html:not([data-theme="dark"]) .sidebar .nav-item:hover,
+html:not([data-theme="dark"]) .sidebar .sidebar-close:hover { background: #dce8ddd9; }
+html:not([data-theme="dark"]) .sidebar .nav-item.active { color: #fff !important; }
+html:not([data-theme="dark"]) .sidebar .nav-count { background: #dce8dd; color: #303b33 !important; }
+html:not([data-theme="dark"]) .sidebar .count-alert { background: #f8dce5; color: #a43157 !important; }
+html:not([data-theme="dark"]) .sidebar .system-status { border-color: #303b3333; color: #303b33 !important; }
+html:not([data-theme="dark"]) .sidebar .alert-source-live,
+html:not([data-theme="dark"]) .sidebar .status-check { color: #276e5c !important; }
+html:not([data-theme="dark"]) .sidebar .alert-source-demo { color: #765a22 !important; }
+html:not([data-theme="dark"]) .sidebar .alert-source-live-inactive { color: #a43157 !important; }
 
 .theme-toggle[hidden] { display: none; }
 .theme-toggle-symbol {

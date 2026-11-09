@@ -56,6 +56,13 @@ class SourceLogDetailRead(SourceLogMetadataRead):
     donnees_brutes: dict[str, Any] | None
 
 
+class SourceLogTypeCountRead(BaseModel):
+    """Nombre de logs conservés pour un type exact, après filtrage par criticité."""
+
+    type: str
+    total: int
+
+
 class SourceLogListFilters(BaseModel):
     """Filtres de la liste des logs. Les bornes de date sont incluses."""
 

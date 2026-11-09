@@ -32,6 +32,17 @@
 .alert-severity-cell { min-width: 140px; }
 .severity-source-level { display: block; margin: 4px 0 0 2px; color: var(--muted); font-size: 9px; }
 
+.alert-type-group { border-top: 1px solid var(--border); }
+.alert-type-group > summary {
+  display: flex; align-items: center; gap: 12px; padding: 16px;
+  min-height: 52px; color: var(--text); cursor: pointer; list-style: none;
+}
+.alert-type-group > summary::-webkit-details-marker { display: none; }
+.alert-type-group > summary:focus-visible { outline: 2px solid var(--text); outline-offset: -3px; }
+.alert-type-name { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
+.alert-type-chevron { display: flex; flex-shrink: 0; }
+.alert-type-group[open] > summary .alert-type-chevron { transform: rotate(90deg); }
+
 @media (max-width: 1100px) {
   .alert-charts-grid { grid-template-columns: 1fr; }
   .alert-chart-content { grid-template-columns: minmax(0, 1fr) minmax(150px, .55fr); }

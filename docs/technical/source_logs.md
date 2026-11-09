@@ -14,6 +14,7 @@ Conserver les métadonnées des logs collectés (niveaux au-dessus du seuil de c
 | `store_source_log_if_new(session, NewSourceLogData)` | insère si `identifiant_source` inconnu, sinon ne touche à rien ; commit ; retourne `SourceLogStorageResult(source_log_id, was_inserted)` | `ResourceNotFoundError` / `ResourceConflictError` si l'exécution d'import est absente / terminée |
 | `fetch_source_log_metadata(session, id)` | métadonnées (utilisée par `incidents`) | `ResourceNotFoundError` |
 | `fetch_source_log_detail`, `list_source_logs` | consultation | `ResourceNotFoundError` |
+| `count_source_logs_by_type(session, source_criticality=None)` | liste de `SourceLogTypeCountRead(type, total)`, types exacts triés alphabétiquement, effectifs sur tous les logs filtrés ; agrégation SQL `GROUP BY` dans le repository, utilisée par la page Alertes | — |
 
 ## Validation des données entrantes (`NewSourceLogData`)
 

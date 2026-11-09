@@ -248,6 +248,69 @@ def test_low_case_is_labelled_normally_when_every_level_is_collected(web_client,
     assert "Faibles et informatives" in page and "Non collectées" not in page
 
 
+def test_alert_type_groups_include_all_types_and_paginate_within_the_selected_type(
+    web_client, database_session,
+) -> None:
+    for index in range(27):
+        store_synthetic_source_log(
+            database_session, identifier_suffix=f"vpn-{index:02}", event_type="vpn",
+        )
+    forward_log = store_synthetic_source_log(
+        database_session, identifier_suffix="forward", event_type="forward",
+        criticite_source=CriticalityLevel.MEDIUM,
+    )
+    incident = incidents_service.create_incident_from_source_log(
+        database_session, IncidentCreationRequest(log_id=forward_log.source_log_id),
+    )
+    end_test_session_transaction(database_session)
+
+    page = web_client.get("/alertes").text
+    groups = re.findall(r'<details class="alert-type-group".*?</details>', page, re.S)
+    assert len(groups) == 2
+    forward_group, vpn_group = groups
+    assert '<span class="alert-type-name">forward</span>' in forward_group
+    assert '<span class="table-count">1</span>' in forward_group
+    assert f'href="/incidents/{incident.id}"' in forward_group
+    assert '<span class="alert-type-name">vpn</span>' in vpn_group
+    assert '<span class="table-count">27</span>' in vpn_group
+    assert vpn_group.count('class="incident-title"') == 25
+    assert "SYNTHETIQUE-forward" not in vpn_group
+    assert 'href="/alertes?groupe=vpn&offset=25"' in vpn_group
+    assert not re.search(r'<details[^>]*\bopen\b', page)
+
+    next_page = web_client.get("/alertes?groupe=vpn&offset=25").text
+    next_groups = re.findall(r'<details class="alert-type-group".*?</details>', next_page, re.S)
+    assert next_groups[1].startswith('<details class="alert-type-group" open>')
+    assert next_groups[1].count('class="incident-title"') == 2
+    first_ids = set(re.findall(r'SYNTHETIQUE-vpn-\d+', vpn_group))
+    last_ids = set(re.findall(r'SYNTHETIQUE-vpn-\d+', next_groups[1]))
+    assert len(first_ids | last_ids) == 27 and not first_ids & last_ids
+    assert "SYNTHETIQUE-forward" in next_groups[0]
+    assert 'href="/alertes?groupe=vpn&offset=0"' in next_groups[1]
+
+    filtered = web_client.get("/alertes?criticite=critique").text
+    assert '<span class="alert-type-name">forward</span>' not in filtered
+    assert '<span class="table-count">27</span>' in filtered
+    assert 'groupe=vpn&amp;criticite=critique&offset=25' in filtered
+
+
+def test_alert_type_groups_escape_names_and_keep_exact_types_separate(web_client, database_session) -> None:
+    for index, event_type in enumerate(["vpn", "VPN", 'test <script> & " /']):
+        store_synthetic_source_log(
+            database_session, identifier_suffix=f"type-{index}", event_type=event_type,
+        )
+    end_test_session_transaction(database_session)
+    page = web_client.get("/alertes").text
+    assert page.count('<details class="alert-type-group"') == 3
+    assert '<span class="alert-type-name">VPN</span>' in page
+    assert '<span class="alert-type-name">vpn</span>' in page
+    assert '<script>' not in page
+    assert 'test &lt;script&gt; &amp; &#34; /' in page
+    assert web_client.get("/alertes?criticite=faible").text.count('<details class="alert-type-group"') == 0
+    assert web_client.get("/alertes?offset=-1").status_code == 422
+    assert web_client.get("/alertes?groupe=" + "x" * 256).status_code == 422
+
+
 def test_dashboard_uses_global_theme_and_shows_alert_source(web_client) -> None:
     """Le dashboard suit le thème sauge commun (plus de thème noir/blanc dédié) et garde l'indicateur de source."""
     dashboard = web_client.get("/").text

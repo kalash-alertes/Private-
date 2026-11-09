@@ -17,6 +17,7 @@ from backend.core.utc_datetime_types import interpret_stored_datetime_as_utc
 from sqlalchemy.orm import Session
 
 from backend.core.domain_errors import ResourceNotFoundError
+from backend.core.criticality import CriticalityLevel
 from backend.core.pagination import PaginatedResponse, PaginationParameters
 from backend.features.import_runs import service as import_runs_service
 from backend.features.source_logs import repository
@@ -27,6 +28,7 @@ from backend.features.source_logs.schemas import (
     SourceLogListFilters,
     SourceLogMetadataRead,
     SourceLogStorageResult,
+    SourceLogTypeCountRead,
 )
 
 
@@ -81,6 +83,18 @@ def fetch_source_logs_metadata_by_ids(
 def count_all_source_logs(database_session: Session) -> int:
     """Retourne le nombre total de logs connus."""
     return repository.count_all_source_logs(database_session)
+
+
+def count_source_logs_by_type(
+    database_session: Session, source_criticality: CriticalityLevel | None = None
+) -> list[SourceLogTypeCountRead]:
+    """Retourne tous les types conservés et leurs effectifs, filtrés par criticité si demandée."""
+    return [
+        SourceLogTypeCountRead(type=log_type, total=total)
+        for log_type, total in repository.fetch_source_log_counts_by_type(
+            database_session, source_criticality.value if source_criticality is not None else None
+        )
+    ]
 
 
 def count_source_logs_per_event_day(database_session: Session, first_day: date, last_day: date) -> dict[date, int]:

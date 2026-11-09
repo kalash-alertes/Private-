@@ -64,8 +64,8 @@
   <section class="panel incidents-panel">
     <div class="panel-header incidents-header">
       <div>
-        <div class="title-with-count"><h2>Liste des alertes</h2><span class="table-count">{{ alerts_page.total }}</span></div>
-        <p>Chaque alerte est classée en critique, moyenne ou faible. Les plus récentes apparaissent d'abord.</p>
+        <div class="title-with-count"><h2>Liste des alertes</h2><span class="table-count">{{ filtered_alert_total }}</span></div>
+        <p>Déroulez un type pour voir ses alertes, les plus récentes d'abord. Chaque rubrique a sa propre pagination.</p>
       </div>
     </div>
     <form class="table-toolbar" method="get" action="/alertes">
@@ -82,11 +82,18 @@
         <button class="button button-secondary button-small" type="submit">Filtrer</button>
       </div>
     </form>
+    {% for group in alert_groups %}
+      <details class="alert-type-group" {% if expanded_group == group.type %}open{% endif %}>
+        <summary>
+          <span class="alert-type-name">{{ group.type }}</span>
+          <span class="table-count">{{ group.page.total }}</span>
+          <span class="alert-type-chevron" aria-hidden="true">{{ icon("chevron_right", 18) }}</span>
+        </summary>
     <div class="table-scroll">
       <table>
         <thead><tr><th>ALERTE</th><th>SÉVÉRITÉ</th><th>DATE DE L'ÉVÉNEMENT</th><th>REÇUE LE</th><th>INCIDENT</th></tr></thead>
         <tbody>
-          {% for alert in alerts_page.items %}
+          {% for alert in group.page.items %}
             {% set incident_id = incident_id_by_alert_id.get(alert.id) %}
             <tr>
               <td>
@@ -108,11 +115,15 @@
               </td>
             </tr>
           {% else %}
-            <tr><td colspan="5" class="empty-state">Aucune alerte. Elles apparaîtront après le premier import FortiAnalyzer.</td></tr>
+            <tr><td colspan="5" class="empty-state">Aucune alerte sur cette page.</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    {{ pagination_footer(alerts_page, "/alertes", filter_query, "alertes") }}
+        {{ pagination_footer(group.page, "/alertes", group.query, "alertes") }}
+      </details>
+    {% else %}
+      <p class="empty-state">Aucune alerte ne correspond au filtre. Les alertes apparaîtront après le premier import FortiAnalyzer.</p>
+    {% endfor %}
   </section>
 {% endblock %}

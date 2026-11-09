@@ -30,7 +30,8 @@ Une photographie de forêt apparaît derrière les menus, cartes et champs trans
 contenus, liens et actions ; un léger flou et un voile clair permettent de lire les textes.
 Le menu latéral est plus sombre, avec la photo visible derrière, des textes blancs et un fond vert pour la rubrique
 ouverte, comme dans la référence visuelle. Tous ses liens et compteurs sont conservés.
-Un contour translucide plus épais souligne le menu. Le bouton **Mode sombre / Mode clair**, en haut de l'écran, change
+Un contour translucide discret souligne le menu. La sidebar passe elle aussi en clair ou en sombre, tout en gardant
+la photo en arrière-plan. Le bouton **Mode sombre / Mode clair**, en haut de l'écran, change
 l'apparence de toute l'application tout en conservant la photo. Votre choix est mémorisé sur ce navigateur et
 reste actif quand vous changez de page. Sans JavaScript, l'interface reste en clair et ce bouton n'apparaît pas.
 
@@ -56,6 +57,17 @@ Le tableau de bord utilise le même thème sauge clair que les autres écrans. C
 la bonne liste : incidents ouverts, alertes à traiter ou incidents traités. Le graphique couvre les sept derniers
 jours, et la liste du bas ouvre directement chaque incident. En haut à droite, un petit indicateur rappelle d'où
 viennent les alertes (démonstration, FortiAnalyzer en direct, ou réception inactive) et mène à la page Journaux.
+
+## Dérouler les alertes par type
+
+Dans **Alertes**, chaque type apparaît une seule fois, avec son nombre d'alertes : par exemple **vpn** ou
+**forward**. Cliquez sur la rubrique pour afficher ses alertes, puis cliquez à nouveau pour la replier.
+Au clavier, sélectionnez la rubrique avec Tab et ouvrez-la avec Entrée ou Espace.
+
+Chaque rubrique affiche 25 alertes à la fois, les plus récentes en premier ; les flèches donnent accès aux autres.
+Après un changement de page, la rubrique consultée reste ouverte. Le filtre de sévérité s'applique à toutes les
+rubriques et à leurs nombres. Les liens vers le log original et les boutons d'incident sont conservés.
+Ce rangement ne regroupe pas les alertes en incidents et ne modifie ni les logs stockés ni les graphiques.
 
 ## Démonstration ou vraies alertes ?
 

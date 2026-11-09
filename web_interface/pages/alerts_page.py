@@ -6,6 +6,7 @@ Moyenne = moyenne, Faible = faible + information. Le niveau source n'est jamais 
 Une alerte sans incident est « à traiter » : un bouton crée l'incident (formulaire vers `POST /incidents`).
 """
 
+from dataclasses import dataclass
 from typing import Annotated
 from urllib.parse import urlencode
 from uuid import UUID
@@ -16,12 +17,12 @@ from sqlalchemy.orm import Session
 
 from backend.core.criticality import CriticalityLevel, is_at_least_as_severe
 from backend.core.database import get_database_session
-from backend.core.pagination import PaginationParameters
+from backend.core.pagination import PaginatedResponse, PaginationParameters
 from backend.core.settings import get_application_settings
 from backend.features.dashboard import service as dashboard_service
 from backend.features.incidents import service as incidents_service
 from backend.features.source_logs import service as source_logs_service
-from backend.features.source_logs.schemas import SourceLogListFilters
+from backend.features.source_logs.schemas import SourceLogListFilters, SourceLogMetadataRead
 from web_interface.alert_charts_svg import AlertSeverityCounts, build_alert_chart_svgs
 from web_interface.application_layout import build_application_layout_context
 from web_interface.template_rendering import render_page
@@ -36,19 +37,39 @@ ALERT_SEVERITY_GROUP_LEVELS = {
 }
 
 
+@dataclass(frozen=True)
+class AlertTypeGroup:
+    """Rubrique dépliable et liens de pagination conservant son type et le filtre courant."""
+
+    type: str
+    page: PaginatedResponse[SourceLogMetadataRead]
+    query: str
+
+
 @alerts_page_router.get("/alertes", response_class=HTMLResponse)
 def show_alerts_page(
     request: Request,
     database_session: Annotated[Session, Depends(get_database_session)],
     criticite: CriticalityLevel | None = None,
     offset: Annotated[int, Query(ge=0)] = 0,
+    groupe: Annotated[str | None, Query(min_length=1, max_length=255)] = None,
 ) -> HTMLResponse:
-    """Liste paginée des alertes, les plus récentes d'abord."""
-    alerts_page = source_logs_service.list_source_logs(
-        database_session,
-        SourceLogListFilters(criticite_source=criticite),
-        PaginationParameters(limit=ALERTS_PER_PAGE, offset=offset),
-    )
+    """Liste des types dépliables, avec pagination indépendante des alertes de chaque type."""
+    type_counts = source_logs_service.count_source_logs_by_type(database_session, criticite)
+    alert_groups = [
+        AlertTypeGroup(
+            type=type_count.type,
+            page=source_logs_service.list_source_logs(
+                database_session,
+                SourceLogListFilters(criticite_source=criticite, type=type_count.type),
+                PaginationParameters(limit=ALERTS_PER_PAGE, offset=offset if groupe == type_count.type else 0),
+            ),
+            query=urlencode(
+                {"groupe": type_count.type, **({"criticite": criticite.value} if criticite else {})}
+            ),
+        )
+        for type_count in type_counts
+    ]
     source_alert_counts = {
         criticality: source_logs_service.list_source_logs(
             database_session,
@@ -74,14 +95,15 @@ def show_alerts_page(
                 database_session,
                 "alertes",
                 "Alertes",
-                "Visualisez les alertes par niveau de sévérité et créez un incident pour celles qui méritent un traitement.",
+                "Déroulez un type pour consulter ses alertes et créer un incident si nécessaire.",
             ),
-            "alerts_page": alerts_page,
+            "alert_groups": alert_groups,
+            "filtered_alert_total": sum(type_count.total for type_count in type_counts),
+            "expanded_group": groupe,
             "incident_id_by_alert_id": incidents_service.fetch_incident_ids_by_log_ids(
-                database_session, [alert.id for alert in alerts_page.items]
+                database_session, [alert.id for group in alert_groups for alert in group.page.items]
             ),
             "selected_criticality": criticite,
-            "filter_query": urlencode({"criticite": criticite.value} if criticite else {}),
             "severity_counts": severity_counts,
             "minimum_collected_criticality": minimum_collected_criticality,
             "is_low_case_collected": is_at_least_as_severe(CriticalityLevel.LOW, minimum_collected_criticality),

@@ -45,6 +45,9 @@ adaptés au clavier et au mobile. Servie à la racine du backend
   inchangés et sont indiqués lorsqu'ils sont regroupés.
 - Chaque alerte ouvre sa copie originale conservée via `pages/alerts_page.py` et `templates/pages/alert_source_log.html`.
   Les données manquantes sont signalées, et le texte syslog exact n'est pas reconstruit.
+- La liste Alertes utilise des rubriques HTML dépliables par type exact (`vpn`, `forward`...), accessibles sans
+  JavaScript. Les effectifs portent sur tous les logs filtrés ; chaque rubrique a une pagination de 25 alertes.
+  `groupe` et `offset` conservent ouverte la rubrique paginée. Aucun regroupement métier d'incidents.
 - Logs bruts : `static/js/raw_syslog_feed.js` conserve la ligne visible après insertion et retrait des messages ;
   `static/css/raw_syslog_feed.css` désactive l'ancrage natif pour éviter une double compensation. Les filtres restent
   actifs en direct et Pause ignore les réponses encore en cours.
@@ -61,6 +64,8 @@ Si seul Chrome est installé : `$env:PLAYWRIGHT_BROWSER_CHANNEL = "chrome"` avan
 Sans Playwright ou moteur disponible, ces seuls tests sont ignorés.
 `test_application_theme_browser.py` vérifie toutes les pages avec des données synthétiques à 320, 390 et 1440 px :
 absence de débordement global, lisibilité, boutons, contrastes, navigation mobile, photographie JPEG et repli opaque.
+Il teste aussi les rubriques Alertes au clavier et à la souris, sans JavaScript, en clair/sombre à 320 et 1440 px.
+`test_web_pages.py` couvre les types hors première page, la pagination par type, les filtres et l'échappement HTML.
 
 ## Changer la photographie de fond
 
@@ -71,7 +76,8 @@ ni retiré. Le voile clair et les panneaux floutés préservent la lisibilité ;
 les panneaux restent opaques.
 La sidebar reprend le rendu de la référence : photographie derrière un voile sombre, textes et icônes clairs,
 entrée active verte. Ses liens, compteurs et indicateurs restent les mêmes ; elle utilise la même image remplaçable.
-Son contour translucide fait 4 px, sans élargir le menu. Le bouton clair/sombre est inclus dans `templates/partials/application_theme_toggle.html`,
+Son contour translucide fait 2 px, sans élargir le menu. La sidebar devient sauge claire avec textes foncés en mode
+clair et sombre avec textes blancs en mode sombre. Le bouton clair/sombre est inclus dans `templates/partials/application_theme_toggle.html`,
 le choix mémorisé par `static/js/application_theme.js` et la variante sombre dans `static/css/dark_theme.css`.
 Le script applique le choix avant le rendu et n'écrit aucune donnée métier ; si le stockage est bloqué,
 il le signale et le bouton reste fonctionnel dans la page.
